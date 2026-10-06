@@ -1,0 +1,114 @@
+/* Estilo da tela de login. Estava num <style> dentro do .razor, que
+   valia para o site inteiro; aqui o escopo e so desta pagina. */
+
+.tela-login {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: #fff;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.cartao {
+    width: 100%;
+    max-width: 380px;
+    background: #f7f7f8;
+    border: 2px solid #e67e22;
+    border-radius: 12px;
+    padding: 40px 36px;
+    box-shadow: 0 6px 22px rgba(0, 0, 0, 0.08);
+}
+
+/* Versao grafite com fundo transparente: contrasta no cartao claro
+   sem a caixa preta que antes escondia o fundo opaco do PNG. */
+.marca {
+    display: block;
+    width: 200px;
+    max-width: 100%;
+    height: auto;
+    margin: 0 auto 20px;
+}
+
+.cartao h1 {
+    margin: 0;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #1c1c1e;
+    text-align: center;
+}
+
+.legenda {
+    margin: 4px 0 28px;
+    font-size: 0.85rem;
+    color: #8a8a8e;
+    text-align: center;
+}
+
+.creditos {
+    margin: 22px 0 0;
+    padding-top: 16px;
+    border-top: 1px solid #e3e3e6;
+    font-size: 0.75rem;
+    color: #a1a1a6;
+    text-align: center;
+}
+
+.cartao label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #48484a;
+}
+
+/* ::deep porque o <input> e renderizado pelo <InputText>, componente
+   filho: o atributo de escopo desta pagina nao chega nele. */
+.cartao ::deep input {
+    display: block;
+    width: 100%;
+    margin-bottom: 18px;
+    padding: 11px 12px;
+    font-size: 0.95rem;
+    color: #1c1c1e;
+    background: #fff;
+    border: 1px solid #d1d1d6;
+    border-radius: 7px;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.cartao ::deep input:focus {
+    outline: none;
+    border-color: #e67e22;
+    box-shadow: 0 0 0 3px rgba(230, 126, 34, 0.15);
+}
+
+.cartao button {
+    width: 100%;
+    margin-top: 6px;
+    padding: 12px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #fff;
+    background: #e67e22;
+    border: none;
+    border-radius: 7px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.cartao button:hover {
+    background: #d35400;
+}
+
+.erro {
+    margin-bottom: 18px;
+    padding: 10px 12px;
+    font-size: 0.85rem;
+    color: #b3261e;
+    background: #fdecea;
+    border-left: 3px solid #b3261e;
+    border-radius: 5px;
+}
