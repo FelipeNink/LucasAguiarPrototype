@@ -1,0 +1,90 @@
+@page "/login"
+
+@using LucasAguiar.Models
+@inject UsuarioDAO usuarioDAO
+@inject NavigationManager Navigation
+@inject IHttpContextAccessor HttpContextAccessor
+
+<PageTitle>Entrar — Lucas Aguiar</PageTitle>
+
+<div class="tela-login">
+    <div class="cartao">
+        <img src="logo-escura.png" alt="Lucas Aguiar" class="marca" />
+
+        <h1>Lucas Aguiar</h1>
+        <p class="legenda">Sistema de Gerenciamento Empresarial</p>
+
+        <EditForm Model="login" OnValidSubmit="Logar" FormName="formLogin">
+            @if (!string.IsNullOrEmpty(erro))
+            {
+                <div class="erro">@erro</div>
+            }
+
+            <label for="usuario">Usuário</label>
+            <InputText id="usuario" @bind-Value="login.NomeUsuario" autocomplete="username" />
+
+            <label for="senha">Senha</label>
+            <InputText id="senha" @bind-Value="login.Senha" type="password" autocomplete="current-password" />
+
+            <button type="submit">Entrar</button>
+        </EditForm>
+
+        <p class="creditos">&copy; Garotos de Programa</p>
+    </div>
+</div>
+
+
+@code {
+    [SupplyParameterFromForm(FormName = "formLogin")]
+    private LoginModel login { get; set; } = new();
+
+    private string? erro;
+
+    private void Logar()
+    {
+        erro = null;
+
+        if (string.IsNullOrWhiteSpace(login.NomeUsuario) || string.IsNullOrWhiteSpace(login.Senha))
+        {
+            erro = "Informe usuário e senha.";
+            return;
+        }
+
+        Usuario? usuario;
+        try
+        {
+            usuario = usuarioDAO.ValidarLogin(login.NomeUsuario, login.Senha);
+        }
+        catch (Exception ex)
+        {
+            erro = "Erro ao entrar: " + ex.Message;
+            return;
+        }
+
+        if (usuario == null)
+        {
+            erro = "Usuário ou senha inválidos.";
+            return;
+        }
+
+        var httpContext = HttpContextAccessor?.HttpContext;
+        if (httpContext == null)
+        {
+            erro = "Não foi possível iniciar a sessão. Recarregue a página.";
+            return;
+        }
+
+        httpContext.Session.SetString("UsuarioId", usuario.IdUsr.ToString());
+        httpContext.Session.SetString("UsuarioNome", usuario.NomeUsr ?? "");
+
+        // Fora do try: NavigateTo lanca NavigationException internamente para
+        // sinalizar o redirecionamento no render estatico do servidor.
+        Navigation.NavigateTo("/", forceLoad: true);
+    }
+
+    public class LoginModel
+    {
+        public string NomeUsuario { get; set; } = "";
+        public string Senha { get; set; } = "";
+    }
+}

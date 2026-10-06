@@ -1,0 +1,58 @@
+.explicacao {
+    max-width: 640px;
+    margin-bottom: 1.25rem;
+    font-size: 0.88rem;
+    color: #6b7280;
+}
+
+.linha-adicionar {
+    display: grid;
+    grid-template-columns: 150px minmax(0, 1fr) 100px auto;
+    gap: 0.5rem;
+    max-width: 760px;
+}
+
+.campo-qtd {
+    text-align: center;
+}
+
+.dir {
+    text-align: right;
+}
+
+.rodape {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    margin: 1.5rem 0 2.5rem;
+    padding: 1rem 1.25rem;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+}
+
+.comparativo {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 0.88rem;
+    color: #4b5563;
+}
+
+.comparativo .economia {
+    color: #16a34a;
+    font-weight: 600;
+}
+
+.comparativo .acrescimo {
+    color: #c9302c;
+    font-weight: 600;
+}
+
+@media (max-width: 900px) {
+    .linha-adicionar {
+        grid-template-columns: 1fr 1fr;
+    }
+}

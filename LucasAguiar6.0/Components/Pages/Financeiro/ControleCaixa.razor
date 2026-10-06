@@ -1,0 +1,382 @@
+@page "/caixa"
+@rendermode InteractiveServer
+
+@using LucasAguiar.Models
+@using LucasAguiar.Services
+@inject CaixaDAO caixaDAO
+@inject AuthenticationService auth
+
+<PageTitle>Caixa</PageTitle>
+
+<h1>Caixa</h1>
+
+@if (!string.IsNullOrEmpty(erro))
+{
+    <div class="alert alert-danger">@erro</div>
+}
+@if (!string.IsNullOrEmpty(aviso))
+{
+    <div class="alert alert-success">@aviso</div>
+}
+
+@if (caixa == null)
+{
+    @* ---------- nenhum caixa aberto ---------- *@
+    <section class="cartao abertura">
+        <h2>Nenhum caixa aberto</h2>
+        <p class="explicacao">
+            As vendas precisam de um caixa aberto para que o dinheiro possa ser
+            conferido no fim do dia. Informe quanto há em espécie na gaveta agora.
+        </p>
+
+        <div class="linha-abertura">
+            <div>
+                <label>Saldo inicial em dinheiro</label>
+                <input type="number" step="0.01" min="0" class="form-control"
+                       @bind="valorAbertura" />
+            </div>
+            <div class="cresce">
+                <label>Observação</label>
+                <input class="form-control" placeholder="Opcional" @bind="observacaoAbertura" />
+            </div>
+            <button type="button" class="btn btn-primary" @onclick="Abrir">Abrir caixa</button>
+        </div>
+    </section>
+}
+else
+{
+    @* ---------- caixa aberto ---------- *@
+    <section class="cartao cabecalho-caixa">
+        <div>
+            <span class="etiqueta aberto">Aberto</span>
+            <strong class="titulo-caixa">Caixa #@caixa.IdCaixa</strong>
+            <span class="desde">
+                desde @caixa.DataAbertura.ToString("dd/MM/yyyy 'às' HH:mm")
+                @if (!string.IsNullOrWhiteSpace(caixa.UsuarioAbertura))
+                {
+                    <text> por @caixa.UsuarioAbertura</text>
+                }
+            </span>
+        </div>
+        <button type="button" class="btn btn-fechar" @onclick="() => mostrarFechamento = true">
+            Fechar caixa
+        </button>
+    </section>
+
+    <div class="painel-caixa">
+
+        @* --- dinheiro na gaveta --- *@
+        <section class="cartao gaveta">
+            <h2>Dinheiro na gaveta</h2>
+
+            <div class="linhas">
+                <div><span>Abertura</span><span>@caixa.ValorAbertura.ToString("C")</span></div>
+                <div><span>Vendas em dinheiro</span><span class="mais">+ @caixa.Resumo.VendasDinheiro.ToString("C")</span></div>
+                <div><span>Suprimentos</span><span class="mais">+ @caixa.Resumo.Suprimentos.ToString("C")</span></div>
+                <div><span>Sangrias</span><span class="menos">− @caixa.Resumo.Sangrias.ToString("C")</span></div>
+                <div><span>Despesas em dinheiro</span><span class="menos">− @caixa.Resumo.DespesasDinheiro.ToString("C")</span></div>
+                <div class="total">
+                    <span>Deve haver na gaveta</span>
+                    <span>@SaldoEsperado.ToString("C")</span>
+                </div>
+            </div>
+
+            <p class="nota-rodape">
+                Cartão e PIX não entram nesta conta — não passam pela gaveta.
+            </p>
+        </section>
+
+        @* --- movimento por forma de pagamento --- *@
+        <section class="cartao">
+            <h2>Recebimentos da sessão</h2>
+
+            <div class="linhas">
+                <div><span>Dinheiro</span><span>@caixa.Resumo.VendasDinheiro.ToString("C")</span></div>
+                <div><span>PIX</span><span>@caixa.Resumo.VendasPix.ToString("C")</span></div>
+                <div><span>Débito</span><span>@caixa.Resumo.VendasDebito.ToString("C")</span></div>
+                <div><span>Crédito</span><span>@caixa.Resumo.VendasCredito.ToString("C")</span></div>
+                <div class="total">
+                    <span>Faturamento (@caixa.Resumo.QuantidadeVendas venda(s))</span>
+                    <span>@caixa.Resumo.FaturamentoTotal.ToString("C")</span>
+                </div>
+            </div>
+
+            <div class="linhas secundaria">
+                <div><span>Despesas do período</span><span class="menos">@caixa.Resumo.DespesasTotal.ToString("C")</span></div>
+                <div><span>Comissões geradas</span><span class="menos">@caixa.Resumo.Comissoes.ToString("C")</span></div>
+                <div class="total @(ResultadoLiquido >= 0 ? "positivo" : "negativo")">
+                    <span>Resultado</span>
+                    <span>@ResultadoLiquido.ToString("C")</span>
+                </div>
+            </div>
+        </section>
+
+        @* --- sangria e suprimento --- *@
+        <section class="cartao">
+            <h2>Sangria e suprimento</h2>
+            <p class="explicacao">
+                Sangria retira dinheiro da gaveta (depósito, pagamento).
+                Suprimento coloca dinheiro (troco).
+            </p>
+
+            <div class="grade-movimento">
+                <select class="form-control" @bind="tipoMovimento">
+                    <option value="@TipoMovimento.Sangria">Sangria (retirar)</option>
+                    <option value="@TipoMovimento.Suprimento">Suprimento (colocar)</option>
+                </select>
+                <input type="number" step="0.01" min="0" class="form-control"
+                       placeholder="Valor" @bind="valorMovimento" />
+                <input class="form-control" placeholder="Motivo" @bind="descricaoMovimento" />
+                <button type="button" class="btn btn-primary" @onclick="RegistrarMovimento">Registrar</button>
+            </div>
+
+            @if (caixa.Movimentos.Count > 0)
+            {
+                <ul class="movimentos">
+                    @foreach (var m in caixa.Movimentos.OrderByDescending(x => x.DataHora))
+                    {
+                        <li>
+                            <span class="hora">@m.DataHora.ToString("HH:mm")</span>
+                            <span class="descricao">
+                                <strong>@m.RotuloTipo</strong>
+                                @if (!string.IsNullOrWhiteSpace(m.Descricao))
+                                {
+                                    <text> — @m.Descricao</text>
+                                }
+                            </span>
+                            <span class="@(m.ERetirada ? "menos" : "mais")">
+                                @(m.ERetirada ? "−" : "+") @m.Valor.ToString("C")
+                            </span>
+                        </li>
+                    }
+                </ul>
+            }
+            else
+            {
+                <p class="vazio">Nenhuma movimentação registrada nesta sessão.</p>
+            }
+        </section>
+    </div>
+}
+
+@* ---------- histórico ---------- *@
+<h2 class="titulo-secao">Sessões anteriores</h2>
+
+<div class="tabela">
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>Abertura</th>
+            <th>Fechamento</th>
+            <th class="dir">Faturamento</th>
+            <th class="dir">Esperado</th>
+            <th class="dir">Contado</th>
+            <th class="dir">Diferença</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (historico.Count > 0)
+        {
+            @foreach (var c in historico)
+            {
+                <tr>
+                    <td>@c.IdCaixa</td>
+                    <td>@c.DataAbertura.ToString("dd/MM/yy HH:mm")</td>
+                    <td>@(c.DataFechamento?.ToString("dd/MM/yy HH:mm") ?? "—")</td>
+                    <td class="dir">@c.Resumo.FaturamentoTotal.ToString("C")</td>
+                    <td class="dir">@(c.ValorCalculado?.ToString("C") ?? "—")</td>
+                    <td class="dir">@(c.ValorInformado?.ToString("C") ?? "—")</td>
+                    <td class="dir @ClasseDiferenca(c)">@c.RotuloDiferenca</td>
+                    <td class="dir">
+                        <a href="/relatorio/caixa/@c.IdCaixa" class="btn-pdf"
+                           data-enhance-nav="false">PDF</a>
+                    </td>
+                </tr>
+            }
+        }
+        else
+        {
+            <tr>
+                <td colspan="8" class="text-center text-muted">Nenhuma sessão de caixa registrada.</td>
+            </tr>
+        }
+    </tbody>
+</table>
+</div>
+
+@* ---------- modal de fechamento cego ---------- *@
+@* Depende de resultadoFechamento também: assim que o caixa fecha, `caixa`
+   fica nulo, e sem isto o resultado da conferência sumiria da tela. *@
+@if (mostrarFechamento && (caixa != null || resultadoFechamento != null))
+{
+    <div class="fundo-modal" @onclick="CancelarFechamento">
+        <div class="modal-fechamento" @onclick:stopPropagation="true">
+            <div class="modal-topo">
+                <h5>Fechar caixa #@(resultadoFechamento?.IdCaixa ?? caixa!.IdCaixa)</h5>
+            </div>
+
+            <div class="modal-corpo">
+                @if (resultadoFechamento == null)
+                {
+                    <p class="explicacao">
+                        Conte o dinheiro da gaveta e informe o total. O sistema só
+                        mostra o valor esperado depois — assim a conferência é real.
+                    </p>
+
+                    <label>Total contado na gaveta</label>
+                    <input type="number" step="0.01" min="0" class="form-control campo-grande"
+                           @bind="valorContado" />
+
+                    <label>Observação</label>
+                    <input class="form-control" placeholder="Opcional" @bind="observacaoFechamento" />
+                }
+                else
+                {
+                    <div class="resultado @(resultadoFechamento.Diferenca == 0 ? "confere" : (resultadoFechamento.Diferenca > 0 ? "sobra" : "falta"))">
+                        <strong>@resultadoFechamento.RotuloDiferenca</strong>
+                    </div>
+
+                    <div class="linhas">
+                        <div><span>Esperado</span><span>@resultadoFechamento.ValorCalculado?.ToString("C")</span></div>
+                        <div><span>Contado</span><span>@resultadoFechamento.ValorInformado?.ToString("C")</span></div>
+                        <div class="total"><span>Diferença</span><span>@resultadoFechamento.Diferenca?.ToString("C")</span></div>
+                    </div>
+
+                    <a href="/relatorio/caixa/@resultadoFechamento.IdCaixa"
+                       class="btn-pdf comprovante" data-enhance-nav="false">
+                        Baixar comprovante em PDF
+                    </a>
+                }
+            </div>
+
+            <div class="modal-rodape">
+                @if (resultadoFechamento == null)
+                {
+                    <button class="btn btn-outline-secondary" @onclick="CancelarFechamento">Cancelar</button>
+                    <button class="btn btn-primary" @onclick="ConfirmarFechamento">Conferir e fechar</button>
+                }
+                else
+                {
+                    <button class="btn btn-primary" @onclick="CancelarFechamento">Concluir</button>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private Caixa? caixa;
+    private List<Caixa> historico = new();
+    private string? erro;
+    private string? aviso;
+
+    private decimal valorAbertura;
+    private string observacaoAbertura = "";
+
+    private string tipoMovimento = TipoMovimento.Sangria;
+    private decimal valorMovimento;
+    private string descricaoMovimento = "";
+
+    private bool mostrarFechamento;
+    private decimal valorContado;
+    private string observacaoFechamento = "";
+    private Caixa? resultadoFechamento;
+
+    private decimal SaldoEsperado =>
+        caixa == null ? 0 : caixa.Resumo.SaldoEsperadoGaveta(caixa.ValorAbertura);
+
+    private decimal ResultadoLiquido =>
+        caixa == null ? 0
+        : caixa.Resumo.FaturamentoTotal - caixa.Resumo.DespesasTotal - caixa.Resumo.Comissoes;
+
+    private string? Usuario => auth.GetUsuarioNome();
+
+    protected override void OnInitialized() => Carregar();
+
+    private void Carregar()
+    {
+        try
+        {
+            erro = null;
+            caixa = caixaDAO.BuscarAberto();
+            historico = caixaDAO.Listar();
+        }
+        catch (Exception ex)
+        {
+            erro = "Erro ao carregar o caixa: " + ex.Message;
+        }
+    }
+
+    private void Abrir()
+    {
+        try
+        {
+            erro = null;
+            var id = caixaDAO.Abrir(valorAbertura, Usuario, observacaoAbertura);
+            aviso = $"Caixa #{id} aberto com {valorAbertura:C}.";
+            valorAbertura = 0;
+            observacaoAbertura = "";
+            Carregar();
+        }
+        catch (Exception ex)
+        {
+            erro = ex.Message;
+        }
+    }
+
+    private void RegistrarMovimento()
+    {
+        try
+        {
+            erro = null;
+            aviso = null;
+
+            if (caixa == null) return;
+
+            caixaDAO.RegistrarMovimento(
+                caixa.IdCaixa, tipoMovimento, valorMovimento, descricaoMovimento, Usuario);
+
+            valorMovimento = 0;
+            descricaoMovimento = "";
+            Carregar();
+        }
+        catch (Exception ex)
+        {
+            erro = ex.Message;
+        }
+    }
+
+    private void ConfirmarFechamento()
+    {
+        try
+        {
+            erro = null;
+            if (caixa == null) return;
+
+            resultadoFechamento = caixaDAO.Fechar(
+                caixa.IdCaixa, valorContado, Usuario, observacaoFechamento);
+
+            Carregar();
+        }
+        catch (Exception ex)
+        {
+            erro = ex.Message;
+            mostrarFechamento = false;
+        }
+    }
+
+    private void CancelarFechamento()
+    {
+        mostrarFechamento = false;
+        resultadoFechamento = null;
+        valorContado = 0;
+        observacaoFechamento = "";
+    }
+
+    private static string ClasseDiferenca(Caixa c) =>
+        !c.Diferenca.HasValue ? ""
+        : c.Diferenca.Value == 0 ? "confere"
+        : c.Diferenca.Value > 0 ? "sobra" : "falta";
+}

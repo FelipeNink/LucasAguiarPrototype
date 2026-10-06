@@ -1,0 +1,16 @@
+@inject AuthenticationService AuthService
+
+<Router AppAssembly="typeof(Program).Assembly">
+    <Found Context="routeData">
+        @{
+            var nomePagina = routeData.PageType?.Name;
+            var paginaPublica = nomePagina == "Login" || nomePagina == "Logout" || nomePagina == "Error";
+
+            var tipoLayout = (paginaPublica || !AuthService.IsAuthenticated())
+                ? typeof(Layout.BlankLayout)
+                : typeof(Layout.MainLayout);
+        }
+        <RouteView RouteData="routeData" DefaultLayout="tipoLayout" />
+        <FocusOnNavigate RouteData="routeData" Selector="h1" />
+    </Found>
+</Router>

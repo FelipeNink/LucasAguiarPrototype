@@ -1,0 +1,75 @@
+﻿@page "/ListarPlano"
+@rendermode InteractiveServer
+
+@using LucasAguiar.Models
+@using LucasAguiar.Configs
+@inject PlanoDAO planoDAO
+
+<PageTitle>Produtos</PageTitle>
+
+<h1>Lista de plano</h1>
+
+<div class="barra-acoes">
+    <NavLink href="/plano/novo" class="btn-novo">Novo plano</NavLink>
+    <a href="/relatorio/planos" class="btn-pdf" data-enhance-nav="false">Relatório PDF</a>
+</div>
+
+<div class="tabela">
+    <table class="table table-striped">
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>Nome</th>
+            <th>Descrição</th>
+            <th>Inclui</th>
+            <th>Valor</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (listaPlano != null && listaPlano.Any())
+        {
+            int contador = 1;
+            foreach (var plano in listaPlano)
+            {
+                <tr>
+                    <td>@contador</td>
+                    <td>@plano.NomePlano</td>
+                    <td>@plano.Descricao</td>
+                    <td>
+                        @if (plano.TotalItens > 0)
+                        {
+                            <span>@plano.TotalItens item(ns)</span>
+                        }
+                        else
+                        {
+                            <span class="text-muted">sem itens</span>
+                        }
+                    </td>
+                    <td>R$ @plano.Valor</td>
+                    <td class="col-acoes">
+                        <a href="/plano/@plano.IdPlano/componentes" class="btn-acao">
+                            Componentes
+                        </a>
+                    </td>
+                </tr>
+                contador++;
+            }
+        }
+        else
+        {
+            <tr>
+                <td colspan="6" class="text-center text-muted">Nenhum plano encontrado.</td>
+            </tr>
+        }
+    </tbody>
+    </table>
+</div>
+@code {
+    private List<Plano> listaPlano = new();
+
+    protected override void OnInitialized()
+    {
+        listaPlano = planoDAO.ListarTodos();
+    }
+}

@@ -1,0 +1,72 @@
+﻿@page "/servico"
+@rendermode InteractiveServer
+
+@using LucasAguiar.Configs
+@using LucasAguiar.Models
+@inject ServicoDAO servicoDAO
+
+<PageTitle>Serviços</PageTitle>
+
+<h1>Lista de Serviços</h1>
+
+<div class="barra-acoes">
+    <NavLink href="/servico/novo" class="btn-novo">Novo Serviço</NavLink>
+    <a href="/relatorio/servicos" class="btn-pdf" data-enhance-nav="false">Relatório PDF</a>
+</div>
+
+<div class="tabela">
+    <table class="table table-striped">
+    <thead>
+        <tr> 
+            <th>#</th>
+            <th>Nome</th>
+            <th>Preço</th>
+            <th>Duração</th>
+            <th>Valor Comissão</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (listaServico != null && listaServico.Any())
+        {
+            int contador = 1;
+            foreach (var servico in listaServico)
+            {
+                <tr>
+                    <td>@contador</td>
+                    <td>@servico.NomeServico</td>
+                    <td>@servico.PrecoServico.ToString("C")</td>  @* mostra como moeda *@
+                    <td>@servico.DuracaoServico min</td>
+                    <td>@servico.ComissaoServico.ToString("C")</td>
+                </tr>
+                contador++;
+            }
+        }
+        else
+        {
+            <tr>
+                <td colspan="5" class="text-center text-muted">Nenhum serviço encontrado.</td>
+            </tr>
+        }
+    </tbody>
+    </table>
+</div>
+@code {
+    private List<Servico> listaServico = new(); // 🔹 nome minúsculo (padrão)
+
+    protected override void OnInitialized()
+    {
+        CarregarServico();
+    }
+
+    private void CarregarServico()
+    {
+        try
+        {
+            listaServico = servicoDAO.ListarTodos();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Erro ao carregar serviços: " + ex.Message);
+        }
+    }
+}

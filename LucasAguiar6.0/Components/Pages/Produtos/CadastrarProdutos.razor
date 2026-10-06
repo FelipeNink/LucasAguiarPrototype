@@ -1,0 +1,105 @@
+@page "/produto/novo"
+@rendermode InteractiveServer
+
+@using LucasAguiar.Models
+@using LucasAguiar.Configs
+@inject ProdutoDAO produtoDAO
+@inject FornecedorDAO fornecedorDAO
+@inject NavigationManager Navigation
+
+<PageTitle>Produto - Novo</PageTitle>
+
+<a href="/produto" class="btn btn-sm btn-outline-secondary mb-3">&#8592; Voltar</a>
+
+<h1 class="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-6">Novo Produto</h1>
+
+@if (erro != null)
+{
+    <div class="alert alert-danger">@erro</div>
+}
+
+<EditForm Model="_novoProduto" OnValidSubmit="Salvar">
+    <div class="row">
+        <div class="col-md-6">
+            <InputText class="form-control mb-2" @bind-Value="_novoProduto.NomeProduto" placeholder="Nome do Produto" />
+            <InputNumber class="form-control mb-2" @bind-Value="_novoProduto.Quantidade" placeholder="Quantidade" />
+            <InputNumber class="form-control mb-2" @bind-Value="_novoProduto.Valor" placeholder="Valor" />
+            <InputTextArea class="form-control mb-2" @bind-Value="_novoProduto.Descricao" placeholder="Descrição" rows="3" />
+            <InputText class="form-control mb-2" @bind-Value="_novoProduto.Marca" placeholder="Marca" />
+
+            <label>Fornecedor</label>
+            <select class="form-control mb-2" @bind="_novoProduto.IdFornecedor">
+                <option value="">Selecione</option>
+                @foreach (var f in fornecedores)
+                {
+                    <option value="@f.IdFornecedor">@f.NomeFornecedor</option>
+                }
+            </select>
+
+            <div class="linha-criar">
+                <button type="button" class="btn-criar" @onclick="() => modalAberto = true">
+                    + Cadastrar novo fornecedor aqui
+                </button>
+                @if (fornecedores.Count == 0)
+                {
+                    <span class="aviso">Nenhum fornecedor cadastrado ainda.</span>
+                }
+            </div>
+
+            <button type="submit" class="btn btn-primary mt-3">Salvar</button>
+            <a href="/produto" class="btn btn-outline-secondary mt-3 ms-2">Cancelar</a>
+        </div>
+    </div>
+</EditForm>
+
+<CadastroRapido Visivel="modalAberto"
+                Tipo="CadastroRapido.TipoCadastro.Fornecedor"
+                OnCriado="AoCriarFornecedor"
+                OnCancelado="() => modalAberto = false" />
+
+@code {
+    private string? erro = null;
+    private Produto _novoProduto = new();
+    private List<Fornecedor> fornecedores = new();
+    private bool modalAberto;
+
+    protected override void OnInitialized()
+    {
+        fornecedores = fornecedorDAO.ListarTodos();
+    }
+
+    /// <summary>Recarrega e já seleciona, sem perder o produto em digitação.</summary>
+    private void AoCriarFornecedor(int id)
+    {
+        try
+        {
+            erro = null;
+            fornecedores = fornecedorDAO.ListarTodos() ?? new();
+            _novoProduto.IdFornecedor = id;
+        }
+        catch (Exception ex)
+        {
+            erro = ex.Message;
+        }
+        finally
+        {
+            modalAberto = false;
+        }
+    }
+
+    private void Salvar()
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(_novoProduto.NomeProduto))
+                throw new Exception("O nome do produto é obrigatório.");
+
+            produtoDAO.Inserir(_novoProduto);
+            Navigation.NavigateTo("/produto");
+        }
+        catch (Exception ex)
+        {
+            erro = ex.Message;
+        }
+    }
+}

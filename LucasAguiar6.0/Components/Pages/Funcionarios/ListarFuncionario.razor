@@ -1,0 +1,62 @@
+﻿@page "/funcionario"
+@rendermode InteractiveServer
+
+@using LucasAguiar.Models
+@using LucasAguiar.Configs
+@inject FuncionarioDAO funcionarioDAO
+
+<PageTitle>Funcionários</PageTitle>
+
+<h1>Lista de Funcionários</h1>
+
+<div class="barra-acoes">
+    <NavLink href="/funcionario/novo" class="btn-novo">Novo Funcionário</NavLink>
+    <a href="/relatorio/funcionarios" class="btn-pdf" data-enhance-nav="false">Relatório PDF</a>
+</div>
+
+<div class="tabela">
+    <table class="table table-striped">
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>Nome</th>
+            <th>Telefone</th>
+            <th>CPF</th>
+            <th>Email</th>
+            <th>Cidade</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (listaFuncionarios != null && listaFuncionarios.Any())
+        {
+            int contador = 1;
+            foreach (var funcionario in listaFuncionarios)
+            {
+                <tr>
+                    <td>@contador</td>
+                    <td>@funcionario.NomeFuncionario</td>
+                    <td>@funcionario.Telefone</td>
+                    <td>@funcionario.CPF</td>
+                    <td>@funcionario.Email</td>
+                    <td>@funcionario.Cidade</td>
+                </tr>
+                contador++;
+            }
+        }
+        else
+        {
+            <tr>
+                <td colspan="6" class="text-center text-muted">Nenhum funcionário encontrado.</td>
+            </tr>
+        }
+    </tbody>
+    </table>
+</div>
+@code {
+    private List<Funcionario> listaFuncionarios = new();
+
+    protected override void OnInitialized()
+    {
+        listaFuncionarios = funcionarioDAO.ListarTodos();
+    }
+}

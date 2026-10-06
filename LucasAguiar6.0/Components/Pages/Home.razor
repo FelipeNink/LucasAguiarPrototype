@@ -1,0 +1,207 @@
+@page "/"
+@rendermode InteractiveServer
+
+@using LucasAguiar.Models
+@using System.Text.Json
+@inject PainelDAO painelDAO
+@inject CaixaDAO caixaDAO
+
+<PageTitle>Home</PageTitle>
+
+<div class="cabecalho-painel">
+    <div>
+        <h1 class="titulo-painel">Painel</h1>
+        <span class="periodo-texto">@RotuloPeriodo</span>
+    </div>
+
+    <a href="/venda/nova" class="botao-nova-venda">
+        <svg viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4" />
+        </svg>
+        NOVA VENDA
+    </a>
+</div>
+
+@if (!string.IsNullOrEmpty(erro))
+{
+    <div class="alert alert-danger">@erro</div>
+}
+
+@* ---------- situação do caixa ---------- *@
+<div class="faixa-caixa @(caixaAberto != null ? "aberto" : "fechado")">
+    @if (caixaAberto != null)
+    {
+        <div>
+            <strong>Caixa #@caixaAberto.IdCaixa aberto</strong>
+            <span>desde @caixaAberto.DataAbertura.ToString("dd/MM 'às' HH:mm")</span>
+        </div>
+        <div class="gaveta-agora">
+            <span>Na gaveta</span>
+            <strong>@caixaAberto.Resumo.SaldoEsperadoGaveta(caixaAberto.ValorAbertura).ToString("C")</strong>
+        </div>
+        <a href="/caixa" class="link-caixa">Ver caixa</a>
+    }
+    else
+    {
+        <div>
+            <strong>Nenhum caixa aberto</strong>
+            <span>Abra o caixa para registrar vendas.</span>
+        </div>
+        <a href="/caixa" class="link-caixa">Abrir caixa</a>
+    }
+</div>
+
+@* ---------- filtro de período ---------- *@
+<div class="atalhos-periodo">
+    <button type="button" class="@(periodo == 0 ? "ativo" : "")" @onclick="() => TrocarPeriodo(0)">Hoje</button>
+    <button type="button" class="@(periodo == 7 ? "ativo" : "")" @onclick="() => TrocarPeriodo(7)">7 dias</button>
+    <button type="button" class="@(periodo == 30 ? "ativo" : "")" @onclick="() => TrocarPeriodo(30)">30 dias</button>
+    <button type="button" class="@(periodo == -1 ? "ativo" : "")" @onclick="() => TrocarPeriodo(-1)">Este mês</button>
+</div>
+
+@* ---------- indicadores ---------- *@
+<div class="indicadores">
+    <div class="indicador receita">
+        <span class="rotulo">Receita</span>
+        <strong class="valor">@resumo.Receita.ToString("C")</strong>
+        <span class="detalhe">@resumo.QuantidadeVendas venda(s) · ticket @resumo.TicketMedio.ToString("C")</span>
+    </div>
+    <div class="indicador despesa">
+        <span class="rotulo">Despesas</span>
+        <strong class="valor">@resumo.Despesas.ToString("C")</strong>
+        <span class="detalhe"><a href="/despesas">ver lançamentos</a></span>
+    </div>
+    <div class="indicador comissao">
+        <span class="rotulo">Comissões</span>
+        <strong class="valor">@resumo.Comissoes.ToString("C")</strong>
+        <span class="detalhe">a pagar aos profissionais</span>
+    </div>
+    <div class="indicador @(resumo.Lucro >= 0 ? "lucro" : "prejuizo")">
+        <span class="rotulo">@(resumo.Lucro >= 0 ? "Lucro" : "Prejuízo")</span>
+        <strong class="valor">@resumo.Lucro.ToString("C")</strong>
+        <span class="detalhe">receita − despesas − comissões</span>
+    </div>
+</div>
+
+@* ---------- gráficos ---------- *@
+<div class="painel">
+    <section class="cartao cartao-barras">
+        <header class="cartao-topo">
+            <h2>Receita e despesas por mês</h2>
+            <span class="cartao-sub">Últimos 12 meses</span>
+        </header>
+        <div class="area-grafico">
+            <canvas id="barChart"></canvas>
+        </div>
+    </section>
+
+    <section class="cartao cartao-pizza">
+        <header class="cartao-topo">
+            <h2>Formas de pagamento</h2>
+            <span class="cartao-sub">@RotuloPeriodo</span>
+        </header>
+        <div class="area-grafico">
+            <canvas id="pieChart"></canvas>
+        </div>
+    </section>
+</div>
+
+@* Os dados vão para o JS por um elemento oculto, lido pelo dashboard.js. *@
+<script id="dados-painel" type="application/json">@((MarkupString)dadosJson)</script>
+
+<h2 class="titulo-secao">Acesso rápido</h2>
+
+<div class="atalhos">
+    <a href="/venda/nova" class="atalho">
+        <span class="atalho-acao">Nova</span>
+        <span class="atalho-nome">Venda</span>
+    </a>
+    <a href="/despesas" class="atalho">
+        <span class="atalho-acao">Nova</span>
+        <span class="atalho-nome">Despesa</span>
+    </a>
+    <a href="/CadastrarCliente/novo" class="atalho">
+        <span class="atalho-acao">Novo</span>
+        <span class="atalho-nome">Cliente</span>
+    </a>
+    <a href="/servico/novo" class="atalho">
+        <span class="atalho-acao">Novo</span>
+        <span class="atalho-nome">Serviço</span>
+    </a>
+    <a href="/produto/novo" class="atalho">
+        <span class="atalho-acao">Novo</span>
+        <span class="atalho-nome">Produto</span>
+    </a>
+    <a href="/plano/novo" class="atalho">
+        <span class="atalho-acao">Novo</span>
+        <span class="atalho-nome">Plano</span>
+    </a>
+</div>
+
+@code {
+    private PainelDAO.ResumoPainel resumo = new();
+    private Caixa? caixaAberto;
+    private string dadosJson = "{}";
+    private string? erro;
+
+    /// <summary>0 = hoje, 7/30 = últimos dias, -1 = mês corrente.</summary>
+    private int periodo = 30;
+
+    private (DateTime De, DateTime Ate) Intervalo
+    {
+        get
+        {
+            var hoje = DateTime.Today;
+            return periodo switch
+            {
+                0 => (hoje, hoje.AddDays(1)),
+                -1 => (new DateTime(hoje.Year, hoje.Month, 1), hoje.AddDays(1)),
+                _ => (hoje.AddDays(-periodo), hoje.AddDays(1))
+            };
+        }
+    }
+
+    private string RotuloPeriodo => periodo switch
+    {
+        0 => "Hoje",
+        -1 => "Este mês",
+        _ => $"Últimos {periodo} dias"
+    };
+
+    protected override void OnInitialized() => Carregar();
+
+    private void TrocarPeriodo(int novo)
+    {
+        periodo = novo;
+        Carregar();
+    }
+
+    private void Carregar()
+    {
+        try
+        {
+            erro = null;
+
+            var (de, ate) = Intervalo;
+            resumo = painelDAO.Resumo(de, ate);
+            caixaAberto = caixaDAO.BuscarAberto();
+
+            var serie = painelDAO.SerieMensal();
+            var formas = painelDAO.PorFormaPagamento(de, ate);
+
+            dadosJson = JsonSerializer.Serialize(new
+            {
+                meses = serie.Select(s => s.Mes).ToArray(),
+                receitas = serie.Select(s => s.Receita).ToArray(),
+                despesas = serie.Select(s => s.Despesa).ToArray(),
+                formasRotulos = formas.Keys.Select(FormaPagamento.Rotulo).ToArray(),
+                formasValores = formas.Values.ToArray()
+            });
+        }
+        catch (Exception ex)
+        {
+            erro = "Erro ao carregar o painel: " + ex.Message;
+            dadosJson = "{}";
+        }
+    }
+}

@@ -1,0 +1,64 @@
+﻿@page "/fornecedores"
+
+@using LucasAguiar.Configs
+@using LucasAguiar.Models
+@inject FornecedorDAO fornecedorDAO
+
+<PageTitle>Fornecedores</PageTitle>
+
+<h1>Lista de Fornecedores</h1>
+
+<div class="barra-acoes">
+    <NavLink href="/fornecedores/novo" class="btn-novo">Novo Fornecedor</NavLink>
+    <a href="/relatorio/fornecedores" class="btn-pdf" data-enhance-nav="false">Relatório PDF</a>
+</div>
+
+<div class="tabela">
+    <table class="table table-striped">
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>Nome</th>
+            <th>Email</th>
+            <th>Telefone</th>
+            <th>Tipo de Produto</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (listaFornecedores != null && listaFornecedores.Any())
+        {
+            int contador = 1;
+            foreach (var fornecedor in listaFornecedores)
+            {
+                <tr>
+                    <td>@contador</td>
+                    <td>@fornecedor.NomeFornecedor</td>
+                    <td>@fornecedor.Email</td>
+                    <td>@fornecedor.Telefone</td>
+                    <td>@fornecedor.TipoProd</td>
+                </tr>
+                contador++;
+            }
+        }
+        else
+        {
+            <tr>
+                <td colspan="5" class="text-center text-muted">Nenhum fornecedor encontrado.</td>
+            </tr>
+        }
+    </tbody>
+    </table>
+</div>
+@code {
+    private List<Fornecedor> listaFornecedores = new();
+
+    private void CarregarFornecedores()
+    {
+        listaFornecedores = fornecedorDAO.ListarTodos();
+    }
+
+    protected override void OnInitialized()
+    {
+        CarregarFornecedores();
+    }
+}

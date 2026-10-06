@@ -1,0 +1,103 @@
+.fundo {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1100;
+    padding: 1.5rem;
+}
+
+.caixa {
+    width: 100%;
+    max-width: 420px;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+}
+
+.cabecalho {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.cabecalho h5 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #1f2937;
+}
+
+.fechar {
+    width: 1.9rem;
+    height: 1.9rem;
+    background: none;
+    border: none;
+    border-radius: 50%;
+    font-size: 1.3rem;
+    line-height: 1;
+    color: #9ca3af;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.fechar:hover {
+    background: #f3f4f6;
+    color: #1f2937;
+}
+
+.corpo {
+    padding: 1.25rem;
+}
+
+.corpo label {
+    display: block;
+    margin-bottom: 0.3rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #9ca3af;
+}
+
+.corpo .form-control {
+    margin-bottom: 1rem;
+}
+
+.obrigatorio {
+    color: #c9302c;
+}
+
+.dupla {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+}
+
+.ajuda {
+    margin: -0.5rem 0 0;
+    font-size: 0.78rem;
+    color: #9ca3af;
+}
+
+.erro {
+    margin-bottom: 1rem;
+    padding: 0.6rem 0.75rem;
+    background: #fdecea;
+    border-left: 3px solid #b3261e;
+    border-radius: 5px;
+    font-size: 0.85rem;
+    color: #b3261e;
+}
+
+.rodape {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.6rem;
+    padding: 0.9rem 1.25rem;
+    border-top: 1px solid #e9ecef;
+}

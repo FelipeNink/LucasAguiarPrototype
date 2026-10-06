@@ -1,0 +1,120 @@
+
+    @page "/CadastrarCliente/novo"
+@rendermode InteractiveServer
+
+@using LucasAguiar.Models
+@using LucasAguiar.Configs
+@inject ClienteDAO ClienteDAO
+@inject PlanoDAO planoDAO
+@inject NavigationManager Navigation
+
+<PageTitle>Cliente - Novo</PageTitle>
+
+<a href="/ListaClientes" class="btn btn-sm btn-outline-secondary mb-3">&#8592; Voltar</a>
+
+<h1 class="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-6">Novo Cliente</h1>
+
+@if (erro != null)
+{
+    <div class="alert alert-danger">@erro</div>
+}
+
+<EditForm Model="_novoCliente" OnValidSubmit="Salvar">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="row">
+        <div class="col-md-6">
+            <InputText class="form-control mb-2" @bind-Value="_novoCliente.NomeCliente" placeholder="Nome" />
+            <InputText class="form-control mb-2" @bind-Value="_novoCliente.Telefone" placeholder="Telefone" />
+            <InputText class="form-control mb-2" @bind-Value="_novoCliente.CPF" placeholder="CPF" />
+            <InputDate class="form-control mb-2" @bind-Value="_novoCliente.DataNascimento" />
+            <InputText class="form-control mb-2" @bind-Value="_novoCliente.RG" placeholder="RG" />
+
+            <label>Plano</label>
+            <select class="form-control mb-2" @bind="_novoCliente.IdPlano">
+                <option value="">Selecione</option>
+                @foreach (var p in planos)
+                {
+                    <option value="@p.IdPlano">@p.NomePlano</option>
+                }
+            </select>
+        </div>
+
+        <div class="col-md-6">
+            <InputText class="form-control mb-2" @bind-Value="_novoCliente.Estado" placeholder="Estado" />
+            <InputText class="form-control mb-2" @bind-Value="_novoCliente.Cidade" placeholder="Cidade" />
+            <InputText class="form-control mb-2" @bind-Value="_novoCliente.Bairro" placeholder="Bairro" />
+            <InputText class="form-control mb-2" @bind-Value="_novoCliente.Rua" placeholder="Rua" />
+            <InputText class="form-control mb-2" @bind-Value="_novoCliente.Numero" placeholder="Número" />
+        </div>
+    </div>
+
+    <div class="linha-criar">
+        <button type="button" class="btn-criar" @onclick="() => modalAberto = true">
+            + Cadastrar novo plano aqui
+        </button>
+        @if (planos.Count == 0)
+        {
+            <span class="aviso">Nenhum plano cadastrado ainda.</span>
+        }
+    </div>
+
+    <button type="submit" class="btn btn-primary mt-3">Salvar</button>
+    <a href="/ListaClientes" class="btn btn-outline-secondary mt-3 ms-2">Cancelar</a>
+</EditForm>
+
+<CadastroRapido Visivel="modalAberto"
+                Tipo="CadastroRapido.TipoCadastro.Plano"
+                OnCriado="AoCriarPlano"
+                OnCancelado="() => modalAberto = false" />
+
+@code {
+    private string? erro = null;
+    private bool modalAberto;
+    private Cliente _novoCliente = new();
+    private List<Plano> planos = new();
+
+    /// <summary>Recarrega e já seleciona, sem perder o cliente em digitação.</summary>
+    private void AoCriarPlano(int id)
+    {
+        try
+        {
+            erro = null;
+            planos = planoDAO.ListarTodos() ?? new();
+            _novoCliente.IdPlano = id;
+        }
+        catch (Exception ex)
+        {
+            erro = ex.Message;
+        }
+        finally
+        {
+            modalAberto = false;
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        planos = planoDAO.ListarTodos();
+    }
+
+    private void Salvar()
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(_novoCliente.NomeCliente))
+                throw new Exception("O nome é obrigatório.");
+
+            if (_novoCliente.IdPlano == null)
+                throw new Exception("Selecione um plano.");
+
+            ClienteDAO.Inserir(_novoCliente);
+            Navigation.NavigateTo("/ListaClientes");
+        }
+        catch (Exception ex)
+        {
+            erro = ex.Message;
+        }
+    }
+}

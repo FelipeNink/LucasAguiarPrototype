@@ -1,0 +1,241 @@
+@page "/comissoes"
+@rendermode InteractiveServer
+
+@using LucasAguiar.Models
+@using LucasAguiar.Services
+@using Microsoft.AspNetCore.WebUtilities
+@inject ComissaoDAO comissaoDAO
+
+<PageTitle>Comissões</PageTitle>
+
+<h1>Comissões</h1>
+
+@if (!string.IsNullOrEmpty(erro))
+{
+    <div class="alert alert-danger">@erro</div>
+}
+@if (!string.IsNullOrEmpty(aviso))
+{
+    <div class="alert alert-success">@aviso</div>
+}
+
+<div class="atalhos-periodo">
+    <button type="button" class="@(periodo == 7 ? "ativo" : "")" @onclick="() => TrocarPeriodo(7)">7 dias</button>
+    <button type="button" class="@(periodo == 15 ? "ativo" : "")" @onclick="() => TrocarPeriodo(15)">15 dias</button>
+    <button type="button" class="@(periodo == 30 ? "ativo" : "")" @onclick="() => TrocarPeriodo(30)">30 dias</button>
+    <button type="button" class="@(periodo == -1 ? "ativo" : "")" @onclick="() => TrocarPeriodo(-1)">Este mês</button>
+    <span class="periodo-texto">@Intervalo.De.ToString("dd/MM/yyyy") a @Intervalo.Ate.AddDays(-1).ToString("dd/MM/yyyy")</span>
+    <a href="@UrlRelatorio" class="btn-pdf" data-enhance-nav="false">Relatório PDF</a>
+</div>
+
+<div class="resumo">
+    <div class="cartao-resumo">
+        <span class="rotulo">Profissionais</span>
+        <strong class="valor">@resumo.Count</strong>
+    </div>
+    <div class="cartao-resumo">
+        <span class="rotulo">Vendido no período</span>
+        <strong class="valor">@resumo.Sum(r => r.TotalVendido).ToString("C")</strong>
+    </div>
+    <div class="cartao-resumo comissao">
+        <span class="rotulo">Comissões geradas</span>
+        <strong class="valor">@resumo.Sum(r => r.TotalComissao).ToString("C")</strong>
+    </div>
+    <div class="cartao-resumo pendente">
+        <span class="rotulo">Produtos vendidos</span>
+        <strong class="valor">@resumo.Sum(r => r.ProdutosVendidos)</strong>
+    </div>
+</div>
+
+<p class="nota-topo">
+    Esta tela é um relatório. O pagamento acontece na
+    <a href="/folha">Folha de Pagamento</a>, onde a comissão é somada ao salário fixo.
+</p>
+
+<div class="tabela">
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Profissional</th>
+            <th class="dir">Atendimentos</th>
+            <th class="dir">Serviços</th>
+            <th class="dir">Produtos</th>
+            <th class="dir">Vendido</th>
+            <th class="dir">Comissão</th>
+            <th class="dir">%</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (resumo.Count > 0)
+        {
+            @foreach (var r in resumo)
+            {
+                <tr>
+                    <td><strong>@r.NomeFuncionario</strong></td>
+                    <td class="dir">@r.QuantidadeAtendimentos</td>
+                    <td class="dir">@r.ServicosRealizados</td>
+                    <td class="dir">
+                        @r.ProdutosVendidos
+                        <span class="suave bloco">@r.ValorProdutos.ToString("C")</span>
+                    </td>
+                    <td class="dir">@r.TotalVendido.ToString("C")</td>
+                    <td class="dir destaque">@r.TotalComissao.ToString("C")</td>
+                    <td class="dir suave">@r.PercentualSobreVenda.ToString("0.#")%</td>
+                    <td class="dir acoes">
+                        <button type="button" class="btn-acao"
+                                @onclick="() => VerDetalhe(r)">Detalhe</button>
+                    </td>
+                </tr>
+            }
+        }
+        else
+        {
+            <tr>
+                <td colspan="8" class="text-center text-muted">
+                    Nenhuma comissão gerada neste período.
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+</div>
+
+@* ---------- detalhe ---------- *@
+@if (detalheDe != null)
+{
+    <div class="fundo-modal" @onclick="Fechar">
+        <div class="caixa-modal larga" @onclick:stopPropagation="true">
+            <div class="modal-topo">
+                <h5>@detalheDe.NomeFuncionario</h5>
+                <span class="suave">@Intervalo.De.ToString("dd/MM") a @Intervalo.Ate.AddDays(-1).ToString("dd/MM")</span>
+            </div>
+
+            <div class="modal-corpo">
+                <table class="tabela-detalhe">
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Item</th>
+                            <th>Cliente</th>
+                            <th class="dir">Qtd</th>
+                            <th class="dir">Valor</th>
+                            <th class="dir">Comissão</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var l in detalhe)
+                        {
+                            <tr>
+                                <td class="suave">@l.DataVenda.ToString("dd/MM HH:mm")</td>
+                                <td>
+                                    @l.Descricao
+                                    @if (l.CobertoPlano)
+                                    {
+                                        <span class="etiqueta-plano">plano</span>
+                                    }
+                                </td>
+                                <td class="suave">@(l.NomeCliente ?? "—")</td>
+                                <td class="dir">@l.Quantidade</td>
+                                <td class="dir">@l.ValorItem.ToString("C")</td>
+                                <td class="dir destaque">@l.Comissao.ToString("C")</td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="5" class="dir"><strong>Total</strong></td>
+                            <td class="dir destaque"><strong>@detalhe.Sum(l => l.Comissao).ToString("C")</strong></td>
+                        </tr>
+                    </tfoot>
+                </table>
+
+                @if (detalhe.Any(l => l.CobertoPlano))
+                {
+                    <p class="nota">
+                        Itens marcados como <strong>plano</strong> foram pagos com crédito
+                        da assinatura. O cliente não pagou na hora, mas o profissional
+                        executou o atendimento e a comissão é devida.
+                    </p>
+                }
+            </div>
+
+            <div class="modal-rodape">
+                <button class="btn btn-secondary" @onclick="Fechar">Fechar</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<ComissaoDAO.ResumoProfissional> resumo = new();
+    private List<ComissaoDAO.LinhaComissao> detalhe = new();
+
+    private ComissaoDAO.ResumoProfissional? detalheDe;
+
+    private string? erro;
+    private string? aviso;
+    private int periodo = 30;
+
+    private (DateTime De, DateTime Ate) Intervalo
+    {
+        get
+        {
+            var hoje = DateTime.Today;
+            return periodo == -1
+                ? (new DateTime(hoje.Year, hoje.Month, 1), hoje.AddDays(1))
+                : (hoje.AddDays(-periodo), hoje.AddDays(1));
+        }
+    }
+
+    private string UrlRelatorio =>
+        QueryHelpers.AddQueryString("/relatorio/comissoes", new Dictionary<string, string?>
+        {
+            ["de"] = Intervalo.De.ToString("yyyy-MM-dd"),
+            ["ate"] = Intervalo.Ate.AddDays(-1).ToString("yyyy-MM-dd")
+        });
+
+    protected override void OnInitialized() => Carregar();
+
+    private void TrocarPeriodo(int novo)
+    {
+        periodo = novo;
+        Carregar();
+    }
+
+    private void Carregar()
+    {
+        try
+        {
+            erro = null;
+            var (de, ate) = Intervalo;
+            resumo = comissaoDAO.ResumoPorProfissional(de, ate);
+        }
+        catch (Exception ex)
+        {
+            erro = "Erro ao carregar as comissões: " + ex.Message;
+            resumo = new();
+        }
+    }
+
+    private void VerDetalhe(ComissaoDAO.ResumoProfissional r)
+    {
+        try
+        {
+            erro = null;
+            var (de, ate) = Intervalo;
+            detalhe = comissaoDAO.Detalhar(r.IdFuncionario, de, ate);
+            detalheDe = r;
+        }
+        catch (Exception ex)
+        {
+            erro = ex.Message;
+        }
+    }
+
+    private void Fechar()
+    {
+        detalheDe = null;
+        detalhe = new();
+    }
+}

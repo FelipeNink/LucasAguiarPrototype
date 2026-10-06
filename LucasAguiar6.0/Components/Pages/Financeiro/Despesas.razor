@@ -1,0 +1,370 @@
+@page "/despesas"
+@rendermode InteractiveServer
+
+@using LucasAguiar.Models
+@using Microsoft.AspNetCore.WebUtilities
+@inject DespesaDAO despesaDAO
+@inject FornecedorDAO fornecedorDAO
+@inject CaixaDAO caixaDAO
+
+<PageTitle>Despesas</PageTitle>
+
+<h1>Despesas</h1>
+
+@if (!string.IsNullOrEmpty(erro))
+{
+    <div class="alert alert-danger">@erro</div>
+}
+@if (!string.IsNullOrEmpty(aviso))
+{
+    <div class="alert alert-success">@aviso</div>
+}
+
+@* ---------- lançamento ---------- *@
+<section class="cartao lancamento">
+    <h2>Lançar despesa</h2>
+
+    <div class="grade">
+        <div class="campo campo-largo">
+            <label>Descrição <span class="obrigatorio">*</span></label>
+            <input class="form-control" placeholder="Ex.: Compra de toalhas"
+                   @bind="nova.Descricao" @bind:event="oninput" />
+        </div>
+
+        <div class="campo">
+            <label>Valor <span class="obrigatorio">*</span></label>
+            <input type="number" step="0.01" min="0" class="form-control" @bind="nova.Valor" />
+        </div>
+
+        <div class="campo">
+            <label>Data</label>
+            <input type="date" class="form-control" @bind="nova.DataDespesa" />
+        </div>
+
+        <div class="campo">
+            <label>Categoria</label>
+            <select class="form-control" @bind="nova.Categoria">
+                @foreach (var c in CategoriaDespesa.Todas)
+                {
+                    <option value="@c.Valor">@c.Rotulo</option>
+                }
+            </select>
+        </div>
+
+        <div class="campo">
+            <label>Forma de pagamento</label>
+            <select class="form-control" @bind="nova.FormaPagamentoDespesa">
+                @foreach (var f in FormaPagamento.Todas)
+                {
+                    <option value="@f.Valor">@f.Rotulo</option>
+                }
+            </select>
+        </div>
+
+        <div class="campo">
+            <label>Fornecedor</label>
+            <select class="form-control" @bind="idFornecedor">
+                <option value="0">Nenhum</option>
+                @foreach (var f in fornecedores)
+                {
+                    <option value="@f.IdFornecedor">@f.NomeFornecedor</option>
+                }
+            </select>
+        </div>
+    </div>
+
+    <div class="linha-criar">
+        <button type="button" class="btn-criar" @onclick="() => modalAberto = true">
+            + Cadastrar novo fornecedor aqui
+        </button>
+
+        <label class="marcador">
+            <input type="checkbox" @bind="nova.Pago" />
+            Já foi paga
+        </label>
+    </div>
+
+    @if (nova.AfetaGaveta && caixaAberto != null)
+    {
+        <p class="aviso-caixa">
+            Esta despesa sai da gaveta do caixa #@caixaAberto.IdCaixa e entra no fechamento.
+        </p>
+    }
+    else if (nova.AfetaGaveta && caixaAberto == null)
+    {
+        <p class="aviso-caixa alerta">
+            Não há caixa aberto. A despesa será registrada, mas não entrará em nenhum fechamento.
+            <a href="/caixa">Abrir caixa</a>.
+        </p>
+    }
+
+    <button type="button" class="btn btn-primary mt-3" @onclick="Salvar">Lançar despesa</button>
+</section>
+
+@* ---------- filtros ---------- *@
+<section class="filtros">
+    <div class="campo">
+        <label>De</label>
+        <input type="date" class="form-control" @bind="de" />
+    </div>
+    <div class="campo">
+        <label>Até</label>
+        <input type="date" class="form-control" @bind="ate" />
+    </div>
+    <div class="campo">
+        <label>Categoria</label>
+        <select class="form-control" @bind="filtroCategoria">
+            <option value="">Todas</option>
+            @foreach (var c in CategoriaDespesa.Todas)
+            {
+                <option value="@c.Valor">@c.Rotulo</option>
+            }
+        </select>
+    </div>
+    <div class="campo">
+        <label>Pagamento</label>
+        <select class="form-control" @bind="filtroForma">
+            <option value="">Todos</option>
+            @foreach (var f in FormaPagamento.Todas)
+            {
+                <option value="@f.Valor">@f.Rotulo</option>
+            }
+        </select>
+    </div>
+    <div class="campo-acoes">
+        <button type="button" class="btn btn-primary" @onclick="Carregar">Filtrar</button>
+        <button type="button" class="btn btn-outline-secondary" @onclick="Limpar">Limpar</button>
+        <a href="@UrlRelatorio" class="btn-pdf" data-enhance-nav="false">Relatório PDF</a>
+    </div>
+</section>
+
+<div class="atalhos-periodo">
+    <button type="button" @onclick="() => Periodo(0)">Hoje</button>
+    <button type="button" @onclick="() => Periodo(7)">7 dias</button>
+    <button type="button" @onclick="() => Periodo(30)">30 dias</button>
+    <button type="button" @onclick="PeriodoMes">Este mês</button>
+</div>
+
+@* ---------- resumo ---------- *@
+<div class="resumo">
+    <div class="cartao-resumo">
+        <span class="rotulo">Lançamentos</span>
+        <strong class="valor">@despesas.Count</strong>
+    </div>
+    <div class="cartao-resumo total">
+        <span class="rotulo">Total</span>
+        <strong class="valor">@despesas.Sum(d => d.Valor).ToString("C")</strong>
+    </div>
+    <div class="cartao-resumo">
+        <span class="rotulo">Em dinheiro</span>
+        <strong class="valor">@despesas.Where(d => d.AfetaGaveta).Sum(d => d.Valor).ToString("C")</strong>
+    </div>
+    <div class="cartao-resumo">
+        <span class="rotulo">Em aberto</span>
+        <strong class="valor">@despesas.Where(d => !d.Pago).Sum(d => d.Valor).ToString("C")</strong>
+    </div>
+</div>
+
+<div class="tabela">
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Data</th>
+            <th>Descrição</th>
+            <th>Categoria</th>
+            <th>Pagamento</th>
+            <th class="dir">Valor</th>
+            <th class="col-acao"></th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (despesas.Count > 0)
+        {
+            @foreach (var d in despesas)
+            {
+                <tr>
+                    <td>@d.DataDespesa.ToString("dd/MM/yyyy")</td>
+                    <td>
+                        @d.Descricao
+                        @if (!string.IsNullOrWhiteSpace(d.NomeFornecedor))
+                        {
+                            <span class="fornecedor">@d.NomeFornecedor</span>
+                        }
+                    </td>
+                    <td>@d.RotuloCategoria</td>
+                    <td>
+                        @FormaPagamento.Rotulo(d.FormaPagamentoDespesa)
+                        @if (!d.Pago)
+                        {
+                            <span class="etiqueta-aberto">em aberto</span>
+                        }
+                    </td>
+                    <td class="dir">@d.Valor.ToString("C")</td>
+                    <td class="col-acao">
+                        <button type="button" class="btn-acao perigo"
+                                @onclick="() => Excluir(d.IdDespesa)">Excluir</button>
+                    </td>
+                </tr>
+            }
+        }
+        else
+        {
+            <tr>
+                <td colspan="6" class="text-center text-muted">Nenhuma despesa encontrada.</td>
+            </tr>
+        }
+    </tbody>
+</table>
+</div>
+
+<CadastroRapido Visivel="modalAberto"
+                Tipo="CadastroRapido.TipoCadastro.Fornecedor"
+                OnCriado="AoCriarFornecedor"
+                OnCancelado="() => modalAberto = false" />
+
+@code {
+    private Despesa nova = new();
+    private List<Despesa> despesas = new();
+    private List<Fornecedor> fornecedores = new();
+    private Caixa? caixaAberto;
+
+    private int idFornecedor;
+    private bool modalAberto;
+    private string? erro;
+    private string? aviso;
+
+    private DateTime? de;
+    private DateTime? ate;
+    private string filtroCategoria = "";
+    private string filtroForma = "";
+
+    private string UrlRelatorio
+    {
+        get
+        {
+            var p = new Dictionary<string, string?>();
+            if (de.HasValue) p["de"] = de.Value.ToString("yyyy-MM-dd");
+            if (ate.HasValue) p["ate"] = ate.Value.ToString("yyyy-MM-dd");
+            if (!string.IsNullOrWhiteSpace(filtroCategoria)) p["categoria"] = filtroCategoria;
+            if (!string.IsNullOrWhiteSpace(filtroForma)) p["forma"] = filtroForma;
+            return QueryHelpers.AddQueryString("/relatorio/despesas", p);
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        try
+        {
+            fornecedores = fornecedorDAO.ListarTodos() ?? new();
+            caixaAberto = caixaDAO.BuscarAberto();
+        }
+        catch (Exception ex)
+        {
+            erro = ex.Message;
+        }
+
+        Carregar();
+    }
+
+    private void Carregar()
+    {
+        try
+        {
+            erro = null;
+            despesas = despesaDAO.Listar(new DespesaDAO.Filtro
+            {
+                De = de,
+                Ate = ate?.AddDays(1),
+                Categoria = string.IsNullOrWhiteSpace(filtroCategoria) ? null : filtroCategoria,
+                FormaPagamento = string.IsNullOrWhiteSpace(filtroForma) ? null : filtroForma
+            });
+        }
+        catch (Exception ex)
+        {
+            erro = "Erro ao carregar as despesas: " + ex.Message;
+            despesas = new();
+        }
+    }
+
+    private void Salvar()
+    {
+        try
+        {
+            erro = null;
+            aviso = null;
+
+            nova.IdFornecedor = idFornecedor > 0 ? idFornecedor : null;
+
+            // Só amarra ao caixa se o dinheiro realmente sair da gaveta.
+            nova.IdCaixa = nova.AfetaGaveta ? caixaAberto?.IdCaixa : null;
+
+            despesaDAO.Inserir(nova);
+            aviso = $"Despesa de {nova.Valor:C} lançada.";
+
+            nova = new Despesa { Categoria = nova.Categoria };
+            idFornecedor = 0;
+
+            caixaAberto = caixaDAO.BuscarAberto();
+            Carregar();
+        }
+        catch (Exception ex)
+        {
+            erro = ex.Message;
+        }
+    }
+
+    private void Excluir(int id)
+    {
+        try
+        {
+            erro = null;
+            despesaDAO.Excluir(id);
+            aviso = "Despesa excluída.";
+            Carregar();
+        }
+        catch (Exception ex)
+        {
+            erro = ex.Message;
+        }
+    }
+
+    private void AoCriarFornecedor(int id)
+    {
+        try
+        {
+            fornecedores = fornecedorDAO.ListarTodos() ?? new();
+            idFornecedor = id;
+        }
+        catch (Exception ex)
+        {
+            erro = ex.Message;
+        }
+        finally
+        {
+            modalAberto = false;
+        }
+    }
+
+    private void Limpar()
+    {
+        de = ate = null;
+        filtroCategoria = "";
+        filtroForma = "";
+        Carregar();
+    }
+
+    private void Periodo(int dias)
+    {
+        ate = DateTime.Today;
+        de = DateTime.Today.AddDays(-dias);
+        Carregar();
+    }
+
+    private void PeriodoMes()
+    {
+        var hoje = DateTime.Today;
+        de = new DateTime(hoje.Year, hoje.Month, 1);
+        ate = hoje;
+        Carregar();
+    }
+}

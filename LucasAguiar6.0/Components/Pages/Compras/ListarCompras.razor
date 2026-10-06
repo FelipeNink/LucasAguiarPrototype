@@ -1,0 +1,91 @@
+﻿@page "/compra"
+@rendermode InteractiveServer
+
+@using LucasAguiar.Configs
+@using LucasAguiar.Models
+@inject CompraDAO compraDAO
+
+<PageTitle>Compras</PageTitle>
+
+<h1>Lista de Compras</h1>
+
+<div class="barra-acoes">
+    <NavLink href="/compra/novo" class="btn-novo">Nova Compra</NavLink>
+    <a href="/relatorio/compras" class="btn-pdf" data-enhance-nav="false">Relatório PDF</a>
+</div>
+
+<div class="tabela">
+    <table class="table table-striped">
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>Data</th>
+            <th>Valor</th>
+            <th>Item</th>
+            <th>Quantidade</th>
+            <th>Produto</th>
+            <th>Fornecedor</th>
+            <th>Funcionário</th>
+            <th>Despesa</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (listaCompras != null && listaCompras.Any())
+        {
+            int contador = 1;
+            foreach (var compra in listaCompras)
+            {
+                <tr>
+                    <td>@contador</td>
+                    <td>@compra.DataCompra.ToShortDateString()</td>
+                    <td>@compra.ValorCompra.ToString("C")</td>
+                    <td>@compra.ItemCompra</td>
+                    <td>@compra.Quantidade</td>
+                    <td>@compra.NomeProduto</td>
+                    <td>@compra.NomeFornecedor</td>
+                    <td>@compra.NomeFuncionario</td>
+                    <td>
+                        @if (compra.IdDespesa.HasValue)
+                        {
+                            <a href="/despesas">lançada</a>
+                        }
+                        else
+                        {
+                            <span class="text-muted">—</span>
+                        }
+                    </td>
+                </tr>
+                contador++;
+            }
+        }
+        else
+        {
+            <tr>
+                <td colspan="9" class="text-center text-muted">Nenhuma compra encontrada.</td>
+            </tr>
+        }
+    </tbody>
+    </table>
+</div>
+
+
+@code {
+    private List<Compra> listaCompras = new();
+
+    protected override void OnInitialized()
+    {
+        CarregarCompras();
+    }
+
+    private void CarregarCompras()
+    {
+        try
+        {
+            listaCompras = compraDAO.ListarTodos();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Erro ao carregar compras: " + ex.Message);
+        }
+    }
+}

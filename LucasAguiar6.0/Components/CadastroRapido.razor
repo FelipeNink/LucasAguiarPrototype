@@ -1,0 +1,190 @@
+@using LucasAguiar.Models
+@inject ServicoDAO servicoDAO
+@inject ProdutoDAO produtoDAO
+@inject FuncionarioDAO funcionarioDAO
+@inject FornecedorDAO fornecedorDAO
+@inject ClienteDAO clienteDAO
+@inject PlanoDAO planoDAO
+
+@*
+    Cadastro mínimo em modal, para criar o que falta sem sair da tela atual
+    e sem perder o que já foi preenchido nela.
+*@
+
+@if (Visivel)
+{
+    <div class="fundo" @onclick="Cancelar">
+        <div class="caixa" @onclick:stopPropagation="true">
+            <div class="cabecalho">
+                <h5>@Titulo</h5>
+                <button type="button" class="fechar" @onclick="Cancelar" title="Fechar">×</button>
+            </div>
+
+            <div class="corpo">
+                @if (!string.IsNullOrEmpty(erro))
+                {
+                    <div class="erro">@erro</div>
+                }
+
+                <label>@RotuloNome <span class="obrigatorio">*</span></label>
+                <input class="form-control" @bind="nome" @bind:event="oninput" placeholder="@PlaceholderNome" />
+
+                @if (Tipo is TipoCadastro.Servico)
+                {
+                    <div class="dupla">
+                        <div>
+                            <label>Preço</label>
+                            <input type="number" step="0.01" min="0" class="form-control" @bind="valor" />
+                        </div>
+                        <div>
+                            <label>Comissão</label>
+                            <input type="number" step="0.01" min="0" class="form-control" @bind="comissao" />
+                        </div>
+                    </div>
+                    <p class="ajuda">A comissão é o valor pago ao profissional por atendimento.</p>
+                }
+                else if (Tipo is TipoCadastro.Produto)
+                {
+                    <div class="dupla">
+                        <div>
+                            <label>Valor de venda</label>
+                            <input type="number" step="0.01" min="0" class="form-control" @bind="valor" />
+                        </div>
+                        <div>
+                            <label>Estoque</label>
+                            <input type="number" min="0" class="form-control" @bind="quantidade" />
+                        </div>
+                    </div>
+                }
+                else if (Tipo is TipoCadastro.Plano)
+                {
+                    <label>Valor mensal</label>
+                    <input type="number" step="0.01" min="0" class="form-control" @bind="valor" />
+                    <p class="ajuda">
+                        Os itens que o plano inclui são definidos depois, na tela de Planos.
+                    </p>
+                }
+                else
+                {
+                    <label>Telefone</label>
+                    <input class="form-control" @bind="telefone" placeholder="Opcional" />
+                }
+            </div>
+
+            <div class="rodape">
+                <button type="button" class="btn btn-outline-secondary" @onclick="Cancelar">Cancelar</button>
+                <button type="button" class="btn btn-primary" disabled="@string.IsNullOrWhiteSpace(nome)"
+                        @onclick="Salvar">
+                    Salvar e usar
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    public enum TipoCadastro { Servico, Produto, Funcionario, Fornecedor, Cliente, Plano }
+
+    [Parameter] public bool Visivel { get; set; }
+    [Parameter] public TipoCadastro Tipo { get; set; }
+
+    /// <summary>Recebe o id do registro criado, para a tela já selecioná-lo.</summary>
+    [Parameter] public EventCallback<int> OnCriado { get; set; }
+
+    [Parameter] public EventCallback OnCancelado { get; set; }
+
+    /// <summary>Pré-preenche o nome, útil quando veio de um campo de busca.</summary>
+    [Parameter] public string? NomeInicial { get; set; }
+
+    private string nome = "";
+    private string telefone = "";
+    private decimal valor;
+    private decimal comissao;
+    private int quantidade;
+    private string? erro;
+
+    private string Titulo => Tipo switch
+    {
+        TipoCadastro.Servico => "Novo serviço",
+        TipoCadastro.Produto => "Novo produto",
+        TipoCadastro.Funcionario => "Novo profissional",
+        TipoCadastro.Fornecedor => "Novo fornecedor",
+        TipoCadastro.Cliente => "Novo cliente",
+        TipoCadastro.Plano => "Novo plano",
+        _ => "Novo registro"
+    };
+
+    private string RotuloNome => Tipo switch
+    {
+        TipoCadastro.Servico => "Nome do serviço",
+        TipoCadastro.Produto => "Nome do produto",
+        TipoCadastro.Funcionario => "Nome do profissional",
+        TipoCadastro.Fornecedor => "Nome do fornecedor",
+        TipoCadastro.Cliente => "Nome do cliente",
+        TipoCadastro.Plano => "Nome do plano",
+        _ => "Nome"
+    };
+
+    private string PlaceholderNome => Tipo switch
+    {
+        TipoCadastro.Servico => "Ex.: Corte degradê",
+        TipoCadastro.Produto => "Ex.: Pomada modeladora",
+        TipoCadastro.Funcionario => "Ex.: João Barbeiro",
+        TipoCadastro.Fornecedor => "Ex.: Distribuidora Central",
+        TipoCadastro.Plano => "Ex.: Plano Híbrido",
+        _ => ""
+    };
+
+    protected override void OnParametersSet()
+    {
+        // Ao abrir, começa limpo e aproveita o texto já digitado na tela.
+        if (Visivel && string.IsNullOrEmpty(nome) && !string.IsNullOrWhiteSpace(NomeInicial))
+            nome = NomeInicial;
+    }
+
+    private async Task Salvar()
+    {
+        try
+        {
+            erro = null;
+
+            var id = Tipo switch
+            {
+                TipoCadastro.Servico => servicoDAO.InserirRapido(nome, valor, comissao),
+                TipoCadastro.Produto => produtoDAO.InserirRapido(nome, valor, quantidade),
+                TipoCadastro.Funcionario => funcionarioDAO.InserirRapido(nome, telefone),
+                TipoCadastro.Fornecedor => fornecedorDAO.InserirRapido(nome, telefone),
+                TipoCadastro.Cliente => clienteDAO.InserirSomenteNome(nome),
+                TipoCadastro.Plano => planoDAO.Inserir(new Plano
+                {
+                    NomePlano = nome.Trim(),
+                    Valor = (float)valor
+                }),
+                _ => throw new Exception("Tipo de cadastro não suportado.")
+            };
+
+            Limpar();
+            await OnCriado.InvokeAsync(id);
+        }
+        catch (Exception ex)
+        {
+            erro = ex.Message;
+        }
+    }
+
+    private async Task Cancelar()
+    {
+        Limpar();
+        await OnCancelado.InvokeAsync();
+    }
+
+    private void Limpar()
+    {
+        nome = "";
+        telefone = "";
+        valor = 0;
+        comissao = 0;
+        quantidade = 0;
+        erro = null;
+    }
+}

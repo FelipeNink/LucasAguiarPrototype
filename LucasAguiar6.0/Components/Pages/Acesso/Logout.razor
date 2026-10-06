@@ -1,0 +1,21 @@
+@page "/logout"
+@inject AuthenticationService AuthService
+@inject NavigationManager Navigation
+
+<PageTitle>Saindo...</PageTitle>
+
+<div class="logout-container">
+    <div class="logout-content">
+        <div class="logout-spinner"></div>
+        <p>Saindo do sistema...</p>
+    </div>
+</div>
+
+
+@code {
+    protected override void OnInitialized()
+    {
+        AuthService.Logout();
+        Navigation.NavigateTo("/login", forceLoad: true);
+    }
+}

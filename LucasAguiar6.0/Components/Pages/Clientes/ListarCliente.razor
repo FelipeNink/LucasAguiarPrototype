@@ -1,0 +1,74 @@
+﻿@page "/ListaClientes"
+@rendermode InteractiveServer
+
+@using LucasAguiar.Configs
+@using LucasAguiar.Models
+@inject ClienteDAO clienteDAO
+
+<PageTitle>Clientes</PageTitle>
+
+<h1>Lista de Clientes</h1>
+
+<div class="barra-acoes">
+    <NavLink href="/CadastrarCliente/novo" class="btn-novo">Novo Cliente</NavLink>
+    <a href="/relatorio/clientes" class="btn-pdf" data-enhance-nav="false">Relatório PDF</a>
+</div>
+
+<div class="tabela">
+    <table class="table table-striped">
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>Nome</th>
+            <th>Telefone</th>
+            <th>CPF</th>
+            <th>Cidade</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (listaCliente != null && listaCliente.Any())
+        {
+            int contador = 1;
+            foreach (var cliente in listaCliente)
+            {
+                <tr>
+                    <td>@contador</td>
+                    <td>@cliente.NomeCliente</td>
+                    <td>@cliente.Telefone</td>
+                    <td>@cliente.CPF</td>
+                    <td>@cliente.Cidade</td>
+                </tr>
+                contador++;
+            }
+        }
+        else
+        {
+            <tr>
+                <td colspan="5" class="text-center text-muted">Nenhum cliente encontrado.</td>
+            </tr>
+        }
+    </tbody>
+    </table>
+</div>
+
+
+@code {
+    private List<Cliente> listaCliente = new();
+
+    protected override void OnInitialized()
+    {
+        CarregarClientes();
+    }
+
+    private void CarregarClientes()
+    {
+        try
+        {
+            listaCliente = clienteDAO.ListarTodos();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Erro ao carregar clientes: " + ex.Message);
+        }
+    }
+}

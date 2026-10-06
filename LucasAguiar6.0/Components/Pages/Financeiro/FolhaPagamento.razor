@@ -1,0 +1,311 @@
+@page "/folha"
+@rendermode InteractiveServer
+
+@using LucasAguiar.Models
+@using LucasAguiar.Services
+@inject FolhaDAO folhaDAO
+@inject CaixaDAO caixaDAO
+@inject ComissaoDAO comissaoDAO
+@inject AuthenticationService auth
+
+<PageTitle>Folha de Pagamento</PageTitle>
+
+<h1>Folha de Pagamento</h1>
+
+@if (!string.IsNullOrEmpty(erro))
+{
+    <div class="alert alert-danger">@erro</div>
+}
+@if (!string.IsNullOrEmpty(aviso))
+{
+    <div class="alert alert-success">@aviso</div>
+}
+
+<div class="seletor-mes">
+    <button type="button" class="seta" @onclick="() => TrocarMes(-1)" title="Mês anterior">‹</button>
+    <span class="mes-atual">@mesReferencia.ToString("MMMM 'de' yyyy", Cultura)</span>
+    <button type="button" class="seta" @onclick="() => TrocarMes(1)"
+            disabled="@(mesReferencia >= InicioMesAtual)" title="Próximo mês">›</button>
+
+    <a href="/comissoes" class="link-lateral">Ver detalhe das comissões</a>
+</div>
+
+<div class="resumo">
+    <div class="cartao-resumo">
+        <span class="rotulo">Salários fixos</span>
+        <strong class="valor">@linhas.Sum(l => l.SalarioFixo).ToString("C")</strong>
+    </div>
+    <div class="cartao-resumo comissao">
+        <span class="rotulo">Comissões</span>
+        <strong class="valor">@linhas.Sum(l => l.Comissoes).ToString("C")</strong>
+    </div>
+    <div class="cartao-resumo total">
+        <span class="rotulo">Total da folha</span>
+        <strong class="valor">@linhas.Sum(l => l.TotalAReceber).ToString("C")</strong>
+    </div>
+    <div class="cartao-resumo pendente">
+        <span class="rotulo">Ainda a pagar</span>
+        <strong class="valor">@linhas.Where(l => !l.Pago).Sum(l => l.TotalAReceber).ToString("C")</strong>
+    </div>
+</div>
+
+<div class="tabela">
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Profissional</th>
+            <th class="dir">Serviços</th>
+            <th class="dir">Produtos</th>
+            <th class="dir">Vendido</th>
+            <th class="dir">Salário fixo</th>
+            <th class="dir">Comissões</th>
+            <th class="dir">Total</th>
+            <th>Situação</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (linhas.Count > 0)
+        {
+            @foreach (var l in linhas)
+            {
+                <tr class="@(l.Pago ? "pago" : "")">
+                    <td>
+                        <strong>@l.NomeFuncionario</strong>
+                        <span class="suave bloco">@l.Atendimentos atendimento(s)</span>
+                    </td>
+                    <td class="dir">
+                        <span class="contador">@l.ServicosRealizados</span>
+                        <span class="suave bloco">@l.ValorServicos.ToString("C")</span>
+                    </td>
+                    <td class="dir">
+                        <span class="contador produto">@l.ProdutosVendidos</span>
+                        <span class="suave bloco">@l.ValorProdutos.ToString("C")</span>
+                    </td>
+                    <td class="dir">@l.TotalVendido.ToString("C")</td>
+                    <td class="dir">@l.SalarioFixo.ToString("C")</td>
+                    <td class="dir comissao-valor">@l.Comissoes.ToString("C")</td>
+                    <td class="dir total-valor">@l.TotalAReceber.ToString("C")</td>
+                    <td>
+                        @if (l.Pago)
+                        {
+                            <span class="etiqueta paga">
+                                pago em @l.DataPagamento!.Value.ToString("dd/MM")
+                            </span>
+                        }
+                        else if (l.TotalAReceber > 0)
+                        {
+                            <span class="etiqueta aberta">a pagar</span>
+                        }
+                        else
+                        {
+                            <span class="suave">sem valor</span>
+                        }
+                    </td>
+                    <td class="dir">
+                        @if (!l.Pago && l.TotalAReceber > 0)
+                        {
+                            <button type="button" class="btn btn-sm btn-primary"
+                                    @onclick="() => AbrirPagamento(l)">Registrar pagamento</button>
+                        }
+                        else if (l.Pago)
+                        {
+                            <span class="suave">@l.ValorPago.ToString("C")</span>
+                        }
+                    </td>
+                </tr>
+            }
+        }
+        else
+        {
+            <tr>
+                <td colspan="10" class="text-center text-muted">
+                    Nenhum profissional cadastrado.
+                    <a href="/funcionario/novo">Cadastrar</a>.
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+</div>
+
+<p class="nota-rodape">
+    O salário fixo vem do cadastro do profissional. As comissões são somadas
+    das vendas do mês, já descontando as canceladas. O pagamento gera uma
+    despesa na categoria Salários — <a href="/despesas">ver em Despesas</a>.
+</p>
+
+@if (historico.Count > 0)
+{
+    <h2 class="titulo-secao">Pagamentos anteriores</h2>
+<div class="tabela">
+    <table class="table table-striped tabela-historico">
+        <thead>
+            <tr>
+                <th>Pago em</th>
+                <th>Profissional</th>
+                <th>Competência</th>
+                <th class="dir">Valor</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var h in historico)
+            {
+                <tr>
+                    <td>@h.Data.ToString("dd/MM/yyyy HH:mm")</td>
+                    <td>@h.Profissional</td>
+                    <td>@h.Competencia</td>
+                    <td class="dir">@h.Total.ToString("C")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+}
+
+@* ---------- pagamento ---------- *@
+@if (pagando != null)
+{
+    <div class="fundo-modal" @onclick="Fechar">
+        <div class="caixa-modal" @onclick:stopPropagation="true">
+            <div class="modal-topo">
+                <h5>Pagar @pagando.NomeFuncionario</h5>
+                <span class="suave">@mesReferencia.ToString("MMMM/yyyy", Cultura)</span>
+            </div>
+
+            <div class="modal-corpo">
+                <div class="composicao">
+                    <div><span>Salário fixo</span><span>@pagando.SalarioFixo.ToString("C")</span></div>
+                    <div>
+                        <span>Comissões (@pagando.ServicosRealizados serviço(s))</span>
+                        <span>@pagando.Comissoes.ToString("C")</span>
+                    </div>
+                    @if (pagando.ProdutosVendidos > 0)
+                    {
+                        <div class="informativo">
+                            <span>@pagando.ProdutosVendidos produto(s) vendido(s)</span>
+                            <span>@pagando.ValorProdutos.ToString("C")</span>
+                        </div>
+                    }
+                    <div class="total"><span>Total</span><span>@pagando.TotalAReceber.ToString("C")</span></div>
+                </div>
+
+                <label>Forma de pagamento</label>
+                <select class="form-control" @bind="formaPagamento">
+                    @foreach (var f in FormaPagamento.Todas)
+                    {
+                        <option value="@f.Valor">@f.Rotulo</option>
+                    }
+                </select>
+
+                @if (formaPagamento == FormaPagamento.Dinheiro)
+                {
+                    @if (caixaAberto != null)
+                    {
+                        <p class="aviso-caixa">
+                            Sai da gaveta do caixa #@caixaAberto.IdCaixa e entra no fechamento.
+                        </p>
+                    }
+                    else
+                    {
+                        <p class="aviso-caixa alerta">
+                            Não há caixa aberto. A despesa será lançada, mas fora de
+                            qualquer fechamento. <a href="/caixa">Abrir caixa</a>.
+                        </p>
+                    }
+                }
+
+                <label>Observação</label>
+                <input class="form-control" placeholder="Opcional" @bind="observacao" />
+            </div>
+
+            <div class="modal-rodape">
+                <button class="btn btn-outline-secondary" @onclick="Fechar">Cancelar</button>
+                <button class="btn btn-primary" @onclick="Confirmar">
+                    Confirmar pagamento de @pagando.TotalAReceber.ToString("C")
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private static readonly System.Globalization.CultureInfo Cultura = new("pt-BR");
+
+    private List<FolhaDAO.LinhaFolha> linhas = new();
+    private List<(DateTime Data, string Profissional, string Competencia, decimal Total)> historico = new();
+    private FolhaDAO.LinhaFolha? pagando;
+    private Caixa? caixaAberto;
+
+    private DateTime mesReferencia = InicioMesAtual;
+    private string formaPagamento = FormaPagamento.Dinheiro;
+    private string observacao = "";
+
+    private string? erro;
+    private string? aviso;
+
+    private static DateTime InicioMesAtual =>
+        new(DateTime.Today.Year, DateTime.Today.Month, 1);
+
+    protected override void OnInitialized() => Carregar();
+
+    private void TrocarMes(int delta)
+    {
+        var novo = mesReferencia.AddMonths(delta);
+        if (novo > InicioMesAtual) return;
+
+        mesReferencia = novo;
+        aviso = null;
+        Carregar();
+    }
+
+    private void Carregar()
+    {
+        try
+        {
+            erro = null;
+            linhas = folhaDAO.Montar(mesReferencia);
+            historico = folhaDAO.Historico();
+            caixaAberto = caixaDAO.BuscarAberto();
+        }
+        catch (Exception ex)
+        {
+            erro = "Erro ao montar a folha: " + ex.Message;
+            linhas = new();
+        }
+    }
+
+    private void AbrirPagamento(FolhaDAO.LinhaFolha linha)
+    {
+        pagando = linha;
+        formaPagamento = FormaPagamento.Dinheiro;
+        observacao = "";
+    }
+
+    private void Confirmar()
+    {
+        try
+        {
+            erro = null;
+            if (pagando == null) return;
+
+            folhaDAO.Pagar(pagando, mesReferencia, formaPagamento,
+                caixaAberto?.IdCaixa, observacao, auth.GetUsuarioNome());
+
+            aviso = $"Pagamento de {pagando.TotalAReceber:C} registrado para {pagando.NomeFuncionario}.";
+            Fechar();
+            Carregar();
+        }
+        catch (Exception ex)
+        {
+            erro = ex.Message;
+            pagando = null;
+        }
+    }
+
+    private void Fechar()
+    {
+        pagando = null;
+        observacao = "";
+    }
+}

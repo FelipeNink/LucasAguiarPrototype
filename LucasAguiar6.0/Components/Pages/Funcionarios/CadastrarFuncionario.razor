@@ -1,0 +1,71 @@
+@page "/funcionario/novo"
+@rendermode InteractiveServer
+
+@using LucasAguiar.Models
+@using LucasAguiar.Configs
+@inject FuncionarioDAO funcionarioDAO
+@inject NavigationManager Navigation
+
+<PageTitle>Funcionário - Novo</PageTitle>
+
+<a href="/funcionario" class="btn btn-sm btn-outline-secondary mb-3">&#8592; Voltar</a>
+
+<h1 class="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-6">Novo Funcionário</h1>
+
+@if (erro != null)
+{
+    <div class="alert alert-danger">@erro</div>
+}
+
+<EditForm Model="_novoFuncionario" OnValidSubmit="Salvar">
+    <div class="row">
+        <div class="col-md-6">
+            <InputText class="form-control mb-2" @bind-Value="_novoFuncionario.NomeFuncionario" placeholder="Nome" />
+            <InputText class="form-control mb-2" @bind-Value="_novoFuncionario.Telefone" placeholder="Telefone" />
+            <InputText class="form-control mb-2" @bind-Value="_novoFuncionario.CPF" placeholder="CPF" />
+            <InputDate class="form-control mb-2" @bind-Value="_novoFuncionario.DataNascimento" />
+            <InputText class="form-control mb-2" @bind-Value="_novoFuncionario.CTPS" placeholder="CTPS" />
+            <InputText class="form-control mb-2" @bind-Value="_novoFuncionario.RG" placeholder="RG" />
+            <InputText class="form-control mb-2" @bind-Value="_novoFuncionario.Email" placeholder="Email" />
+        </div>
+        <div class="col-md-6">
+            <InputText class="form-control mb-2" @bind-Value="_novoFuncionario.Estado" placeholder="Estado" />
+            <InputText class="form-control mb-2" @bind-Value="_novoFuncionario.Cidade" placeholder="Cidade" />
+            <InputText class="form-control mb-2" @bind-Value="_novoFuncionario.Bairro" placeholder="Bairro" />
+            <InputText class="form-control mb-2" @bind-Value="_novoFuncionario.Rua" placeholder="Rua" />
+            <InputText class="form-control mb-2" @bind-Value="_novoFuncionario.Numero" placeholder="Número" />
+
+            <label>Salário fixo mensal</label>
+            <InputNumber class="form-control mb-2" @bind-Value="_novoFuncionario.SalarioFixo" />
+            <small class="ajuda-salario">
+                Somado às comissões na folha de pagamento. Deixe zero se o
+                profissional trabalha só por comissão.
+            </small>
+        </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary mt-3">Salvar</button>
+    <a href="/funcionario" class="btn btn-outline-secondary mt-3 ms-2">Cancelar</a>
+</EditForm>
+
+@code {
+    private string? erro = null;
+    private Funcionario _novoFuncionario = new();
+
+    private void Salvar()
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(_novoFuncionario.NomeFuncionario))
+                throw new Exception("O nome é obrigatório.");
+
+            funcionarioDAO.Inserir(_novoFuncionario);
+            Navigation.NavigateTo("/funcionario");
+        }
+        catch (Exception ex)
+        {
+            erro = ex.Message;
+        }
+    }
+}
+

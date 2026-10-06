@@ -1,0 +1,279 @@
+/* ---------- seletor de mês ---------- */
+
+.seletor-mes {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.seta {
+    width: 2.1rem;
+    height: 2.1rem;
+    background: #fff;
+    border: 1px solid #d1d5db;
+    border-radius: 50%;
+    font-size: 1.2rem;
+    line-height: 1;
+    color: #4b5563;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.seta:hover:enabled {
+    background: #f0651a;
+    border-color: #f0651a;
+    color: #fff;
+}
+
+.seta:disabled {
+    color: #d1d5db;
+    cursor: not-allowed;
+}
+
+.mes-atual {
+    min-width: 180px;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1f2937;
+    text-transform: capitalize;
+}
+
+.link-lateral {
+    margin-left: auto;
+    font-size: 0.82rem;
+    color: #d35400;
+}
+
+/* ---------- resumo ---------- */
+
+.resumo {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    max-width: 900px;
+}
+
+.cartao-resumo {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.85rem 1rem;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-left: 4px solid #9ca3af;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(16, 24, 40, 0.06);
+}
+
+.cartao-resumo.comissao { border-left-color: #a855f7; }
+.cartao-resumo.total    { border-left-color: #f0651a; }
+.cartao-resumo.pendente { border-left-color: #c9302c; }
+
+.cartao-resumo .rotulo {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #9ca3af;
+}
+
+.cartao-resumo .valor {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #1f2937;
+}
+
+/* ---------- tabela ---------- */
+
+.dir { text-align: right; }
+
+.suave {
+    color: #9ca3af;
+    font-size: 0.8rem;
+}
+
+.bloco {
+    display: block;
+}
+
+.contador {
+    display: inline-block;
+    min-width: 1.9rem;
+    padding: 0.1rem 0.45rem;
+    border-radius: 12px;
+    background: #fdf2e9;
+    color: #d35400;
+    font-weight: 700;
+    font-size: 0.85rem;
+}
+
+.contador.produto {
+    background: #eef2ff;
+    color: #4338ca;
+}
+
+.comissao-valor {
+    font-weight: 600;
+    color: #7e22ce;
+}
+
+.total-valor {
+    font-weight: 700;
+    color: #1f2937;
+}
+
+tr.pago {
+    opacity: 0.7;
+}
+
+.etiqueta {
+    display: inline-block;
+    padding: 0.1rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.etiqueta.paga {
+    background: #ecfdf3;
+    color: #15803d;
+}
+
+.etiqueta.aberta {
+    background: #fff8e6;
+    color: #b45309;
+}
+
+.nota-rodape {
+    max-width: 720px;
+    margin: 1rem 0 0;
+    font-size: 0.82rem;
+    color: #9ca3af;
+}
+
+.titulo-secao {
+    margin: 2rem 0 1rem;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.tabela-historico {
+    max-width: 760px;
+}
+
+/* ---------- modal ---------- */
+
+.fundo-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1100;
+    padding: 1.5rem;
+}
+
+.caixa-modal {
+    width: 100%;
+    max-width: 440px;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+}
+
+.modal-topo {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.modal-topo h5 {
+    margin: 0;
+    font-weight: 700;
+    color: #1f2937;
+}
+
+.modal-corpo {
+    padding: 1.25rem;
+}
+
+.modal-corpo label {
+    display: block;
+    margin-bottom: 0.3rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #9ca3af;
+}
+
+.modal-corpo .form-control {
+    margin-bottom: 1rem;
+}
+
+.composicao {
+    margin-bottom: 1.25rem;
+    padding: 0.85rem 1rem;
+    background: #f9fafb;
+    border-radius: 8px;
+}
+
+.composicao > div {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.25rem 0;
+    font-size: 0.88rem;
+    color: #4b5563;
+}
+
+.composicao .informativo {
+    font-size: 0.8rem;
+    color: #9ca3af;
+    font-style: italic;
+}
+
+.composicao .total {
+    margin-top: 0.4rem;
+    padding-top: 0.6rem;
+    border-top: 1px solid #e5e7eb;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #1f2937;
+}
+
+.aviso-caixa {
+    margin: -0.5rem 0 1rem;
+    padding: 0.6rem 0.75rem;
+    background: #f7f8fa;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    color: #6b7280;
+}
+
+.aviso-caixa.alerta {
+    background: #fff8e6;
+    color: #b45309;
+}
+
+.modal-rodape {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.6rem;
+    padding: 0.9rem 1.25rem;
+    border-top: 1px solid #e9ecef;
+}
+
+@media (max-width: 900px) {
+    .resumo {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}

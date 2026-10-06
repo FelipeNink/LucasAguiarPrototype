@@ -1,0 +1,330 @@
+.cartao {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 1.25rem;
+    box-shadow: 0 1px 3px rgba(16, 24, 40, 0.06);
+}
+
+.cartao h2 {
+    margin: 0 0 1rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.explicacao {
+    margin: 0 0 1rem;
+    font-size: 0.85rem;
+    color: #6b7280;
+}
+
+/* ---------- abertura ---------- */
+
+.abertura {
+    max-width: 760px;
+    margin-bottom: 2rem;
+}
+
+.linha-abertura {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.linha-abertura .cresce {
+    flex: 1;
+    min-width: 200px;
+}
+
+.linha-abertura label,
+.grade-movimento label {
+    display: block;
+    margin-bottom: 0.3rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #9ca3af;
+}
+
+/* ---------- cabecalho do caixa aberto ---------- */
+
+.cabecalho-caixa {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.25rem;
+    border-left: 4px solid #16a34a;
+}
+
+.etiqueta {
+    display: inline-block;
+    padding: 0.15rem 0.6rem;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.etiqueta.aberto {
+    background: #ecfdf3;
+    color: #15803d;
+}
+
+.titulo-caixa {
+    margin-left: 0.6rem;
+    font-size: 1.05rem;
+    color: #1f2937;
+}
+
+.desde {
+    display: block;
+    margin-top: 0.25rem;
+    font-size: 0.8rem;
+    color: #9ca3af;
+}
+
+.btn-fechar {
+    padding: 0.6rem 1.5rem;
+    background: #c9302c;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.btn-fechar:hover {
+    background: #a02622;
+}
+
+/* ---------- painel ---------- */
+
+.painel-caixa {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 2rem;
+    align-items: start;
+}
+
+.gaveta {
+    border-left: 4px solid #f0651a;
+}
+
+.linhas > div {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.4rem 0;
+    font-size: 0.88rem;
+    color: #4b5563;
+    border-bottom: 1px solid #f5f5f5;
+}
+
+.linhas .mais {
+    color: #16a34a;
+    font-weight: 600;
+}
+
+.linhas .menos {
+    color: #c9302c;
+    font-weight: 600;
+}
+
+.linhas .total {
+    margin-top: 0.4rem;
+    padding-top: 0.6rem;
+    border-top: 2px solid #e5e7eb;
+    border-bottom: none;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #1f2937;
+}
+
+.linhas .total.positivo span:last-child {
+    color: #15803d;
+}
+
+.linhas .total.negativo span:last-child {
+    color: #c9302c;
+}
+
+.linhas.secundaria {
+    margin-top: 1.25rem;
+    padding-top: 0.75rem;
+    border-top: 2px dashed #e5e7eb;
+}
+
+.nota-rodape {
+    margin: 0.85rem 0 0;
+    font-size: 0.78rem;
+    color: #9ca3af;
+    font-style: italic;
+}
+
+/* ---------- movimentos ---------- */
+
+.grade-movimento {
+    display: grid;
+    grid-template-columns: 1fr 110px 1.4fr auto;
+    gap: 0.5rem;
+}
+
+.movimentos {
+    list-style: none;
+    margin: 1.25rem 0 0;
+    padding: 0;
+}
+
+.movimentos li {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 0.75rem;
+    align-items: center;
+    padding: 0.5rem 0;
+    font-size: 0.85rem;
+    border-top: 1px solid #f0f0f0;
+}
+
+.movimentos .hora {
+    font-size: 0.78rem;
+    color: #9ca3af;
+}
+
+.movimentos .descricao {
+    color: #4b5563;
+}
+
+.movimentos .mais {
+    color: #16a34a;
+    font-weight: 600;
+}
+
+.movimentos .menos {
+    color: #c9302c;
+    font-weight: 600;
+}
+
+.vazio {
+    margin: 1.25rem 0 0;
+    padding: 1rem;
+    background: #f9fafb;
+    border: 1px dashed #d1d5db;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    color: #9ca3af;
+    text-align: center;
+}
+
+/* ---------- historico ---------- */
+
+.titulo-secao {
+    margin: 2rem 0 1rem;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.dir {
+    text-align: right;
+}
+
+td.confere { color: #15803d; font-weight: 600; }
+td.sobra   { color: #b45309; font-weight: 600; }
+td.falta   { color: #c9302c; font-weight: 600; }
+
+/* ---------- fechamento ---------- */
+
+.fundo-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1100;
+    padding: 1.5rem;
+}
+
+.modal-fechamento {
+    width: 100%;
+    max-width: 440px;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+}
+
+.modal-topo {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.modal-topo h5 {
+    margin: 0;
+    font-weight: 700;
+    color: #1f2937;
+}
+
+.modal-corpo {
+    padding: 1.25rem;
+}
+
+.modal-corpo label {
+    display: block;
+    margin-bottom: 0.3rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #9ca3af;
+}
+
+.modal-corpo .form-control {
+    margin-bottom: 1rem;
+}
+
+.campo-grande {
+    font-size: 1.4rem !important;
+    font-weight: 700;
+    text-align: center;
+}
+
+.resultado {
+    padding: 1rem;
+    margin-bottom: 1.25rem;
+    border-radius: 8px;
+    text-align: center;
+    font-size: 1.1rem;
+}
+
+.resultado.confere { background: #ecfdf3; color: #15803d; }
+.resultado.sobra   { background: #fff8e6; color: #b45309; }
+.resultado.falta   { background: #fdecea; color: #b3261e; }
+
+.comprovante {
+    display: block;
+    margin-top: 1.25rem;
+    text-align: center;
+}
+
+.modal-rodape {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.6rem;
+    padding: 0.9rem 1.25rem;
+    border-top: 1px solid #e9ecef;
+}
+
+@media (max-width: 900px) {
+    .grade-movimento {
+        grid-template-columns: 1fr;
+    }
+}

@@ -1,0 +1,179 @@
+@page "/compra/novo"
+@rendermode InteractiveServer
+
+@using LucasAguiar.Models
+@using LucasAguiar.Configs
+@inject CompraDAO compraDAO
+@inject ProdutoDAO produtoDAO
+@inject FornecedorDAO fornecedorDAO
+@inject FuncionarioDAO funcionarioDAO
+@inject CaixaDAO caixaDAO
+@inject NavigationManager Navigation
+
+<PageTitle>Compra - Nova</PageTitle>
+
+<a href="/compra" class="btn btn-sm btn-outline-secondary mb-3">&#8592; Voltar</a>
+
+<h1 class="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-6">Nova Compra</h1>
+
+@if (erro != null)
+{
+    <div class="alert alert-danger">@erro</div>
+}
+
+<EditForm Model="_novaCompra" OnValidSubmit="Salvar">
+    <div class="row">
+        <div class="col-md-6">
+            <label>Data</label>
+            <InputDate class="form-control mb-2" @bind-Value="_novaCompra.DataCompra" />
+
+            <label>Item</label>
+            <InputText class="form-control mb-2" @bind-Value="_novaCompra.ItemCompra" placeholder="Ex.: Caixa de pomada" />
+
+            <label>Valor total pago</label>
+            <InputNumber class="form-control mb-2" @bind-Value="_novaCompra.ValorCompra" />
+
+            <label>Quantidade</label>
+            <InputNumber class="form-control mb-2" @bind-Value="_novaCompra.Quantidade" />
+
+            <label>Forma de pagamento</label>
+            <select class="form-control mb-2" @bind="formaPagamento">
+                @foreach (var f in FormaPagamento.Todas)
+                {
+                    <option value="@f.Valor">@f.Rotulo</option>
+                }
+            </select>
+
+            <label>Produto</label>
+            <select class="form-control mb-2" @bind="_novaCompra.IdProduto">
+                <option value="">Selecione</option>
+                @foreach (var p in produtos)
+                {
+                    <option value="@p.IdProduto">@p.NomeProduto</option>
+                }
+            </select>
+
+            <label>Fornecedor</label>
+            <select class="form-control mb-2" @bind="_novaCompra.IdFornecedor">
+                <option value="">Selecione</option>
+                @foreach (var f in fornecedores)
+                {
+                    <option value="@f.IdFornecedor">@f.NomeFornecedor</option>
+                }
+            </select>
+
+            <label>Funcionário</label>
+            <select class="form-control mb-2" @bind="_novaCompra.IdFuncionario">
+                <option value="">Selecione</option>
+                @foreach (var u in funcionarios)
+                {
+                    <option value="@u.IdFuncionario">@u.NomeFuncionario</option>
+                }
+            </select>
+
+            <div class="linha-criar">
+                <button type="button" class="btn-criar" @onclick="() => modalAberto = CadastroRapido.TipoCadastro.Produto">
+                    + Novo produto
+                </button>
+                <button type="button" class="btn-criar" @onclick="() => modalAberto = CadastroRapido.TipoCadastro.Fornecedor">
+                    + Novo fornecedor
+                </button>
+                <button type="button" class="btn-criar" @onclick="() => modalAberto = CadastroRapido.TipoCadastro.Funcionario">
+                    + Novo funcionário
+                </button>
+            </div>
+
+            <p class="aviso-integracao">
+                A compra lança automaticamente uma <strong>despesa</strong> na categoria
+                Produtos e dá <strong>entrada no estoque</strong> do produto selecionado.
+                @if (formaPagamento == FormaPagamento.Dinheiro && caixaAberto != null)
+                {
+                    <text> O valor sai da gaveta do caixa #@caixaAberto.IdCaixa.</text>
+                }
+            </p>
+
+            <button type="submit" class="btn btn-primary mt-3">Salvar</button>
+            <a href="/compra" class="btn btn-outline-secondary mt-3 ms-2">Cancelar</a>
+        </div>
+    </div>
+</EditForm>
+
+<CadastroRapido Visivel="@(modalAberto != null)"
+                Tipo="@(modalAberto ?? CadastroRapido.TipoCadastro.Produto)"
+                OnCriado="AoCriarRegistro"
+                OnCancelado="() => modalAberto = null" />
+
+@code {
+    
+    private string? erro = null;
+    private CadastroRapido.TipoCadastro? modalAberto;
+    private Compra _novaCompra = new();
+    private string formaPagamento = FormaPagamento.Dinheiro;
+    private Caixa? caixaAberto;
+
+    private List<Produto> produtos = new();
+    private List<Fornecedor> fornecedores = new();
+    private List<Funcionario> funcionarios = new();
+
+    protected override void OnInitialized()
+    {
+        produtos = produtoDAO.ListarTodos();
+        fornecedores = fornecedorDAO.ListarTodos();
+        funcionarios = funcionarioDAO.ListarTodos();
+        caixaAberto = caixaDAO.BuscarAberto();
+    }
+
+    /// <summary>Recarrega e já seleciona, sem perder a compra em digitação.</summary>
+    private void AoCriarRegistro(int id)
+    {
+        try
+        {
+            erro = null;
+
+            switch (modalAberto)
+            {
+                case CadastroRapido.TipoCadastro.Produto:
+                    produtos = produtoDAO.ListarTodos() ?? new();
+                    _novaCompra.IdProduto = id;
+                    break;
+
+                case CadastroRapido.TipoCadastro.Fornecedor:
+                    fornecedores = fornecedorDAO.ListarTodos() ?? new();
+                    _novaCompra.IdFornecedor = id;
+                    break;
+
+                case CadastroRapido.TipoCadastro.Funcionario:
+                    funcionarios = funcionarioDAO.ListarTodos() ?? new();
+                    _novaCompra.IdFuncionario = id;
+                    break;
+            }
+        }
+        catch (Exception ex)
+        {
+            erro = ex.Message;
+        }
+        finally
+        {
+            modalAberto = null;
+        }
+    }
+
+    private void Salvar()
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(_novaCompra.ItemCompra))
+                throw new Exception("O campo item é obrigatório.");
+
+            // A compra lança a despesa e dá entrada no estoque, na mesma transação.
+            compraDAO.Inserir(_novaCompra, caixaAberto?.IdCaixa,
+                gerarDespesa: true, formaPagamento: formaPagamento);
+
+            Navigation.NavigateTo("/compra");
+        }
+        catch (Exception ex)
+        {
+            erro = ex.Message;
+        }
+    }
+}

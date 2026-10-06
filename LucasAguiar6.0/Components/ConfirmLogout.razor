@@ -1,0 +1,142 @@
+@if (IsVisible)
+{
+    <div class="modal-overlay" @onclick="OnBackdropClick">
+        <div class="modal-content" @onclick:stopPropagation="true">
+            <div class="modal-header">
+                <h5>Confirmar Logout</h5>
+            </div>
+            <div class="modal-body">
+                <p>Tem certeza que deseja sair do sistema?</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" @onclick="OnCancel">Cancelar</button>
+                <button class="btn btn-danger" @onclick="OnConfirm">Sair</button>
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+    }
+
+    .modal-content {
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        min-width: 300px;
+        max-width: 400px;
+        animation: slideIn 0.3s ease-out;
+    }
+
+    @@keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .modal-header {
+        padding: 20px;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .modal-header h5 {
+        margin: 0;
+        color: #333;
+        font-weight: 600;
+    }
+
+    .modal-body {
+        padding: 20px;
+        color: #666;
+    }
+
+    .modal-body p {
+        margin: 0;
+    }
+
+    .modal-footer {
+        padding: 15px 20px;
+        border-top: 1px solid #e9ecef;
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+    }
+
+    .btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+
+    /* Cancelar e a acao segura: hover na cor da marca, bem destacado. */
+    .btn-secondary {
+        background: #e9ecef;
+        color: #333;
+        border: 1px solid #d5d9dd;
+    }
+
+    .btn-secondary:hover {
+        background: #e67e22;
+        border-color: #e67e22;
+        color: #fff;
+    }
+
+    .btn-secondary:focus-visible {
+        outline: 2px solid #e67e22;
+        outline-offset: 2px;
+    }
+
+    .btn-danger {
+        background: #dc3545;
+        color: white;
+    }
+
+    .btn-danger:hover {
+        background: #c82333;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public bool IsVisible { get; set; }
+
+    [Parameter]
+    public EventCallback OnConfirmCallback { get; set; }
+
+    [Parameter]
+    public EventCallback OnCancelCallback { get; set; }
+
+    private async Task OnConfirm()
+    {
+        await OnConfirmCallback.InvokeAsync();
+    }
+
+    private async Task OnCancel()
+    {
+        await OnCancelCallback.InvokeAsync();
+    }
+
+    private async Task OnBackdropClick()
+    {
+        await OnCancel();
+    }
+}

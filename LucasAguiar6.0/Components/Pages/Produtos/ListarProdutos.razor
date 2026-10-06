@@ -1,0 +1,70 @@
+﻿@page "/produto"
+@rendermode InteractiveServer
+
+@using LucasAguiar.Models
+@using LucasAguiar.Configs
+@inject ProdutoDAO produtoDAO
+
+<PageTitle>Produtos</PageTitle>
+
+<h1>Lista de Produtos</h1>
+
+<div class="barra-acoes">
+    <NavLink href="/produto/novo" class="btn-novo">Novo Produto</NavLink>
+    <a href="/relatorio/produtos" class="btn-pdf" data-enhance-nav="false">Relatório PDF</a>
+</div>
+
+<div class="tabela">
+    <table class="table table-striped">
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>Nome</th>
+            <th>Quantidade</th>
+            <th>Valor</th>
+            <th>Descrição</th>
+            <th>Marca</th>
+            <th>Fornecedor</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (listaProdutos != null && listaProdutos.Any())
+        {
+            foreach (var produto in listaProdutos)
+            {
+                <tr>
+                    <td>@produto.IdProduto</td>
+                    <td>@produto.NomeProduto</td>
+                    <td>@produto.Quantidade</td>
+                    <td>R$ @produto.Valor</td>
+                    <td> @produto.Descricao</td>
+                    <td> @produto.Marca</td>
+                    <td> @produto.NomeFornecedor</td>
+
+                    <td class="col-acoes">
+                        <span class="acoes">
+                            <a href="/produtos/@produto.IdProduto/editar" class="btn-acao">Editar</a>
+                            <a href="/produtos/@produto.IdProduto/excluir" class="btn-acao perigo">Excluir</a>
+                        </span>
+                    </td>
+                </tr>
+            }
+        }
+        else
+        {
+            <tr>
+                <td colspan="8" class="text-center text-muted">Nenhum produto encontrado.</td>
+            </tr>
+        }
+    </tbody>
+    </table>
+</div>
+@code {
+    private List<Produto> listaProdutos = new();
+
+    protected override void OnInitialized()
+    {
+        listaProdutos = produtoDAO.ListarTodos();
+    }
+}

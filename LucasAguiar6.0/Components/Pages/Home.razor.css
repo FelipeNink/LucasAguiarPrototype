@@ -1,0 +1,319 @@
+.cabecalho-painel {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.botao-nova-venda {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.7rem 1.4rem;
+    background: #f0651a;
+    color: #fff;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-decoration: none;
+    box-shadow: 0 2px 8px rgba(240, 101, 26, 0.3);
+    transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
+}
+
+.botao-nova-venda:hover {
+    background: #d35400;
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(240, 101, 26, 0.4);
+}
+
+.botao-nova-venda svg {
+    width: 1.1rem;
+    height: 1.1rem;
+    fill: currentColor;
+}
+
+.titulo-painel {
+    font-family: "Segoe UI Variable Display", "Segoe UI Semibold", "Segoe UI",
+                 system-ui, -apple-system, Roboto, "Helvetica Neue", sans-serif;
+    font-size: 1.6rem;
+    font-weight: 700;
+    letter-spacing: -0.022em;
+    color: #1f2937;
+    margin: 1.5rem 0 1.5rem;
+}
+
+.painel {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 1.25rem;
+    align-items: stretch;
+}
+
+.cartao {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 1.25rem 1.25rem 1rem;
+    box-shadow: 0 1px 3px rgba(16, 24, 40, 0.06);
+    display: flex;
+    flex-direction: column;
+}
+
+.cartao-topo {
+    margin-bottom: 1rem;
+}
+
+.cartao-topo h2 {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.cartao-sub {
+    font-size: 0.78rem;
+    color: #9ca3af;
+}
+
+/* Altura fixa + maintainAspectRatio:false = o Chart.js respeita este tamanho.
+   Sem flex:1 aqui: o stretch do grid sobrescreveria a altura. */
+.area-grafico {
+    position: relative;
+    height: 300px;
+    flex: 0 0 300px;
+}
+
+.area-grafico canvas {
+    max-width: 100%;
+}
+
+.indicadores {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.25rem;
+    margin: 1.25rem 0 0;
+}
+
+.periodo-texto {
+    display: block;
+    margin-top: -1rem;
+    margin-bottom: 1rem;
+    font-size: 0.82rem;
+    color: #9ca3af;
+}
+
+.indicador .detalhe {
+    font-size: 0.75rem;
+    color: #9ca3af;
+}
+
+.indicador.comissao {
+    border-left-color: #a855f7;
+}
+
+.indicador.prejuizo {
+    border-left-color: #c9302c;
+}
+
+.indicador.prejuizo .valor {
+    color: #c9302c;
+}
+
+/* ---------- faixa de caixa ---------- */
+
+.faixa-caixa {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    flex-wrap: wrap;
+    padding: 0.85rem 1.25rem;
+    border-radius: 10px;
+    border: 1px solid #e5e7eb;
+    background: #fff;
+}
+
+.faixa-caixa.aberto {
+    border-left: 4px solid #16a34a;
+}
+
+.faixa-caixa.fechado {
+    border-left: 4px solid #f0651a;
+    background: #fff8e6;
+}
+
+.faixa-caixa strong {
+    display: block;
+    font-size: 0.9rem;
+    color: #1f2937;
+}
+
+.faixa-caixa span {
+    font-size: 0.8rem;
+    color: #9ca3af;
+}
+
+.gaveta-agora {
+    margin-left: auto;
+    text-align: right;
+}
+
+.gaveta-agora strong {
+    font-size: 1.15rem;
+    color: #15803d;
+}
+
+.link-caixa {
+    padding: 0.4rem 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #4b5563;
+    text-decoration: none;
+    transition: all 0.15s;
+}
+
+.link-caixa:hover {
+    background: #f0651a;
+    border-color: #f0651a;
+    color: #fff;
+}
+
+/* ---------- período ---------- */
+
+.atalhos-periodo {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 1.5rem 0 0;
+}
+
+.atalhos-periodo button {
+    padding: 0.3rem 0.85rem;
+    background: none;
+    border: 1px solid #d1d5db;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    color: #4b5563;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.atalhos-periodo button:hover {
+    border-color: #f0651a;
+    color: #d35400;
+}
+
+.atalhos-periodo button.ativo {
+    background: #f0651a;
+    border-color: #f0651a;
+    color: #fff;
+    font-weight: 600;
+}
+
+.titulo-secao {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin: 2rem 0 1rem;
+}
+
+.atalhos {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 0.85rem;
+    margin-bottom: 2rem;
+}
+
+.atalho {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    padding: 0.9rem 1rem;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    text-decoration: none;
+    box-shadow: 0 1px 3px rgba(16, 24, 40, 0.06);
+    transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+
+.atalho:hover {
+    border-color: #f0651a;
+    box-shadow: 0 4px 12px rgba(240, 101, 26, 0.18);
+    transform: translateY(-2px);
+}
+
+.atalho-acao {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #f0651a;
+}
+
+.atalho-nome {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.indicador {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-left: 4px solid #9ca3af;
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    box-shadow: 0 1px 3px rgba(16, 24, 40, 0.06);
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.indicador .rotulo {
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #9ca3af;
+}
+
+.indicador .valor {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #1f2937;
+}
+
+.indicador.receita {
+    border-left-color: #f0651a;
+}
+
+.indicador.despesa {
+    border-left-color: #dc3545;
+}
+
+.indicador.lucro {
+    border-left-color: #16a34a;
+}
+
+@media (max-width: 1100px) {
+    .painel {
+        grid-template-columns: 1fr;
+    }
+
+    .indicadores {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .atalhos {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .area-grafico {
+        height: 260px;
+        flex: 0 0 260px;
+    }
+}
