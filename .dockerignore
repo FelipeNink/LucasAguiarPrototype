@@ -1,0 +1,11 @@
+**/bin/
+**/obj/
+**/.vs/
+**/.vscode/
+**/.idea/
+.git/
+.gitignore
+
+# Nunca entra na imagem: leva usuario e senha do banco. Em producao a
+# connection string vem da variavel ConnectionStrings__MySqlConnection.
+**/appsettings.Development.json

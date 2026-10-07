@@ -3,10 +3,29 @@ using LucasAguiar.Configs;
 using LucasAguiar.Models;
 using LucasAguiar.Data;
 using LucasAguiar.Services;
+using Microsoft.AspNetCore.HttpOverrides;
 
 
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Hospedagem em container: Render, Railway, Fly e afins informam a porta
+// pela variavel PORT, mas o ASP.NET Core so olha para ASPNETCORE_URLS.
+var porta = Environment.GetEnvironmentVariable("PORT");
+if (!string.IsNullOrWhiteSpace(porta))
+{
+    builder.WebHost.UseUrls($"http://+:{porta}");
+}
+
+// Atras de um proxy que termina o TLS, o pedido chega como http. Sem ler
+// o X-Forwarded-Proto, o UseHttpsRedirection abaixo entra em laco infinito
+// e o cookie de sessao nao e marcado como seguro.
+builder.Services.Configure<ForwardedHeadersOptions>(opcoes =>
+{
+    opcoes.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    opcoes.KnownNetworks.Clear();
+    opcoes.KnownProxies.Clear();
+});
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
@@ -44,6 +63,9 @@ builder.Services.AddSession(options =>
 
 
 var app = builder.Build();
+
+// Precisa vir antes de tudo que olha para o esquema ou o IP do pedido.
+app.UseForwardedHeaders();
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
