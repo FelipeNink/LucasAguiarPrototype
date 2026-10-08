@@ -86,6 +86,7 @@ app.Use(async (context, next) =>
     var caminho = context.Request.Path.Value ?? "/";
 
     var ehPublico = caminho.StartsWith("/login", StringComparison.OrdinalIgnoreCase)
+        || caminho.Equals("/health", StringComparison.OrdinalIgnoreCase)
         || caminho.StartsWith("/logout", StringComparison.OrdinalIgnoreCase)
         || caminho.StartsWith("/Error", StringComparison.OrdinalIgnoreCase)
         || caminho.StartsWith("/_framework", StringComparison.OrdinalIgnoreCase)
@@ -107,6 +108,16 @@ app.Use(async (context, next) =>
 app.UseAntiforgery();
 
 app.MapStaticAssets();
+
+// Sonda de saude da hospedagem. O Railway so manda trafego para a versao
+// nova depois que isto responde 200, e reinicia o container se parar de
+// responder.
+//
+// De proposito nao toca no banco: se o MySQL cair por um instante, o
+// certo e a aplicacao continuar de pe mostrando o erro, e nao o host
+// derrubar o container e tirar todo mundo do ar.
+app.MapGet("/health", () => Results.Ok("ok"));
+
 app.MapearRelatorios();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
