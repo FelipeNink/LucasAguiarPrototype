@@ -5,6 +5,28 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <base href="/" />
+
+    @* Inter: desenhada para interface, com numeros de largura fixa — o que
+       importa num sistema cheio de valor em dinheiro alinhado em coluna. *@
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
+
+    @* Antes do CSS: aplica o tema salvo ja na primeira pintura. Se esperasse
+       o Blazor iniciar, a tela piscaria branca antes de escurecer. *@
+    <script>
+        (function () {
+            try {
+                var t = localStorage.getItem("tema");
+                if (!t) t = matchMedia("(prefers-color-scheme: dark)").matches ? "escuro" : "claro";
+                document.documentElement.setAttribute("data-tema", t);
+            } catch (e) {
+                document.documentElement.setAttribute("data-tema", "claro");
+            }
+        })();
+    </script>
+
     <link rel="stylesheet" href="@Assets["lib/bootstrap/dist/css/bootstrap.min.css"]" />
     <link rel="stylesheet" href="@Assets["app.css"]" />
     <link rel="stylesheet" href="@Assets["LucasAguiar.styles.css"]" />

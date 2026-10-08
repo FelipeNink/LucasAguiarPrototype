@@ -12,7 +12,7 @@
 .caixa {
     width: 100%;
     max-width: 420px;
-    background: #fff;
+    background: var(--superficie);
     border-radius: 10px;
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
 }
@@ -22,14 +22,14 @@
     align-items: center;
     justify-content: space-between;
     padding: 1rem 1.25rem;
-    border-bottom: 1px solid #e9ecef;
+    border-bottom: 1px solid var(--borda-suave);
 }
 
 .cabecalho h5 {
     margin: 0;
     font-size: 1rem;
     font-weight: 700;
-    color: #1f2937;
+    color: var(--texto);
 }
 
 .fechar {
@@ -40,14 +40,14 @@
     border-radius: 50%;
     font-size: 1.3rem;
     line-height: 1;
-    color: #9ca3af;
+    color: var(--texto-fraco);
     cursor: pointer;
     transition: background 0.15s, color 0.15s;
 }
 
 .fechar:hover {
-    background: #f3f4f6;
-    color: #1f2937;
+    background: var(--superficie-3);
+    color: var(--texto);
 }
 
 .corpo {
@@ -61,7 +61,7 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.03em;
-    color: #9ca3af;
+    color: var(--texto-fraco);
 }
 
 .corpo .form-control {
@@ -69,7 +69,7 @@
 }
 
 .obrigatorio {
-    color: #c9302c;
+    color: var(--perigo-escuro);
 }
 
 .dupla {
@@ -81,17 +81,17 @@
 .ajuda {
     margin: -0.5rem 0 0;
     font-size: 0.78rem;
-    color: #9ca3af;
+    color: var(--texto-fraco);
 }
 
 .erro {
     margin-bottom: 1rem;
     padding: 0.6rem 0.75rem;
-    background: #fdecea;
-    border-left: 3px solid #b3261e;
+    background: var(--perigo-fundo);
+    border-left: 3px solid var(--perigo-escuro);
     border-radius: 5px;
     font-size: 0.85rem;
-    color: #b3261e;
+    color: var(--perigo-escuro);
 }
 
 .rodape {
@@ -99,5 +99,5 @@
     justify-content: flex-end;
     gap: 0.6rem;
     padding: 0.9rem 1.25rem;
-    border-top: 1px solid #e9ecef;
+    border-top: 1px solid var(--borda-suave);
 }

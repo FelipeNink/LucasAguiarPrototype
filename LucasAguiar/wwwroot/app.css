@@ -1,5 +1,193 @@
+/* ===========================================================
+   TOKENS
+   Toda cor do sistema passa por aqui. O tema escuro so
+   redefine estes valores — nenhuma regra adiante precisa
+   saber em que tema esta.
+   =========================================================== */
+
+:root {
+    /* Tipografia */
+    --fonte: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --fonte-titulo: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+    /* Marca: a mesma nos dois temas. O laranja e a identidade. */
+    --marca: #f0651a;
+    --marca-escura: #d35400;
+    --marca-clara: #e67e22;
+
+    /* Superficies, do fundo da pagina ao cartao */
+    --fundo: #f7f8fa;
+    --superficie: #fff;
+    --superficie-2: #f9fafb;
+    --superficie-3: #f3f4f6;
+
+    /* Bordas */
+    --borda: #ebedf0;
+    --borda-2: #dcdfe4;
+    --borda-3: #d1d5db;
+    --borda-suave: #e5e7eb;
+    --marca-fraca: #e8b48a;
+
+    /* Texto, do mais forte ao mais apagado */
+    --texto: #1f2937;
+    --texto-2: #4b5563;
+    --texto-3: #6b7280;
+    --texto-fraco: #9ca3af;
+    --texto-apagado: #b0b5bc;
+
+    /* Estados */
+    --ok: #16a34a;
+    --ok-escuro: #15803d;
+    --ok-fundo: #ecfdf3;
+    --ok-borda: #cdeeda;
+    --ok-texto: #166534;
+    --perigo: #dc2626;
+    --perigo-escuro: #c9302c;
+    --perigo-fundo: #fdecea;
+    --alerta: #b45309;
+    --alerta-fundo: #fff8e6;
+    --alerta-borda: #fcd9a4;
+    --alerta-texto: #92400e;
+    --zebra: #fbfbfc;
+    --roxo: #a855f7;
+    --roxo-texto: #7e22ce;
+    --info-fundo: #eef2ff;
+    --info-texto: #4338ca;
+    --sidebar-1: #e8590c;
+    --sidebar-2: #f0651a;
+    --sidebar-3: #fe8413;
+
+    /* Cabecalho de tabela e realces mornos */
+    --morno: #fdf6f1;
+    --morno-2: #fff6ee;
+    --morno-borda: #f7d9c0;
+    --morno-texto: #8a5a36;
+
+    /* Sombra */
+    --sombra: 0 1px 2px rgba(17, 24, 39, 0.04);
+    --sombra-media: 0 4px 16px rgba(17, 24, 39, 0.08);
+
+    color-scheme: light;
+}
+
+[data-tema="escuro"] {
+    /* Cinzas azulados em vez de preto puro: menos cansativo e deixa
+       as sombras e bordas aparecerem. */
+    --fundo: #14171c;
+    --superficie: #1b1f26;
+    --superficie-2: #212630;
+    --superficie-3: #272d38;
+
+    --borda: #2c323d;
+    --borda-2: #3a414e;
+    --borda-3: #49515f;
+    --borda-suave: #333a45;
+    --marca-fraca: #6b4428;
+
+    /* Invertido: o texto forte agora e claro. Nao e branco puro, que
+       vibra sobre fundo escuro. */
+    --texto: #e8eaed;
+    --texto-2: #c3c8d0;
+    --texto-3: #a0a7b2;
+    --texto-fraco: #7d8491;
+    --texto-apagado: #646b77;
+
+    /* O laranja puro satura demais no escuro; clareia um tom. */
+    --marca: #ff7a33;
+    --marca-escura: #f0651a;
+    --marca-clara: #ff9152;
+
+    --ok: #34d07f;
+    --ok-escuro: #22a55f;
+    --ok-fundo: #15291f;
+    --ok-borda: #2a5740;
+    --ok-texto: #7ee0a8;
+    --perigo: #f87171;
+    --perigo-escuro: #ef4444;
+    --perigo-fundo: #2b1618;
+    --alerta: #fbbf24;
+    --alerta-fundo: #2a2113;
+    --alerta-borda: #5c4520;
+    --alerta-texto: #f5c667;
+    --zebra: #1f242c;
+    --roxo: #c084fc;
+    --roxo-texto: #d8b4fe;
+    --info-fundo: #1d2340;
+    --info-texto: #a5b4fc;
+    --sidebar-1: #8f3607;
+    --sidebar-2: #a83f0b;
+    --sidebar-3: #c24d0e;
+
+    --morno: #24201d;
+    --morno-2: #2a241f;
+    --morno-borda: #4a3a2b;
+    --morno-texto: #d9a877;
+
+    --sombra: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --sombra-media: 0 4px 16px rgba(0, 0, 0, 0.45);
+
+    color-scheme: dark;
+}
+
+/* ---------- ponte para o Bootstrap ----------
+   O Bootstrap pinta com variaveis proprias de valor fixo e claro
+   (--bs-body-bg branco, --bs-secondary-color cinza-escuro). Sem
+   reapontar para os tokens, tudo que vem dele ignora o tema escuro:
+   tabela com fundo branco, .text-muted invisivel, modal claro. */
+:root,
+[data-tema="escuro"] {
+    --bs-body-bg: var(--fundo);
+    --bs-body-color: var(--texto);
+    --bs-emphasis-color: var(--texto);
+    --bs-secondary-color: var(--texto-fraco);
+    --bs-tertiary-color: var(--texto-apagado);
+    --bs-secondary-bg: var(--superficie-2);
+    --bs-tertiary-bg: var(--superficie-3);
+    --bs-border-color: var(--borda-2);
+    --bs-link-color: var(--marca-escura);
+    --bs-link-hover-color: var(--marca);
+}
+
+/* A tabela vive dentro do cartao, nao sobre o fundo da pagina. */
+table.table {
+    --bs-table-bg: var(--superficie);
+    --bs-table-color: var(--texto);
+    --bs-table-border-color: var(--borda);
+}
+
+/* Campos tambem ficam na superficie do cartao, nao no fundo. */
+.form-control,
+.form-select {
+    background-color: var(--superficie);
+    color: var(--texto);
+    border-color: var(--borda-2);
+}
+
+.form-control:disabled,
+.form-control[readonly] {
+    background-color: var(--superficie-3);
+    color: var(--texto-fraco);
+}
+
+/* O Bootstrap repinta o campo em foco com o branco dele. */
+.form-control:focus,
+.form-select:focus {
+    background-color: var(--superficie);
+    color: var(--texto);
+}
+
 html, body {
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-family: var(--fonte);
+    background: var(--fundo);
+    color: var(--texto);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Numeros de largura fixa em todo o sistema: valores em dinheiro
+   empilhados em coluna nao dancam de linha para linha. */
+body {
+    font-variant-numeric: tabular-nums;
 }
 
 /* Campos de formulario nao herdam a fonte da pagina por padrao: o navegador
@@ -26,19 +214,18 @@ select.form-control {
 }
 
 .form-control:focus {
-    border-color: #f0651a;
+    border-color: var(--marca);
     box-shadow: 0 0 0 3px rgba(240, 101, 26, 0.15);
 }
 
 /* Titulo de pagina: fonte propria, mais espessa, sem a linha de baixo. */
 h1 {
-    font-family: "Segoe UI Variable Display", "Segoe UI Semibold", "Segoe UI",
-                 system-ui, -apple-system, Roboto, "Helvetica Neue", sans-serif;
+    font-family: var(--fonte-titulo);
     font-size: 1.6rem;
     font-weight: 700;
     letter-spacing: -0.022em;
     line-height: 1.2;
-    color: #1f2937;
+    color: var(--texto);
     margin: 1.5rem 0 1.5rem;
     padding-bottom: 0;
     border-bottom: none;
@@ -52,17 +239,17 @@ a, .btn-link {
    pagina reescrevia isso no proprio <style>. */
 .btn-primary {
     --bs-btn-color: #fff;
-    --bs-btn-bg: #e67e22;
-    --bs-btn-border-color: #e67e22;
+    --bs-btn-bg: var(--marca-clara);
+    --bs-btn-border-color: var(--marca-clara);
     --bs-btn-hover-color: #fff;
-    --bs-btn-hover-bg: #d35400;
-    --bs-btn-hover-border-color: #d35400;
+    --bs-btn-hover-bg: var(--marca-escura);
+    --bs-btn-hover-border-color: var(--marca-escura);
     --bs-btn-active-color: #fff;
-    --bs-btn-active-bg: #d35400;
-    --bs-btn-active-border-color: #d35400;
+    --bs-btn-active-bg: var(--marca-escura);
+    --bs-btn-active-border-color: var(--marca-escura);
     --bs-btn-disabled-color: #fff;
-    --bs-btn-disabled-bg: #e8b48a;
-    --bs-btn-disabled-border-color: #e8b48a;
+    --bs-btn-disabled-bg: var(--marca-fraca);
+    --bs-btn-disabled-border-color: var(--marca-fraca);
     --bs-btn-focus-shadow-rgb: 230, 126, 34;
     font-weight: 600;
 }
@@ -85,38 +272,38 @@ a, .btn-link {
 .btn-criar {
     padding: 0.3rem 0.7rem;
     background: none;
-    border: 1px dashed #f0651a;
+    border: 1px dashed var(--marca);
     border-radius: 6px;
     font-size: 0.8rem;
     font-weight: 600;
-    color: #d35400;
+    color: var(--marca-escura);
     cursor: pointer;
     transition: background 0.15s, color 0.15s;
 }
 
 .btn-criar:hover {
-    background: #f0651a;
+    background: var(--marca);
     border-style: solid;
     color: #fff;
 }
 
 .linha-criar .aviso {
     font-size: 0.8rem;
-    color: #9ca3af;
+    color: var(--texto-fraco);
 }
 
 /* Botao de relatorio: cinza solido, destacado do fundo claro das listagens.
    Definido pelas variaveis do Bootstrap 5 para valer em todos os estados. */
 .btn-relatorio {
     --bs-btn-color: #fff;
-    --bs-btn-bg: #6b7280;
-    --bs-btn-border-color: #6b7280;
+    --bs-btn-bg: var(--texto-3);
+    --bs-btn-border-color: var(--texto-3);
     --bs-btn-hover-color: #fff;
-    --bs-btn-hover-bg: #4b5563;
-    --bs-btn-hover-border-color: #4b5563;
+    --bs-btn-hover-bg: var(--texto-2);
+    --bs-btn-hover-border-color: var(--texto-2);
     --bs-btn-active-color: #fff;
-    --bs-btn-active-bg: #4b5563;
-    --bs-btn-active-border-color: #4b5563;
+    --bs-btn-active-bg: var(--texto-2);
+    --bs-btn-active-border-color: var(--texto-2);
     --bs-btn-focus-shadow-rgb: 107, 114, 128;
     font-weight: 600;
     text-decoration: none;
@@ -135,11 +322,11 @@ h1:focus {
 }
 
 .invalid {
-    outline: 1px solid #e50000;
+    outline: 1px solid var(--perigo);
 }
 
 .validation-message {
-    color: #e50000;
+    color: var(--perigo);
 }
 
 .blazor-error-boundary {
@@ -175,8 +362,8 @@ h1:focus {
 /* A tabela vive dentro de um cartao. O wrapper tambem resolve
    a rolagem horizontal das tabelas largas no celular. */
 .tabela {
-    background: #fff;
-    border: 1px solid #ebedf0;
+    background: var(--superficie);
+    border: 1px solid var(--borda);
     border-radius: 12px;
     box-shadow: 0 1px 2px rgba(17, 24, 39, 0.04);
     overflow-x: auto;
@@ -190,27 +377,27 @@ table.table {
     border-collapse: separate;
     border-spacing: 0;
     font-size: 0.88rem;
-    color: #1f2937;
+    color: var(--texto);
 }
 
 /* Cabecalho: micro-rotulo em caixa alta, igual ao resto do
    sistema, com um fio laranja embaixo no lugar da faixa cheia. */
 table.table > thead > tr > th {
     padding: 0.7rem 1rem;
-    background: #fdf6f1;
-    border-bottom: 2px solid #f7d9c0;
+    background: var(--morno);
+    border-bottom: 2px solid var(--morno-borda);
     font-size: 0.7rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: #8a5a36;
+    color: var(--morno-texto);
     text-align: left;
     white-space: nowrap;
 }
 
 table.table > tbody > tr > td {
     padding: 0.72rem 1rem;
-    border-bottom: 1px solid #f3f4f6;
+    border-bottom: 1px solid var(--superficie-3);
     vertical-align: middle;
 }
 
@@ -226,18 +413,18 @@ table.table.table-striped {
 }
 
 table.table.table-striped > tbody > tr:nth-of-type(odd) > * {
-    --bs-table-bg-type: #fbfbfc;
+    --bs-table-bg-type: var(--zebra);
 }
 
 table.table > tbody > tr:hover > * {
-    --bs-table-bg-state: #fff6ee;
+    --bs-table-bg-state: var(--morno-2);
 }
 
 /* Primeira coluna costuma ser o id/contador: discreta e com
    digitos de largura fixa para as linhas nao dancarem. */
 table.table > tbody > tr > td:first-child,
 table.table.table-striped > tbody > tr > td:first-child {
-    color: #9ca3af;
+    color: var(--texto-fraco);
     font-variant-numeric: tabular-nums;
 }
 
@@ -258,7 +445,7 @@ td.col-acoes {
 table.table .vazio,
 table.table td.text-center.text-muted {
     padding: 2.2rem 1rem;
-    color: #9ca3af;
+    color: var(--texto-fraco);
     font-size: 0.88rem;
     text-align: center;
 }
@@ -291,8 +478,8 @@ table.table > tbody > tr:hover > td.text-center.text-muted {
     align-items: center;
     gap: 0.45rem;
     padding: 0.5rem 0.95rem;
-    background: #f0651a;
-    border: 1px solid #f0651a;
+    background: var(--marca);
+    border: 1px solid var(--marca);
     border-radius: 9px;
     font-size: 0.85rem;
     font-weight: 600;
@@ -310,8 +497,8 @@ table.table > tbody > tr:hover > td.text-center.text-muted {
 }
 
 .btn-novo:hover {
-    background: #d35400;
-    border-color: #d35400;
+    background: var(--marca-escura);
+    border-color: var(--marca-escura);
     color: #fff;
     box-shadow: 0 2px 8px rgba(211, 84, 0, 0.28);
 }
@@ -326,12 +513,12 @@ table.table > tbody > tr:hover > td.text-center.text-muted {
     align-items: center;
     gap: 0.45rem;
     padding: 0.5rem 0.95rem;
-    background: #fff;
-    border: 1px solid #dcdfe4;
+    background: var(--superficie);
+    border: 1px solid var(--borda-2);
     border-radius: 9px;
     font-size: 0.85rem;
     font-weight: 600;
-    color: #4b5563;
+    color: var(--texto-2);
     text-decoration: none;
     cursor: pointer;
     transition: background 0.15s, border-color 0.15s, color 0.15s;
@@ -353,9 +540,9 @@ table.table > tbody > tr:hover > td.text-center.text-muted {
 }
 
 .btn-pdf:hover {
-    background: #f3f4f6;
-    border-color: #c9ced6;
-    color: #1f2937;
+    background: var(--superficie-3);
+    border-color: var(--borda-3);
+    color: var(--texto);
 }
 
 /* Acoes dentro da linha da tabela. */
@@ -370,12 +557,12 @@ table.table > tbody > tr:hover > td.text-center.text-muted {
     align-items: center;
     gap: 0.3rem;
     padding: 0.3rem 0.65rem;
-    background: #fff;
-    border: 1px solid #dcdfe4;
+    background: var(--superficie);
+    border: 1px solid var(--borda-2);
     border-radius: 7px;
     font-size: 0.78rem;
     font-weight: 600;
-    color: #4b5563;
+    color: var(--texto-2);
     text-decoration: none;
     cursor: pointer;
     white-space: nowrap;
@@ -383,15 +570,15 @@ table.table > tbody > tr:hover > td.text-center.text-muted {
 }
 
 .btn-acao:hover {
-    background: #fff6ef;
-    border-color: #f0651a;
-    color: #d35400;
+    background: var(--morno-2);
+    border-color: var(--marca);
+    color: var(--marca-escura);
 }
 
 .btn-acao.perigo:hover {
-    background: #fef2f2;
-    border-color: #dc2626;
-    color: #b91c1c;
+    background: var(--perigo-fundo);
+    border-color: var(--perigo);
+    color: var(--perigo-escuro);
 }
 
 .btn-acao:disabled,
@@ -424,7 +611,7 @@ form label,
     margin-bottom: 0.3rem;
     font-size: 0.8rem;
     font-weight: 600;
-    color: #4b5563;
+    color: var(--texto-2);
 }
 
 form .form-control,
@@ -444,4 +631,29 @@ form .form-check-label {
 .form-control,
 .form-select {
     font-size: 0.92rem;
+}
+
+/* O Bootstrap fixa o cinza #6c757d neste botao, que some no tema escuro. */
+.btn-outline-secondary {
+    --bs-btn-color: var(--texto-2);
+    --bs-btn-border-color: var(--borda-2);
+    --bs-btn-hover-color: var(--texto);
+    --bs-btn-hover-bg: var(--superficie-3);
+    --bs-btn-hover-border-color: var(--borda-3);
+    --bs-btn-active-color: var(--texto);
+    --bs-btn-active-bg: var(--superficie-3);
+    --bs-btn-active-border-color: var(--borda-3);
+}
+
+/* Alertas do Bootstrap tambem vem com paleta clara fixa. */
+.alert-danger {
+    --bs-alert-color: var(--perigo-escuro);
+    --bs-alert-bg: var(--perigo-fundo);
+    --bs-alert-border-color: var(--perigo);
+}
+
+.alert-success {
+    --bs-alert-color: var(--ok-escuro);
+    --bs-alert-bg: var(--ok-fundo);
+    --bs-alert-border-color: var(--ok-borda);
 }

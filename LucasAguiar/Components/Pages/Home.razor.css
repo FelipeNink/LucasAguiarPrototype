@@ -11,7 +11,7 @@
     align-items: center;
     gap: 0.5rem;
     padding: 0.7rem 1.4rem;
-    background: #f0651a;
+    background: var(--marca);
     color: #fff;
     border-radius: 8px;
     font-size: 0.9rem;
@@ -23,7 +23,7 @@
 }
 
 .botao-nova-venda:hover {
-    background: #d35400;
+    background: var(--marca-escura);
     color: #fff;
     transform: translateY(-1px);
     box-shadow: 0 4px 14px rgba(240, 101, 26, 0.4);
@@ -41,7 +41,7 @@
     font-size: 1.6rem;
     font-weight: 700;
     letter-spacing: -0.022em;
-    color: #1f2937;
+    color: var(--texto);
     margin: 1.5rem 0 1.5rem;
 }
 
@@ -53,8 +53,8 @@
 }
 
 .cartao {
-    background: #fff;
-    border: 1px solid #e5e7eb;
+    background: var(--superficie);
+    border: 1px solid var(--borda-suave);
     border-radius: 10px;
     padding: 1.25rem 1.25rem 1rem;
     box-shadow: 0 1px 3px rgba(16, 24, 40, 0.06);
@@ -70,12 +70,12 @@
     margin: 0;
     font-size: 0.95rem;
     font-weight: 600;
-    color: #1f2937;
+    color: var(--texto);
 }
 
 .cartao-sub {
     font-size: 0.78rem;
-    color: #9ca3af;
+    color: var(--texto-fraco);
 }
 
 /* Altura fixa + maintainAspectRatio:false = o Chart.js respeita este tamanho.
@@ -102,24 +102,24 @@
     margin-top: -1rem;
     margin-bottom: 1rem;
     font-size: 0.82rem;
-    color: #9ca3af;
+    color: var(--texto-fraco);
 }
 
 .indicador .detalhe {
     font-size: 0.75rem;
-    color: #9ca3af;
+    color: var(--texto-fraco);
 }
 
 .indicador.comissao {
-    border-left-color: #a855f7;
+    border-left-color: var(--roxo);
 }
 
 .indicador.prejuizo {
-    border-left-color: #c9302c;
+    border-left-color: var(--perigo-escuro);
 }
 
 .indicador.prejuizo .valor {
-    color: #c9302c;
+    color: var(--perigo-escuro);
 }
 
 /* ---------- faixa de caixa ---------- */
@@ -131,28 +131,28 @@
     flex-wrap: wrap;
     padding: 0.85rem 1.25rem;
     border-radius: 10px;
-    border: 1px solid #e5e7eb;
-    background: #fff;
+    border: 1px solid var(--borda-suave);
+    background: var(--superficie);
 }
 
 .faixa-caixa.aberto {
-    border-left: 4px solid #16a34a;
+    border-left: 4px solid var(--ok);
 }
 
 .faixa-caixa.fechado {
-    border-left: 4px solid #f0651a;
-    background: #fff8e6;
+    border-left: 4px solid var(--marca);
+    background: var(--alerta-fundo);
 }
 
 .faixa-caixa strong {
     display: block;
     font-size: 0.9rem;
-    color: #1f2937;
+    color: var(--texto);
 }
 
 .faixa-caixa span {
     font-size: 0.8rem;
-    color: #9ca3af;
+    color: var(--texto-fraco);
 }
 
 .gaveta-agora {
@@ -162,23 +162,23 @@
 
 .gaveta-agora strong {
     font-size: 1.15rem;
-    color: #15803d;
+    color: var(--ok-escuro);
 }
 
 .link-caixa {
     padding: 0.4rem 1rem;
-    border: 1px solid #d1d5db;
+    border: 1px solid var(--borda-3);
     border-radius: 6px;
     font-size: 0.82rem;
     font-weight: 600;
-    color: #4b5563;
+    color: var(--texto-2);
     text-decoration: none;
     transition: all 0.15s;
 }
 
 .link-caixa:hover {
-    background: #f0651a;
-    border-color: #f0651a;
+    background: var(--marca);
+    border-color: var(--marca);
     color: #fff;
 }
 
@@ -194,22 +194,22 @@
 .atalhos-periodo button {
     padding: 0.3rem 0.85rem;
     background: none;
-    border: 1px solid #d1d5db;
+    border: 1px solid var(--borda-3);
     border-radius: 20px;
     font-size: 0.8rem;
-    color: #4b5563;
+    color: var(--texto-2);
     cursor: pointer;
     transition: all 0.15s;
 }
 
 .atalhos-periodo button:hover {
-    border-color: #f0651a;
-    color: #d35400;
+    border-color: var(--marca);
+    color: var(--marca-escura);
 }
 
 .atalhos-periodo button.ativo {
-    background: #f0651a;
-    border-color: #f0651a;
+    background: var(--marca);
+    border-color: var(--marca);
     color: #fff;
     font-weight: 600;
 }
@@ -217,7 +217,7 @@
 .titulo-secao {
     font-size: 0.95rem;
     font-weight: 600;
-    color: #1f2937;
+    color: var(--texto);
     margin: 2rem 0 1rem;
 }
 
@@ -233,8 +233,8 @@
     flex-direction: column;
     gap: 0.15rem;
     padding: 0.9rem 1rem;
-    background: #fff;
-    border: 1px solid #e5e7eb;
+    background: var(--superficie);
+    border: 1px solid var(--borda-suave);
     border-radius: 10px;
     text-decoration: none;
     box-shadow: 0 1px 3px rgba(16, 24, 40, 0.06);
@@ -242,7 +242,7 @@
 }
 
 .atalho:hover {
-    border-color: #f0651a;
+    border-color: var(--marca);
     box-shadow: 0 4px 12px rgba(240, 101, 26, 0.18);
     transform: translateY(-2px);
 }
@@ -252,19 +252,19 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    color: #f0651a;
+    color: var(--marca);
 }
 
 .atalho-nome {
     font-size: 0.95rem;
     font-weight: 600;
-    color: #1f2937;
+    color: var(--texto);
 }
 
 .indicador {
-    background: #fff;
-    border: 1px solid #e5e7eb;
-    border-left: 4px solid #9ca3af;
+    background: var(--superficie);
+    border: 1px solid var(--borda-suave);
+    border-left: 4px solid var(--texto-fraco);
     border-radius: 10px;
     padding: 1rem 1.25rem;
     box-shadow: 0 1px 3px rgba(16, 24, 40, 0.06);
@@ -278,25 +278,25 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    color: #9ca3af;
+    color: var(--texto-fraco);
 }
 
 .indicador .valor {
     font-size: 1.4rem;
     font-weight: 700;
-    color: #1f2937;
+    color: var(--texto);
 }
 
 .indicador.receita {
-    border-left-color: #f0651a;
+    border-left-color: var(--marca);
 }
 
 .indicador.despesa {
-    border-left-color: #dc3545;
+    border-left-color: var(--perigo-escuro);
 }
 
 .indicador.lucro {
-    border-left-color: #16a34a;
+    border-left-color: var(--ok);
 }
 
 @media (max-width: 1100px) {

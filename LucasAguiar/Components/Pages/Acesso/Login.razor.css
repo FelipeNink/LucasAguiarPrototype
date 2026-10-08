@@ -8,15 +8,15 @@
     align-items: center;
     justify-content: center;
     padding: 24px;
-    background: #fff;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--fundo);
+    font-family: var(--fonte);
 }
 
 .cartao {
     width: 100%;
     max-width: 380px;
-    background: #f7f7f8;
-    border: 2px solid #e67e22;
+    background: var(--superficie-2);
+    border: 2px solid var(--marca);
     border-radius: 12px;
     padding: 40px 36px;
     box-shadow: 0 6px 22px rgba(0, 0, 0, 0.08);
@@ -36,23 +36,23 @@
     margin: 0;
     font-size: 1.4rem;
     font-weight: 700;
-    color: #1c1c1e;
+    color: var(--texto);
     text-align: center;
 }
 
 .legenda {
     margin: 4px 0 28px;
     font-size: 0.85rem;
-    color: #8a8a8e;
+    color: var(--texto-fraco);
     text-align: center;
 }
 
 .creditos {
     margin: 22px 0 0;
     padding-top: 16px;
-    border-top: 1px solid #e3e3e6;
+    border-top: 1px solid var(--borda);
     font-size: 0.75rem;
-    color: #a1a1a6;
+    color: var(--texto-fraco);
     text-align: center;
 }
 
@@ -61,7 +61,7 @@
     margin-bottom: 6px;
     font-size: 0.8rem;
     font-weight: 600;
-    color: #48484a;
+    color: var(--texto-2);
 }
 
 /* ::deep porque o <input> e renderizado pelo <InputText>, componente
@@ -72,17 +72,17 @@
     margin-bottom: 18px;
     padding: 11px 12px;
     font-size: 0.95rem;
-    color: #1c1c1e;
-    background: #fff;
-    border: 1px solid #d1d1d6;
+    color: var(--texto);
+    background: var(--superficie);
+    border: 1px solid var(--borda-2);
     border-radius: 7px;
     transition: border-color 0.15s, box-shadow 0.15s;
 }
 
 .cartao ::deep input:focus {
     outline: none;
-    border-color: #e67e22;
-    box-shadow: 0 0 0 3px rgba(230, 126, 34, 0.15);
+    border-color: var(--marca);
+    box-shadow: 0 0 0 3px rgba(240, 101, 26, 0.25);
 }
 
 .cartao button {
@@ -92,7 +92,7 @@
     font-size: 0.95rem;
     font-weight: 600;
     color: #fff;
-    background: #e67e22;
+    background: var(--marca);
     border: none;
     border-radius: 7px;
     cursor: pointer;
@@ -100,15 +100,30 @@
 }
 
 .cartao button:hover {
-    background: #d35400;
+    background: var(--marca-escura);
 }
 
 .erro {
     margin-bottom: 18px;
     padding: 10px 12px;
     font-size: 0.85rem;
-    color: #b3261e;
-    background: #fdecea;
-    border-left: 3px solid #b3261e;
+    color: var(--perigo-escuro);
+    background: var(--perigo-fundo);
+    border-left: 3px solid var(--perigo-escuro);
     border-radius: 5px;
+}
+
+/* A logo grafite some no tema escuro e a branca some no claro, entao cada
+   tema mostra a sua. O seletor de ancestral funciona no CSS com escopo:
+   o Blazor marca so o ultimo elemento do seletor. */
+.marca-escura {
+    display: none;
+}
+
+[data-tema="escuro"] .marca-clara {
+    display: none;
+}
+
+[data-tema="escuro"] .marca-escura {
+    display: block;
 }

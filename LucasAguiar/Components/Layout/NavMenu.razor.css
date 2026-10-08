@@ -77,7 +77,7 @@
     bottom: 0.45rem;
     width: 3px;
     border-radius: 0 3px 3px 0;
-    background: #fff;
+    background: var(--superficie);
 }
 
 .nav-item ::deep .nav-link:hover {
@@ -89,6 +89,57 @@
     margin-top: 0.85rem;
     padding-top: 0.85rem;
     border-top: 1px solid rgba(255, 255, 255, 0.22);
+}
+
+/* ---------- troca de tema ---------- */
+
+.tema-section {
+    margin-top: 0.85rem;
+    padding-top: 0.85rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.22);
+}
+
+/* Par de botoes dentro de uma trilha: o fundo claro marca qual esta
+   ativo sem depender de so um deles mudar de cor. */
+.tema-escolha {
+    display: flex;
+    gap: 2px;
+    padding: 3px;
+    background: rgba(0, 0, 0, 0.16);
+    border-radius: 8px;
+}
+
+.tema-opcao {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3rem;
+    padding: 0.4rem 0.3rem;
+    background: none;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.76rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.72);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.tema-opcao svg {
+    width: 13px;
+    height: 13px;
+    fill: currentColor;
+    flex-shrink: 0;
+}
+
+.tema-opcao:hover {
+    color: #fff;
+}
+
+.tema-opcao.ativa {
+    background: rgba(255, 255, 255, 0.95);
+    color: var(--marca-escura);
 }
 
 .logout-btn {
@@ -108,8 +159,8 @@
 }
 
 .logout-btn:hover {
-    background: #c9302c;
-    border-color: #c9302c;
+    background: var(--perigo-escuro);
+    border-color: var(--perigo-escuro);
 }
 
 .nav-scrollable {

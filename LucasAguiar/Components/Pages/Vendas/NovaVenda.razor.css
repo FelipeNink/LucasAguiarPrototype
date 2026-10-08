@@ -1,7 +1,7 @@
 /* ===========================================================
    Nova Venda
-   Paleta da marca: laranja #f0651a, grafite #1f2937,
-   cinzas #9ca3af / #ebedf0 e verde #16a34a para o que ja esta pago.
+   Paleta da marca: laranja var(--marca), grafite var(--texto),
+   cinzas var(--texto-fraco) / var(--borda) e verde var(--ok) para o que ja esta pago.
    =========================================================== */
 
 /* Todos os campos da tela com o mesmo corpo de texto. Sem isto, o <select>
@@ -9,13 +9,13 @@
    0,92rem, e a diferenca aparece. */
 .form-control {
     font-size: 0.92rem;
-    border-color: #dcdfe4;
+    border-color: var(--borda-2);
     border-radius: 8px;
-    color: #1f2937;
+    color: var(--texto);
 }
 
 .form-control::placeholder {
-    color: #b0b5bc;
+    color: var(--texto-apagado);
 }
 
 
@@ -32,13 +32,13 @@
 
 .voltar {
     font-size: 0.82rem;
-    color: #9ca3af;
+    color: var(--texto-fraco);
     text-decoration: none;
     transition: color 0.15s;
 }
 
 .voltar:hover {
-    color: #d35400;
+    color: var(--marca-escura);
 }
 
 .venda {
@@ -59,8 +59,8 @@
 /* ---------- blocos ---------- */
 
 .bloco {
-    background: #fff;
-    border: 1px solid #ebedf0;
+    background: var(--superficie);
+    border: 1px solid var(--borda);
     border-radius: 12px;
     padding: 1.15rem 1.25rem 1.25rem;
 }
@@ -74,7 +74,7 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: #6b7280;
+    color: var(--texto-3);
 }
 
 .passo {
@@ -84,15 +84,15 @@
     width: 1.4rem;
     height: 1.4rem;
     border-radius: 50%;
-    background: #e5e7eb;
-    color: #9ca3af;
+    background: var(--borda-suave);
+    color: var(--texto-fraco);
     font-size: 0.72rem;
     font-weight: 700;
     transition: background 0.2s, color 0.2s;
 }
 
 .passo.ok {
-    background: #16a34a;
+    background: var(--ok);
     color: #fff;
 }
 
@@ -103,11 +103,11 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    color: #9ca3af;
+    color: var(--texto-fraco);
 }
 
 .obrigatorio {
-    color: #dc2626;
+    color: var(--perigo);
 }
 
 /* Texto so para leitor de tela: o icone basta visualmente. */
@@ -130,21 +130,21 @@
     flex-wrap: wrap;
     margin-bottom: 1rem;
     padding: 0.9rem 1.15rem;
-    background: #fffaf0;
-    border: 1px solid #fcd9a4;
-    border-left: 3px solid #f0651a;
+    background: var(--morno);
+    border: 1px solid var(--alerta-borda);
+    border-left: 3px solid var(--marca);
     border-radius: 10px;
 }
 
 .sem-caixa strong {
     display: block;
     font-size: 0.9rem;
-    color: #92400e;
+    color: var(--alerta-texto);
 }
 
 .sem-caixa span {
     font-size: 0.82rem;
-    color: #b45309;
+    color: var(--alerta);
 }
 
 .abrir-aqui {
@@ -166,13 +166,13 @@
     list-style: none;
     margin: 0.55rem 0 0;
     padding: 0;
-    border: 1px solid #ebedf0;
+    border: 1px solid var(--borda);
     border-radius: 9px;
     overflow: hidden;
 }
 
 .resultados li + li {
-    border-top: 1px solid #f3f4f6;
+    border-top: 1px solid var(--superficie-3);
 }
 
 .resultado {
@@ -189,18 +189,18 @@
 }
 
 .resultado:hover {
-    background: #fff6ef;
+    background: var(--morno-2);
 }
 
 .resultado-nome {
     font-weight: 600;
-    color: #1f2937;
+    color: var(--texto);
     font-size: 0.88rem;
 }
 
 .resultado-info {
     font-size: 0.76rem;
-    color: #9ca3af;
+    color: var(--texto-fraco);
 }
 
 .etiqueta-plano {
@@ -208,8 +208,8 @@
     margin-left: 0.4rem;
     padding: 0.05rem 0.45rem;
     border-radius: 999px;
-    background: #fff1e6;
-    color: #d35400;
+    background: var(--morno-2);
+    color: var(--marca-escura);
     font-weight: 600;
 }
 
@@ -221,11 +221,11 @@
     flex-wrap: wrap;
     margin-top: 0.55rem;
     padding: 0.7rem 0.85rem;
-    background: #fafbfc;
-    border: 1px dashed #d8dce1;
+    background: var(--superficie-2);
+    border: 1px dashed var(--borda-2);
     border-radius: 9px;
     font-size: 0.83rem;
-    color: #6b7280;
+    color: var(--texto-3);
 }
 
 .acoes-cliente {
@@ -240,7 +240,7 @@
     gap: 0.5rem;
     margin-top: 0.8rem;
     padding-top: 0.8rem;
-    border-top: 1px dashed #ebedf0;
+    border-top: 1px dashed var(--borda);
 }
 
 .cadastro-rapido .form-control {
@@ -253,20 +253,20 @@
     justify-content: space-between;
     gap: 1rem;
     padding: 0.75rem 1rem;
-    background: linear-gradient(90deg, #fff6ef 0%, #fffaf6 100%);
-    border: 1px solid #f7d9c0;
+    background: linear-gradient(90deg, var(--morno-2) 0%, var(--morno-2) 100%);
+    border: 1px solid var(--morno-borda);
     border-radius: 10px;
 }
 
 .cliente-escolhido strong {
     font-size: 0.95rem;
-    color: #1f2937;
+    color: var(--texto);
 }
 
 .cliente-detalhe {
     margin-left: 0.5rem;
     font-size: 0.8rem;
-    color: #9ca3af;
+    color: var(--texto-fraco);
 }
 
 /* ---------- planos ativos ---------- */
@@ -289,18 +289,18 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: #15803d;
+    color: var(--ok-escuro);
 }
 
 .planos-cabecalho span {
     font-size: 0.76rem;
-    color: #9ca3af;
+    color: var(--texto-fraco);
 }
 
 .plano-cartao {
     padding: 0.7rem 0.9rem;
-    background: #f6fdf8;
-    border: 1px solid #cdeeda;
+    background: var(--ok-fundo);
+    border: 1px solid var(--ok-borda);
     border-radius: 10px;
 }
 
@@ -318,12 +318,12 @@
 
 .plano-cabecalho strong {
     font-size: 0.88rem;
-    color: #166534;
+    color: var(--ok-texto);
 }
 
 .validade {
     font-size: 0.74rem;
-    color: #9ca3af;
+    color: var(--texto-fraco);
 }
 
 .lista-creditos {
@@ -338,7 +338,7 @@
     justify-content: space-between;
     gap: 1rem;
     padding: 0.45rem 0;
-    border-top: 1px solid #e3f3e9;
+    border-top: 1px solid var(--ok-borda);
 }
 
 .lista-creditos li.esgotado {
@@ -349,17 +349,17 @@
     display: block;
     font-weight: 600;
     font-size: 0.86rem;
-    color: #1f2937;
+    color: var(--texto);
 }
 
 .credito-saldo {
     display: block;
     font-size: 0.75rem;
-    color: #9ca3af;
+    color: var(--texto-fraco);
 }
 
 .credito-saldo strong {
-    color: #15803d;
+    color: var(--ok-escuro);
     font-size: 0.82rem;
 }
 
@@ -369,7 +369,7 @@
     margin-top: 0.1rem;
     font-size: 0.73rem;
     font-weight: 600;
-    color: #d35400;
+    color: var(--marca-escura);
 }
 
 /* ---------- pago pelo plano ---------- */
@@ -377,20 +377,20 @@
 .pago-plano {
     padding: 0.8rem 1rem;
     margin-bottom: 1rem;
-    background: #f6fdf8;
-    border: 1px solid #cdeeda;
+    background: var(--ok-fundo);
+    border: 1px solid var(--ok-borda);
     border-radius: 10px;
 }
 
 .pago-plano strong {
     display: block;
     font-size: 0.9rem;
-    color: #15803d;
+    color: var(--ok-escuro);
 }
 
 .pago-plano span {
     font-size: 0.8rem;
-    color: #4b8f63;
+    color: var(--ok-texto);
 }
 
 /* Botao de baixa: so o icone de menos. */
@@ -401,10 +401,10 @@
     width: 2rem;
     height: 2rem;
     flex-shrink: 0;
-    background: #fff;
-    border: 1px solid #a7e3bf;
+    background: var(--superficie);
+    border: 1px solid var(--ok-borda);
     border-radius: 50%;
-    color: #15803d;
+    color: var(--ok-escuro);
     cursor: pointer;
     transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.1s;
 }
@@ -416,8 +416,8 @@
 }
 
 .btn-baixa:hover {
-    background: #15803d;
-    border-color: #15803d;
+    background: var(--ok-escuro);
+    border-color: var(--ok-escuro);
     color: #fff;
     transform: scale(1.08);
 }
@@ -431,7 +431,7 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.03em;
-    color: #c0c4ca;
+    color: var(--texto-apagado);
 }
 
 .plano-esgotado {
@@ -442,20 +442,20 @@
     flex-wrap: wrap;
     margin-top: 0.5rem;
     padding: 0.65rem 0.9rem;
-    background: #fafbfc;
-    border: 1px solid #ebedf0;
+    background: var(--superficie-2);
+    border: 1px solid var(--borda);
     border-radius: 10px;
 }
 
 .plano-esgotado strong {
     display: block;
     font-size: 0.86rem;
-    color: #6b7280;
+    color: var(--texto-3);
 }
 
 .plano-esgotado span {
     font-size: 0.75rem;
-    color: #b0b5bc;
+    color: var(--texto-apagado);
 }
 
 /* ---------- vender plano ---------- */
@@ -463,7 +463,7 @@
 .vender-plano {
     margin-top: 0.9rem;
     padding-top: 0.9rem;
-    border-top: 1px dashed #ebedf0;
+    border-top: 1px dashed var(--borda);
 }
 
 .vender-plano-titulo {
@@ -473,7 +473,7 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: #9ca3af;
+    color: var(--texto-fraco);
 }
 
 .grade-planos {
@@ -487,8 +487,8 @@
     flex-direction: column;
     gap: 0.1rem;
     padding: 0.65rem 0.8rem;
-    background: #fff;
-    border: 1px solid #f7d9c0;
+    background: var(--superficie);
+    border: 1px solid var(--morno-borda);
     border-radius: 10px;
     text-align: left;
     cursor: pointer;
@@ -496,7 +496,7 @@
 }
 
 .cartao-plano:hover:enabled {
-    border-color: #f0651a;
+    border-color: var(--marca);
     box-shadow: 0 3px 10px rgba(240, 101, 26, 0.14);
     transform: translateY(-1px);
 }
@@ -509,19 +509,19 @@
 .plano-nome {
     font-size: 0.85rem;
     font-weight: 600;
-    color: #1f2937;
+    color: var(--texto);
     line-height: 1.25;
 }
 
 .plano-valor {
     font-size: 0.92rem;
     font-weight: 700;
-    color: #f0651a;
+    color: var(--marca);
 }
 
 .plano-creditos {
     font-size: 0.7rem;
-    color: #9ca3af;
+    color: var(--texto-fraco);
 }
 
 /* ---------- catalogo ---------- */
@@ -538,7 +538,7 @@
     display: inline-flex;
     gap: 0.2rem;
     padding: 0.22rem;
-    background: #f3f4f6;
+    background: var(--superficie-3);
     border-radius: 9px;
 }
 
@@ -552,18 +552,18 @@
     border-radius: 7px;
     font-size: 0.83rem;
     font-weight: 600;
-    color: #6b7280;
+    color: var(--texto-3);
     cursor: pointer;
     transition: background 0.15s, color 0.15s;
 }
 
 .aba:hover {
-    color: #1f2937;
+    color: var(--texto);
 }
 
 .aba.ativa {
-    background: #fff;
-    color: #d35400;
+    background: var(--superficie);
+    color: var(--marca-escura);
     box-shadow: 0 1px 3px rgba(16, 24, 40, 0.1);
 }
 
@@ -594,8 +594,8 @@
     flex-direction: column;
     gap: 0.1rem;
     padding: 0.7rem 0.85rem;
-    background: #fff;
-    border: 1px solid #ebedf0;
+    background: var(--superficie);
+    border: 1px solid var(--borda);
     border-radius: 10px;
     text-align: left;
     cursor: pointer;
@@ -603,7 +603,7 @@
 }
 
 .cartao-item:hover {
-    border-color: #f0651a;
+    border-color: var(--marca);
     box-shadow: 0 3px 10px rgba(240, 101, 26, 0.14);
     transform: translateY(-1px);
 }
@@ -615,23 +615,23 @@
 .item-titulo {
     font-size: 0.85rem;
     font-weight: 600;
-    color: #1f2937;
+    color: var(--texto);
     line-height: 1.25;
 }
 
 .item-preco {
     font-size: 0.92rem;
     font-weight: 700;
-    color: #f0651a;
+    color: var(--marca);
 }
 
 .item-estoque {
     font-size: 0.7rem;
-    color: #9ca3af;
+    color: var(--texto-fraco);
 }
 
 .item-estoque.zerado {
-    color: #dc2626;
+    color: var(--perigo);
     font-weight: 600;
 }
 
@@ -646,7 +646,7 @@
     justify-content: center;
     padding: 0 0.32rem;
     border-radius: 999px;
-    background: #16a34a;
+    background: var(--ok);
     color: #fff;
     font-size: 0.7rem;
     font-weight: 700;
@@ -656,11 +656,11 @@
 .vazio-catalogo {
     margin: 0;
     padding: 1.4rem;
-    background: #fafbfc;
-    border: 1px dashed #d8dce1;
+    background: var(--superficie-2);
+    border: 1px dashed var(--borda-2);
     border-radius: 10px;
     font-size: 0.83rem;
-    color: #9ca3af;
+    color: var(--texto-fraco);
     text-align: center;
 }
 
@@ -668,18 +668,18 @@
     margin-top: 0.8rem;
     padding: 0.3rem 0.7rem;
     background: none;
-    border: 1px dashed #f7b98a;
+    border: 1px dashed var(--marca-fraca);
     border-radius: 7px;
     font-size: 0.78rem;
     font-weight: 600;
-    color: #d35400;
+    color: var(--marca-escura);
     cursor: pointer;
     transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
 
 .btn-criar:hover {
-    background: #f0651a;
-    border-color: #f0651a;
+    background: var(--marca);
+    border-color: var(--marca);
     border-style: solid;
     color: #fff;
 }
@@ -695,24 +695,24 @@
 
 .forma {
     padding: 0.6rem 0.75rem;
-    background: #fff;
-    border: 1px solid #dcdfe4;
+    background: var(--superficie);
+    border: 1px solid var(--borda-2);
     border-radius: 9px;
     font-size: 0.84rem;
     font-weight: 600;
-    color: #6b7280;
+    color: var(--texto-3);
     cursor: pointer;
     transition: all 0.15s;
 }
 
 .forma:hover {
-    border-color: #f7b98a;
-    color: #d35400;
+    border-color: var(--marca-fraca);
+    color: var(--marca-escura);
 }
 
 .forma.ativa {
-    background: #f0651a;
-    border-color: #f0651a;
+    background: var(--marca);
+    border-color: var(--marca);
     color: #fff;
 }
 
@@ -730,7 +730,7 @@
 
 .valor-parcela {
     font-size: 0.83rem;
-    color: #9ca3af;
+    color: var(--texto-fraco);
 }
 
 .grade-final {
@@ -744,7 +744,7 @@
     display: block;
     margin-top: 0.3rem;
     font-size: 0.76rem;
-    color: #b45309;
+    color: var(--alerta);
 }
 
 /* ---------- contador ---------- */
@@ -752,31 +752,31 @@
 .contador {
     display: inline-flex;
     align-items: center;
-    border: 1px solid #dcdfe4;
+    border: 1px solid var(--borda-2);
     border-radius: 7px;
     overflow: hidden;
-    background: #fff;
+    background: var(--superficie);
 }
 
 .contador button {
     width: 1.95rem;
     height: 2rem;
-    background: #fafbfc;
+    background: var(--superficie-2);
     border: none;
     font-size: 0.95rem;
     font-weight: 700;
-    color: #6b7280;
+    color: var(--texto-3);
     cursor: pointer;
     transition: background 0.15s, color 0.15s;
 }
 
 .contador button:hover:enabled {
-    background: #f0651a;
+    background: var(--marca);
     color: #fff;
 }
 
 .contador button:disabled {
-    color: #d8dce1;
+    color: var(--borda-2);
     cursor: not-allowed;
 }
 
@@ -785,7 +785,7 @@
     text-align: center;
     font-size: 0.86rem;
     font-weight: 600;
-    color: #1f2937;
+    color: var(--texto);
 }
 
 .contador.pequeno button {
@@ -804,8 +804,8 @@
 .nota {
     position: sticky;
     top: 1rem;
-    background: #fff;
-    border: 1px solid #ebedf0;
+    background: var(--superficie);
+    border: 1px solid var(--borda);
     border-radius: 12px;
     padding: 1.15rem 1.25rem 1.25rem;
     box-shadow: 0 6px 20px rgba(16, 24, 40, 0.07);
@@ -816,36 +816,36 @@
     justify-content: space-between;
     align-items: baseline;
     padding-bottom: 0.65rem;
-    border-bottom: 1px dashed #e0e3e7;
+    border-bottom: 1px dashed var(--borda-2);
 }
 
 .nota-marca {
     font-weight: 700;
     font-size: 0.84rem;
-    color: #f0651a;
+    color: var(--marca);
 }
 
 .nota-data {
     font-size: 0.72rem;
-    color: #b0b5bc;
+    color: var(--texto-apagado);
 }
 
 .nota-cliente {
     padding: 0.65rem 0;
     font-size: 0.88rem;
-    color: #1f2937;
-    border-bottom: 1px solid #f3f4f6;
+    color: var(--texto);
+    border-bottom: 1px solid var(--superficie-3);
 }
 
 .suave {
-    color: #b0b5bc;
+    color: var(--texto-apagado);
 }
 
 .nota-vazia {
     padding: 2.2rem 1rem;
     text-align: center;
     font-size: 0.83rem;
-    color: #b0b5bc;
+    color: var(--texto-apagado);
 }
 
 .nota-itens {
@@ -856,7 +856,7 @@
 
 .nota-itens li {
     padding: 0.55rem 0;
-    border-bottom: 1px solid #f6f7f8;
+    border-bottom: 1px solid var(--borda);
 }
 
 .linha-nome {
@@ -870,14 +870,14 @@
     flex: 1;
     font-size: 0.86rem;
     font-weight: 600;
-    color: #1f2937;
+    color: var(--texto);
 }
 
 .selo-plano {
     padding: 0.05rem 0.4rem;
     border-radius: 999px;
-    background: #e9f9ef;
-    color: #15803d;
+    background: var(--ok-fundo);
+    color: var(--ok-escuro);
     font-size: 0.65rem;
     font-weight: 700;
     text-transform: uppercase;
@@ -889,7 +889,7 @@
     background: none;
     border: none;
     border-radius: 50%;
-    color: #c0c4ca;
+    color: var(--texto-apagado);
     font-size: 1.05rem;
     line-height: 1;
     cursor: pointer;
@@ -897,8 +897,8 @@
 }
 
 .remover:hover {
-    background: #fdecea;
-    color: #dc2626;
+    background: var(--perigo-fundo);
+    color: var(--perigo);
 }
 
 .linha-valores {
@@ -910,7 +910,7 @@
 .unitario {
     flex: 1;
     font-size: 0.78rem;
-    color: #b0b5bc;
+    color: var(--texto-apagado);
 }
 
 .riscado {
@@ -920,14 +920,14 @@
 .linha-total {
     font-size: 0.88rem;
     font-weight: 700;
-    color: #1f2937;
+    color: var(--texto);
     white-space: nowrap;
 }
 
 .nota-totais {
     margin-top: 0.8rem;
     padding-top: 0.7rem;
-    border-top: 1px dashed #e0e3e7;
+    border-top: 1px dashed var(--borda-2);
     font-size: 0.84rem;
 }
 
@@ -935,36 +935,36 @@
     display: flex;
     justify-content: space-between;
     padding: 0.18rem 0;
-    color: #6b7280;
+    color: var(--texto-3);
 }
 
 .nota-totais .economia,
 .nota-totais .desconto {
-    color: #15803d;
+    color: var(--ok-escuro);
 }
 
 .nota-totais .total {
     margin-top: 0.4rem;
     padding-top: 0.5rem;
-    border-top: 1px solid #ebedf0;
+    border-top: 1px solid var(--borda);
     font-size: 1.3rem;
     font-weight: 700;
-    color: #1f2937;
+    color: var(--texto);
 }
 
 .nota-totais .comissao {
     margin-top: 0.35rem;
     padding-top: 0.35rem;
-    border-top: 1px dashed #ebedf0;
+    border-top: 1px dashed var(--borda);
     font-size: 0.75rem;
-    color: #9ca3af;
+    color: var(--texto-fraco);
 }
 
 .pendencias {
     list-style: none;
     margin: 0.9rem 0 0;
     padding: 0.65rem 0.8rem;
-    background: #fffaf0;
+    background: var(--morno);
     border-radius: 9px;
 }
 
@@ -972,7 +972,7 @@
     position: relative;
     padding-left: 1rem;
     font-size: 0.78rem;
-    color: #b45309;
+    color: var(--alerta);
     line-height: 1.65;
 }
 
@@ -984,14 +984,14 @@
     width: 5px;
     height: 5px;
     border-radius: 50%;
-    border: 1px solid #d99a4e;
+    border: 1px solid var(--alerta-borda);
 }
 
 .btn-confirmar {
     width: 100%;
     margin-top: 0.9rem;
     padding: 0.85rem;
-    background: #16a34a;
+    background: var(--ok);
     color: #fff;
     border: none;
     border-radius: 9px;
@@ -1002,12 +1002,12 @@
 }
 
 .btn-confirmar:hover:enabled {
-    background: #15803d;
+    background: var(--ok-escuro);
 }
 
 .btn-confirmar:disabled {
-    background: #e5e7eb;
-    color: #b0b5bc;
+    background: var(--borda-suave);
+    color: var(--texto-apagado);
     cursor: not-allowed;
 }
 

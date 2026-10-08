@@ -10,24 +10,24 @@
 .seta {
     width: 2.1rem;
     height: 2.1rem;
-    background: #fff;
-    border: 1px solid #d1d5db;
+    background: var(--superficie);
+    border: 1px solid var(--borda-3);
     border-radius: 50%;
     font-size: 1.2rem;
     line-height: 1;
-    color: #4b5563;
+    color: var(--texto-2);
     cursor: pointer;
     transition: all 0.15s;
 }
 
 .seta:hover:enabled {
-    background: #f0651a;
-    border-color: #f0651a;
+    background: var(--marca);
+    border-color: var(--marca);
     color: #fff;
 }
 
 .seta:disabled {
-    color: #d1d5db;
+    color: var(--borda-3);
     cursor: not-allowed;
 }
 
@@ -35,14 +35,14 @@
     min-width: 180px;
     font-size: 1rem;
     font-weight: 600;
-    color: #1f2937;
+    color: var(--texto);
     text-transform: capitalize;
 }
 
 .link-lateral {
     margin-left: auto;
     font-size: 0.82rem;
-    color: #d35400;
+    color: var(--marca-escura);
 }
 
 /* ---------- resumo ---------- */
@@ -60,29 +60,29 @@
     flex-direction: column;
     gap: 0.25rem;
     padding: 0.85rem 1rem;
-    background: #fff;
-    border: 1px solid #e5e7eb;
-    border-left: 4px solid #9ca3af;
+    background: var(--superficie);
+    border: 1px solid var(--borda-suave);
+    border-left: 4px solid var(--texto-fraco);
     border-radius: 8px;
     box-shadow: 0 1px 3px rgba(16, 24, 40, 0.06);
 }
 
-.cartao-resumo.comissao { border-left-color: #a855f7; }
-.cartao-resumo.total    { border-left-color: #f0651a; }
-.cartao-resumo.pendente { border-left-color: #c9302c; }
+.cartao-resumo.comissao { border-left-color: var(--roxo); }
+.cartao-resumo.total    { border-left-color: var(--marca); }
+.cartao-resumo.pendente { border-left-color: var(--perigo-escuro); }
 
 .cartao-resumo .rotulo {
     font-size: 0.72rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    color: #9ca3af;
+    color: var(--texto-fraco);
 }
 
 .cartao-resumo .valor {
     font-size: 1.2rem;
     font-weight: 700;
-    color: #1f2937;
+    color: var(--texto);
 }
 
 /* ---------- tabela ---------- */
@@ -90,7 +90,7 @@
 .dir { text-align: right; }
 
 .suave {
-    color: #9ca3af;
+    color: var(--texto-fraco);
     font-size: 0.8rem;
 }
 
@@ -103,25 +103,25 @@
     min-width: 1.9rem;
     padding: 0.1rem 0.45rem;
     border-radius: 12px;
-    background: #fdf2e9;
-    color: #d35400;
+    background: var(--morno);
+    color: var(--marca-escura);
     font-weight: 700;
     font-size: 0.85rem;
 }
 
 .contador.produto {
-    background: #eef2ff;
-    color: #4338ca;
+    background: var(--info-fundo);
+    color: var(--info-texto);
 }
 
 .comissao-valor {
     font-weight: 600;
-    color: #7e22ce;
+    color: var(--roxo-texto);
 }
 
 .total-valor {
     font-weight: 700;
-    color: #1f2937;
+    color: var(--texto);
 }
 
 tr.pago {
@@ -139,27 +139,27 @@ tr.pago {
 }
 
 .etiqueta.paga {
-    background: #ecfdf3;
-    color: #15803d;
+    background: var(--ok-fundo);
+    color: var(--ok-escuro);
 }
 
 .etiqueta.aberta {
-    background: #fff8e6;
-    color: #b45309;
+    background: var(--alerta-fundo);
+    color: var(--alerta);
 }
 
 .nota-rodape {
     max-width: 720px;
     margin: 1rem 0 0;
     font-size: 0.82rem;
-    color: #9ca3af;
+    color: var(--texto-fraco);
 }
 
 .titulo-secao {
     margin: 2rem 0 1rem;
     font-size: 1rem;
     font-weight: 600;
-    color: #1f2937;
+    color: var(--texto);
 }
 
 .tabela-historico {
@@ -182,7 +182,7 @@ tr.pago {
 .caixa-modal {
     width: 100%;
     max-width: 440px;
-    background: #fff;
+    background: var(--superficie);
     border-radius: 10px;
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
 }
@@ -193,13 +193,13 @@ tr.pago {
     justify-content: space-between;
     gap: 1rem;
     padding: 1rem 1.25rem;
-    border-bottom: 1px solid #e9ecef;
+    border-bottom: 1px solid var(--borda-suave);
 }
 
 .modal-topo h5 {
     margin: 0;
     font-weight: 700;
-    color: #1f2937;
+    color: var(--texto);
 }
 
 .modal-corpo {
@@ -213,7 +213,7 @@ tr.pago {
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.03em;
-    color: #9ca3af;
+    color: var(--texto-fraco);
 }
 
 .modal-corpo .form-control {
@@ -223,7 +223,7 @@ tr.pago {
 .composicao {
     margin-bottom: 1.25rem;
     padding: 0.85rem 1rem;
-    background: #f9fafb;
+    background: var(--superficie-2);
     border-radius: 8px;
 }
 
@@ -232,36 +232,36 @@ tr.pago {
     justify-content: space-between;
     padding: 0.25rem 0;
     font-size: 0.88rem;
-    color: #4b5563;
+    color: var(--texto-2);
 }
 
 .composicao .informativo {
     font-size: 0.8rem;
-    color: #9ca3af;
+    color: var(--texto-fraco);
     font-style: italic;
 }
 
 .composicao .total {
     margin-top: 0.4rem;
     padding-top: 0.6rem;
-    border-top: 1px solid #e5e7eb;
+    border-top: 1px solid var(--borda-suave);
     font-size: 1.1rem;
     font-weight: 700;
-    color: #1f2937;
+    color: var(--texto);
 }
 
 .aviso-caixa {
     margin: -0.5rem 0 1rem;
     padding: 0.6rem 0.75rem;
-    background: #f7f8fa;
+    background: var(--fundo);
     border-radius: 6px;
     font-size: 0.8rem;
-    color: #6b7280;
+    color: var(--texto-3);
 }
 
 .aviso-caixa.alerta {
-    background: #fff8e6;
-    color: #b45309;
+    background: var(--alerta-fundo);
+    color: var(--alerta);
 }
 
 .modal-rodape {
@@ -269,7 +269,7 @@ tr.pago {
     justify-content: flex-end;
     gap: 0.6rem;
     padding: 0.9rem 1.25rem;
-    border-top: 1px solid #e9ecef;
+    border-top: 1px solid var(--borda-suave);
 }
 
 @media (max-width: 900px) {

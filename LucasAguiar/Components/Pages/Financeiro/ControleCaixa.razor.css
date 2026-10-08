@@ -1,6 +1,6 @@
 .cartao {
-    background: #fff;
-    border: 1px solid #e5e7eb;
+    background: var(--superficie);
+    border: 1px solid var(--borda-suave);
     border-radius: 10px;
     padding: 1.25rem;
     box-shadow: 0 1px 3px rgba(16, 24, 40, 0.06);
@@ -10,13 +10,13 @@
     margin: 0 0 1rem;
     font-size: 0.95rem;
     font-weight: 600;
-    color: #1f2937;
+    color: var(--texto);
 }
 
 .explicacao {
     margin: 0 0 1rem;
     font-size: 0.85rem;
-    color: #6b7280;
+    color: var(--texto-3);
 }
 
 /* ---------- abertura ---------- */
@@ -46,7 +46,7 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.03em;
-    color: #9ca3af;
+    color: var(--texto-fraco);
 }
 
 /* ---------- cabecalho do caixa aberto ---------- */
@@ -58,7 +58,7 @@
     gap: 1rem;
     flex-wrap: wrap;
     margin-bottom: 1.25rem;
-    border-left: 4px solid #16a34a;
+    border-left: 4px solid var(--ok);
 }
 
 .etiqueta {
@@ -72,26 +72,26 @@
 }
 
 .etiqueta.aberto {
-    background: #ecfdf3;
-    color: #15803d;
+    background: var(--ok-fundo);
+    color: var(--ok-escuro);
 }
 
 .titulo-caixa {
     margin-left: 0.6rem;
     font-size: 1.05rem;
-    color: #1f2937;
+    color: var(--texto);
 }
 
 .desde {
     display: block;
     margin-top: 0.25rem;
     font-size: 0.8rem;
-    color: #9ca3af;
+    color: var(--texto-fraco);
 }
 
 .btn-fechar {
     padding: 0.6rem 1.5rem;
-    background: #c9302c;
+    background: var(--perigo-escuro);
     color: #fff;
     border: none;
     border-radius: 8px;
@@ -101,7 +101,7 @@
 }
 
 .btn-fechar:hover {
-    background: #a02622;
+    background: var(--perigo-escuro);
 }
 
 /* ---------- painel ---------- */
@@ -115,7 +115,7 @@
 }
 
 .gaveta {
-    border-left: 4px solid #f0651a;
+    border-left: 4px solid var(--marca);
 }
 
 .linhas > div {
@@ -125,48 +125,48 @@
     gap: 1rem;
     padding: 0.4rem 0;
     font-size: 0.88rem;
-    color: #4b5563;
-    border-bottom: 1px solid #f5f5f5;
+    color: var(--texto-2);
+    border-bottom: 1px solid var(--superficie-2);
 }
 
 .linhas .mais {
-    color: #16a34a;
+    color: var(--ok);
     font-weight: 600;
 }
 
 .linhas .menos {
-    color: #c9302c;
+    color: var(--perigo-escuro);
     font-weight: 600;
 }
 
 .linhas .total {
     margin-top: 0.4rem;
     padding-top: 0.6rem;
-    border-top: 2px solid #e5e7eb;
+    border-top: 2px solid var(--borda-suave);
     border-bottom: none;
     font-size: 1.05rem;
     font-weight: 700;
-    color: #1f2937;
+    color: var(--texto);
 }
 
 .linhas .total.positivo span:last-child {
-    color: #15803d;
+    color: var(--ok-escuro);
 }
 
 .linhas .total.negativo span:last-child {
-    color: #c9302c;
+    color: var(--perigo-escuro);
 }
 
 .linhas.secundaria {
     margin-top: 1.25rem;
     padding-top: 0.75rem;
-    border-top: 2px dashed #e5e7eb;
+    border-top: 2px dashed var(--borda-suave);
 }
 
 .nota-rodape {
     margin: 0.85rem 0 0;
     font-size: 0.78rem;
-    color: #9ca3af;
+    color: var(--texto-fraco);
     font-style: italic;
 }
 
@@ -191,36 +191,36 @@
     align-items: center;
     padding: 0.5rem 0;
     font-size: 0.85rem;
-    border-top: 1px solid #f0f0f0;
+    border-top: 1px solid var(--borda-suave);
 }
 
 .movimentos .hora {
     font-size: 0.78rem;
-    color: #9ca3af;
+    color: var(--texto-fraco);
 }
 
 .movimentos .descricao {
-    color: #4b5563;
+    color: var(--texto-2);
 }
 
 .movimentos .mais {
-    color: #16a34a;
+    color: var(--ok);
     font-weight: 600;
 }
 
 .movimentos .menos {
-    color: #c9302c;
+    color: var(--perigo-escuro);
     font-weight: 600;
 }
 
 .vazio {
     margin: 1.25rem 0 0;
     padding: 1rem;
-    background: #f9fafb;
-    border: 1px dashed #d1d5db;
+    background: var(--superficie-2);
+    border: 1px dashed var(--borda-3);
     border-radius: 8px;
     font-size: 0.85rem;
-    color: #9ca3af;
+    color: var(--texto-fraco);
     text-align: center;
 }
 
@@ -230,16 +230,16 @@
     margin: 2rem 0 1rem;
     font-size: 1rem;
     font-weight: 600;
-    color: #1f2937;
+    color: var(--texto);
 }
 
 .dir {
     text-align: right;
 }
 
-td.confere { color: #15803d; font-weight: 600; }
-td.sobra   { color: #b45309; font-weight: 600; }
-td.falta   { color: #c9302c; font-weight: 600; }
+td.confere { color: var(--ok-escuro); font-weight: 600; }
+td.sobra   { color: var(--alerta); font-weight: 600; }
+td.falta   { color: var(--perigo-escuro); font-weight: 600; }
 
 /* ---------- fechamento ---------- */
 
@@ -257,20 +257,20 @@ td.falta   { color: #c9302c; font-weight: 600; }
 .modal-fechamento {
     width: 100%;
     max-width: 440px;
-    background: #fff;
+    background: var(--superficie);
     border-radius: 10px;
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
 }
 
 .modal-topo {
     padding: 1rem 1.25rem;
-    border-bottom: 1px solid #e9ecef;
+    border-bottom: 1px solid var(--borda-suave);
 }
 
 .modal-topo h5 {
     margin: 0;
     font-weight: 700;
-    color: #1f2937;
+    color: var(--texto);
 }
 
 .modal-corpo {
@@ -284,7 +284,7 @@ td.falta   { color: #c9302c; font-weight: 600; }
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.03em;
-    color: #9ca3af;
+    color: var(--texto-fraco);
 }
 
 .modal-corpo .form-control {
@@ -305,9 +305,9 @@ td.falta   { color: #c9302c; font-weight: 600; }
     font-size: 1.1rem;
 }
 
-.resultado.confere { background: #ecfdf3; color: #15803d; }
-.resultado.sobra   { background: #fff8e6; color: #b45309; }
-.resultado.falta   { background: #fdecea; color: #b3261e; }
+.resultado.confere { background: var(--ok-fundo); color: var(--ok-escuro); }
+.resultado.sobra   { background: var(--alerta-fundo); color: var(--alerta); }
+.resultado.falta   { background: var(--perigo-fundo); color: var(--perigo-escuro); }
 
 .comprovante {
     display: block;
@@ -320,7 +320,7 @@ td.falta   { color: #c9302c; font-weight: 600; }
     justify-content: flex-end;
     gap: 0.6rem;
     padding: 0.9rem 1.25rem;
-    border-top: 1px solid #e9ecef;
+    border-top: 1px solid var(--borda-suave);
 }
 
 @media (max-width: 900px) {

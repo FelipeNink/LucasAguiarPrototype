@@ -7,7 +7,7 @@
 main {
     flex: 1;
     min-width: 0;
-    background: #f7f8fa;
+    background: var(--fundo);
 }
 
 .sidebar {
@@ -17,7 +17,7 @@ main {
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    background-image: linear-gradient(170deg, #e8590c 0%, #f0651a 45%, #fe8413 100%);
+    background-image: linear-gradient(170deg, var(--sidebar-1) 0%, var(--sidebar-2) 45%, var(--sidebar-3) 100%);
 }
 
 @media (min-width: 641px) {

@@ -22,3 +22,24 @@
         observar();
     }
 })();
+
+// Tema claro/escuro. O App.razor ja aplicou o tema salvo antes da primeira
+// pintura; aqui ficam a leitura e a troca, chamadas pelo NavMenu.
+window.tema = {
+    ler: function () {
+        try {
+            var t = localStorage.getItem('tema');
+            if (t === 'claro' || t === 'escuro') return t;
+        } catch (e) { /* navegacao anonima ou storage bloqueado */ }
+
+        // Sem escolha salva, segue a preferencia do sistema operacional.
+        return matchMedia('(prefers-color-scheme: dark)').matches ? 'escuro' : 'claro';
+    },
+
+    aplicar: function (valor) {
+        document.documentElement.setAttribute('data-tema', valor);
+        try {
+            localStorage.setItem('tema', valor);
+        } catch (e) { /* a troca vale para esta sessao mesmo sem persistir */ }
+    }
+};
