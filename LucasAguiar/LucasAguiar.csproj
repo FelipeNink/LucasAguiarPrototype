@@ -10,4 +10,11 @@
     <PackageReference Include="MySqlConnector" Version="2.4.0" />
   </ItemGroup>
 
+
+  <ItemGroup>
+    <!-- O esquema viaja dentro do assembly para o BancoInicializador
+         poder cria-lo na primeira subida, inclusive no container, onde
+         so existe o resultado do publish. -->
+    <EmbeddedResource Include="Configs\banco_dados.sql" />
+  </ItemGroup>
 </Project>

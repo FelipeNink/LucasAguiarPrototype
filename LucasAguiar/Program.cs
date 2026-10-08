@@ -49,6 +49,7 @@ builder.Services.AddScoped<PainelDAO>();
 builder.Services.AddScoped<ComissaoDAO>();
 builder.Services.AddScoped<FolhaDAO>();
 builder.Services.AddScoped<UsuarioDAO>();
+builder.Services.AddScoped<BancoInicializador>();
 builder.Services.AddScoped<AuthenticationService>();
 builder.Services.AddScoped<RelatorioPdf>();
 builder.Services.AddDistributedMemoryCache();
@@ -63,6 +64,13 @@ builder.Services.AddSession(options =>
 
 
 var app = builder.Build();
+
+// Cria o esquema e o primeiro login se o banco estiver vazio. Roda uma
+// vez, na subida, e nao faz nada quando as tabelas ja existem.
+using (var escopo = app.Services.CreateScope())
+{
+    escopo.ServiceProvider.GetRequiredService<BancoInicializador>().Preparar();
+}
 
 // Precisa vir antes de tudo que olha para o esquema ou o IP do pedido.
 app.UseForwardedHeaders();
