@@ -3,15 +3,35 @@
 // re-executa <script> declarado dentro de uma pagina, entao o bootstrap precisa
 // viver aqui fora e reagir ao evento 'enhancedload'.
 (function () {
-    const paleta = {
-        laranja: '#f0651a',
-        laranjaClaro: '#fe8413',
-        vermelho: '#c9302c',
-        texto: '#6b7280',
-        grade: '#eceff3'
-    };
+    // As cores saem dos tokens do CSS, nao ficam escritas aqui: assim o
+    // grafico acompanha a troca de tema em vez de manter grade clara e
+    // rotulo escuro sobre fundo escuro.
+    function token(nome, reserva) {
+        var v = getComputedStyle(document.documentElement)
+            .getPropertyValue(nome).trim();
+        return v || reserva;
+    }
 
-    const coresFormas = ['#f0651a', '#16a34a', '#3b82f6', '#a855f7', '#d1d5db'];
+    function paletaAtual() {
+        return {
+            laranja: token('--marca', '#f0651a'),
+            laranjaClaro: token('--marca-clara', '#fe8413'),
+            vermelho: token('--perigo-escuro', '#c9302c'),
+            texto: token('--texto-3', '#6b7280'),
+            grade: token('--borda', '#eceff3'),
+            superficie: token('--superficie', '#fff'),
+            // Balao invertido em relacao a pagina: escuro no tema claro,
+            // claro no escuro. Legivel nos dois sem cor propria.
+            balao: token('--texto', '#1f2937'),
+            balaoTexto: token('--superficie', '#fff'),
+            vazio: token('--borda-suave', '#e5e7eb')
+        };
+    }
+
+    function coresDasFormas(p) {
+        return [p.laranja, token('--ok', '#16a34a'), '#3b82f6',
+                token('--roxo', '#a855f7'), token('--borda-3', '#d1d5db')];
+    }
 
     let graficoBarras = null;
     let graficoPizza = null;
@@ -43,6 +63,7 @@
             return;
         }
 
+        const paleta = paletaAtual();
         const dados = lerDados();
         if (!dados || !dados.meses) return;
 
@@ -89,7 +110,9 @@
                         labels: { usePointStyle: true, pointStyle: 'circle', boxWidth: 8, padding: 14 }
                     },
                     tooltip: {
-                        backgroundColor: '#1f2937',
+                        backgroundColor: paleta.balao,
+                        titleColor: paleta.balaoTexto,
+                        bodyColor: paleta.balaoTexto,
                         padding: 10,
                         callbacks: {
                             label: function (ctx) {
@@ -122,8 +145,8 @@
                 labels: temFormas ? dados.formasRotulos : ['Sem vendas no período'],
                 datasets: [{
                     data: temFormas ? dados.formasValores : [1],
-                    backgroundColor: temFormas ? coresFormas : ['#e5e7eb'],
-                    borderColor: '#fff',
+                    backgroundColor: temFormas ? coresDasFormas(paleta) : [paleta.vazio],
+                    borderColor: paleta.superficie,
                     borderWidth: 2,
                     hoverOffset: temFormas ? 6 : 0
                 }]
@@ -139,7 +162,9 @@
                     },
                     tooltip: {
                         enabled: temFormas,
-                        backgroundColor: '#1f2937',
+                        backgroundColor: paleta.balao,
+                        titleColor: paleta.balaoTexto,
+                        bodyColor: paleta.balaoTexto,
                         padding: 10,
                         callbacks: {
                             label: function (ctx) {
@@ -198,7 +223,10 @@
         if (!alvo) return;
 
         const dados = document.getElementById('dados-painel');
-        const assinatura = dados ? dados.textContent : '';
+        // O tema entra na assinatura: trocar de claro para escuro muda as
+        // cores da grade e dos rotulos, entao o grafico precisa ser refeito.
+        const assinatura = (dados ? dados.textContent : "")
+            + "|" + document.documentElement.getAttribute("data-tema");
 
         if (!Chart.getChart(alvo) || assinatura !== assinaturaAnterior) {
             assinaturaAnterior = assinatura;
