@@ -98,6 +98,31 @@ namespace LucasAguiar.Data
             return Convert.ToInt32(comando.ExecuteScalar());
         }
 
+
+        /// <summary>
+        /// Recusa uma saida em dinheiro maior do que ha na gaveta.
+        ///
+        /// A sangria ja fazia esta conferencia, mas despesa em dinheiro e
+        /// folha de pagamento gravavam direto na tabela despesa, sem passar
+        /// por aqui -- e por isso o caixa aceitava ficar negativo.
+        /// </summary>
+        /// <param name="oQue">Como a saida e chamada na mensagem de erro.</param>
+        public void GarantirSaldoParaSaida(int idCaixa, decimal valor, string oQue)
+        {
+            if (idCaixa <= 0) return;
+
+            var caixa = BuscarPorId(idCaixa)
+                ?? throw new Exception("Caixa não encontrado.");
+
+            if (!caixa.EstaAberto)
+                throw new Exception("Este caixa já está fechado.");
+
+            var disponivel = caixa.Resumo.SaldoEsperadoGaveta(caixa.ValorAbertura);
+            if (valor > disponivel)
+                throw new Exception(
+                    $"{oQue} de {valor:C} é maior que o dinheiro em caixa ({disponivel:C}).");
+        }
+
         public void RegistrarMovimento(int idCaixa, string tipo, decimal valor, string? descricao, string? usuario)
         {
             if (valor <= 0)
@@ -110,12 +135,7 @@ namespace LucasAguiar.Data
                 throw new Exception("Este caixa já está fechado.");
 
             if (tipo == TipoMovimento.Sangria)
-            {
-                var disponivel = caixa.Resumo.SaldoEsperadoGaveta(caixa.ValorAbertura);
-                if (valor > disponivel)
-                    throw new Exception(
-                        $"A sangria de {valor:C} é maior que o dinheiro em caixa ({disponivel:C}).");
-            }
+                GarantirSaldoParaSaida(idCaixa, valor, "A sangria");
 
             using var conexao = _conexao.GetConnection();
             using var comando = new MySqlCommand(@"

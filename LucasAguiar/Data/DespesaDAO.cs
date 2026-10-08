@@ -7,10 +7,12 @@ namespace LucasAguiar.Data
     public class DespesaDAO
     {
         private readonly Conexao _conexao;
+        private readonly CaixaDAO _caixaDAO;
 
-        public DespesaDAO(Conexao conexao)
+        public DespesaDAO(Conexao conexao, CaixaDAO caixaDAO)
         {
             _conexao = conexao;
+            _caixaDAO = caixaDAO;
         }
 
         public int Inserir(Despesa despesa)
@@ -20,6 +22,16 @@ namespace LucasAguiar.Data
 
             if (despesa.Valor <= 0)
                 throw new Exception("O valor da despesa deve ser maior que zero.");
+
+            // Despesa paga em dinheiro tira da gaveta: so pode se couber.
+            // Sem isto o caixa fecha negativo e o conferente nao descobre
+            // de onde veio a diferenca.
+            if (despesa.Pago
+                && despesa.FormaPagamentoDespesa == FormaPagamento.Dinheiro
+                && despesa.IdCaixa > 0)
+            {
+                _caixaDAO.GarantirSaldoParaSaida(despesa.IdCaixa!.Value, despesa.Valor, "A despesa");
+            }
 
             using var conexao = _conexao.GetConnection();
             using var comando = new MySqlCommand(@"

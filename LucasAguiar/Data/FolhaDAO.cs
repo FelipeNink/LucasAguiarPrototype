@@ -11,10 +11,12 @@ namespace LucasAguiar.Data
     public class FolhaDAO
     {
         private readonly Conexao _conexao;
+        private readonly CaixaDAO _caixaDAO;
 
-        public FolhaDAO(Conexao conexao)
+        public FolhaDAO(Conexao conexao, CaixaDAO caixaDAO)
         {
             _conexao = conexao;
+            _caixaDAO = caixaDAO;
         }
 
         public class LinhaFolha
@@ -144,6 +146,15 @@ namespace LucasAguiar.Data
         {
             if (linha.TotalAReceber <= 0)
                 throw new Exception("Não há valor a pagar para este profissional.");
+
+            // Pagamento em dinheiro sai da gaveta, igual a sangria. Conferir
+            // antes de abrir a transacao: barrar aqui devolve uma mensagem
+            // clara em vez de deixar o caixa fechar com falta.
+            if (formaPagamento == FormaPagamento.Dinheiro && idCaixaAberto > 0)
+            {
+                _caixaDAO.GarantirSaldoParaSaida(
+                    idCaixaAberto!.Value, linha.TotalAReceber, "O pagamento");
+            }
 
             var competencia = Competencia(mes);
 
