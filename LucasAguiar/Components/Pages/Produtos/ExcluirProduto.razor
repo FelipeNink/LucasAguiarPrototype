@@ -1,4 +1,4 @@
-@page "/produtos/{Id:int}/excluir"
+@page "/produto/{Id:int}/excluir"
 @rendermode InteractiveServer
 
 @using LucasAguiar.Models;
@@ -7,24 +7,24 @@
 
 <PageTitle>Produtos</PageTitle>
 
-<h1 class="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-6">Exclusão de Produto</h1>
+<h1>Exclusão de Produto</h1>
 
 @if (erro != string.Empty)
 {
-  <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4" role="alert">
-    <strong class="font-bold">Erro!</strong>
-    <span class="block sm:inline">@erro</span>
+  <div class="alert alert-danger" role="alert">
+    <strong>Erro!</strong>
+    <span>@erro</span>
   </div>
 }
 
 
 <EditForm Model="produto" OnSubmit="Excluir">
-  <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4" role="alert">
-    <strong class="font-bold">Atenção!</strong>
-    <span class="block sm:inline">Esta ação não pode ser desfeita.</span>
+  <div class="alert alert-danger" role="alert">
+    <strong>Atenção!</strong>
+    <span>Esta ação não pode ser desfeita.</span>
 
 
-    <p class="text-lg">Tem certeza que deseja excluir o produto <strong>@produto.NomeProduto</strong>?</p>
+    <p>Tem certeza que deseja excluir o produto <strong>@produto.NomeProduto</strong>?</p>
   </div>
 
 

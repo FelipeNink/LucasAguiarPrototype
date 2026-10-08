@@ -10,7 +10,7 @@
 
 <a href="/servico" class="btn btn-sm btn-outline-secondary mb-3">&#8592; Voltar</a>
 
-<h1 class="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-6">Novo Serviço</h1>
+<h1>Novo Serviço</h1>
 
 @if (erro != null)
 {
@@ -21,22 +21,22 @@
     <div class="col">
         <EditForm Model="_novoServico" OnValidSubmit="Salvar">
 
-            <div class="form-group mb-4">
+            <div class="mb-4">
                 <label>Nome</label>
                 <input @bind-value="_novoServico.NomeServico" type="text" class="form-control" placeholder="Informe o nome do serviço" />
             </div>
 
-            <div class="form-group mb-4">
+            <div class="mb-4">
                 <label>Preço</label>
                 <input @bind-value="_novoServico.PrecoServico" type="number" step="0.01" class="form-control" placeholder="Informe o preço do serviço" />
             </div>
 
-            <div class="form-group mb-4">
+            <div class="mb-4">
                 <label>Duração (minutos)</label>
                 <input @bind-value="_novoServico.DuracaoServico" type="number" class="form-control" placeholder="Informe a duração do serviço (em minutos)" />
             </div>
 
-            <div class="form-group mb-4">
+            <div class="mb-4">
                 <label>Comissão</label>
                 <input @bind-value="_novoServico.ComissaoServico" type="number" step="0.01" class="form-control" placeholder="Informe a comissão paga ao funcionário" />
             </div>

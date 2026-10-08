@@ -1,4 +1,4 @@
-@page "/produtos/{Id:int}/editar"
+@page "/produto/{Id:int}/editar"
 @rendermode InteractiveServer
 
 @using LucasAguiar.Models;
@@ -11,9 +11,9 @@
 
 @if (erro != string.Empty)
 {
-  <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4" role="alert">
-    <strong class="font-bold">Erro!</strong>
-    <span class="block sm:inline">@erro</span>
+  <div class="alert alert-danger" role="alert">
+    <strong>Erro!</strong>
+    <span>@erro</span>
   </div>
 }
 

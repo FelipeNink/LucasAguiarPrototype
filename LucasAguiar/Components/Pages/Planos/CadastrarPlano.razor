@@ -9,7 +9,7 @@
 
 <PageTitle>Plano - Novo</PageTitle>
 
-<a href="/ListarPlano" class="btn btn-sm btn-outline-secondary mb-3">&#8592; Voltar</a>
+<a href="/plano" class="btn btn-sm btn-outline-secondary mb-3">&#8592; Voltar</a>
 
 <h1>Novo Plano</h1>
 
@@ -175,7 +175,7 @@
 
 <div class="acoes-finais">
     <button type="button" class="btn btn-primary btn-salvar" @onclick="Salvar">Salvar plano</button>
-    <a href="/ListarPlano" class="btn btn-outline-secondary">Cancelar</a>
+    <a href="/plano" class="btn btn-outline-secondary">Cancelar</a>
 </div>
 
 <CadastroRapido Visivel="@(modalAberto != null)"
@@ -331,7 +331,7 @@
             var idPlano = planoDAO.Inserir(plano);
             if (itens.Count > 0) planoDAO.SalvarItens(idPlano, itens);
 
-            Navigation.NavigateTo("/ListarPlano");
+            Navigation.NavigateTo("/plano");
         }
         catch (Exception ex)
         {

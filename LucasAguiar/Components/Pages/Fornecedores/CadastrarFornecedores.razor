@@ -10,7 +10,7 @@
 
 <a href="/fornecedores" class="btn btn-sm btn-outline-secondary mb-3">&#8592; Voltar</a>
 
-<h1 class="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-6">Novo Fornecedor</h1>
+<h1>Novo Fornecedor</h1>
 
 @if (erro != null)
 {
@@ -23,22 +23,22 @@
 <div class="row">
     <div class="col">
         <EditForm Model="_novoFornecedor" OnValidSubmit="Salvar">
-            <div class="form-group mb-4">
+            <div class="mb-4">
                 <label>Nome</label>
                 <input @bind-value="_novoFornecedor!.NomeFornecedor" type="text" class="form-control" name="nome" placeholder="Informe o nome do Fornecedor" />
             </div>
 
-            <div class="form-group mb-4">
+            <div class="mb-4">
                 <label> Email</label>
                 <input @bind-value="_novoFornecedor!.Email" type="text" class="form-control" name="email" placeholder="Informe o Email do Fornecedor" />
             </div>
 
-            <div class="form-group mb-4">
+            <div class="mb-4">
                 <label>Telefone</label>
                 <input @bind-value="_novoFornecedor!.Telefone" type="text" class="form-control" name="telefone" placeholder="Informe o telefone do Fornecedor" />
             </div>
 
-            <div class="form-group mb-4">
+            <div class="mb-4">
                 <label>Tipo de Produto</label>
                 <InputTextArea class="form-control" @bind-Value="_novoFornecedor.TipoProd" rows="5" />
 
