@@ -1,5 +1,6 @@
 @page "/"
 @rendermode InteractiveServer
+@implements IDisposable
 
 @using LucasAguiar.Models
 @using System.Text.Json
@@ -169,6 +170,32 @@
     };
 
     protected override void OnInitialized() => Carregar();
+
+    /// <summary>
+    /// Relogio que repoe os numeros enquanto a tela fica aberta.
+    ///
+    /// Carregar() so rodava no OnInitialized: com o painel aberto numa TV
+    /// do salao, ou em outra aba enquanto alguem lanca uma venda, os
+    /// valores congelavam ate recarregar a pagina.
+    /// </summary>
+    private PeriodicTimer? relogio;
+
+    protected override async Task OnAfterRenderAsync(bool primeiraVez)
+    {
+        if (!primeiraVez) return;
+
+        relogio = new PeriodicTimer(TimeSpan.FromSeconds(60));
+
+        // Sem await no laco: ele vive enquanto a tela existir e termina
+        // quando o Dispose descarta o relogio.
+        while (await relogio.WaitForNextTickAsync())
+        {
+            Carregar();
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    public void Dispose() => relogio?.Dispose();
 
     private void TrocarPeriodo(int novo)
     {
