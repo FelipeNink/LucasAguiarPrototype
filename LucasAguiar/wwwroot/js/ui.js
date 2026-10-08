@@ -43,3 +43,26 @@ window.tema = {
         } catch (e) { /* a troca vale para esta sessao mesmo sem persistir */ }
     }
 };
+
+// Olhinho de mostrar senha. Ouvinte delegado no documento em vez de um
+// onclick no botao: a tela de login e renderizacao estatica e a navegacao
+// aprimorada do Blazor troca o DOM, entao um ouvinte preso ao elemento
+// se perderia na primeira navegacao.
+document.addEventListener('click', function (evento) {
+    const botao = evento.target.closest('[data-ver-senha]');
+    if (!botao) return;
+
+    const campo = document.getElementById(botao.dataset.verSenha);
+    if (!campo) return;
+
+    const mostrando = campo.type === 'text';
+    campo.type = mostrando ? 'password' : 'text';
+
+    botao.setAttribute('aria-pressed', String(!mostrando));
+    botao.setAttribute('aria-label', mostrando ? 'Mostrar senha' : 'Ocultar senha');
+    botao.classList.toggle('revelado', !mostrando);
+
+    // O clique tira o foco do campo; devolver evita que a pessoa precise
+    // clicar de novo para continuar digitando.
+    campo.focus();
+});

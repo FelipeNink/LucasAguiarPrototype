@@ -127,3 +127,70 @@
 [data-tema="escuro"] .marca-escura {
     display: block;
 }
+
+/* ---------- olhinho de mostrar senha ---------- */
+
+.campo-senha {
+    position: relative;
+}
+
+/* O input ja tem margem inferior propria; o botao se alinha pelo topo
+   para nao descer junto com ela. */
+.campo-senha ::deep input {
+    padding-right: 42px;
+}
+
+/* .cartao button (laranja, largura total) vence .ver-senha sozinho,
+   entao as regras do olhinho sobem para a mesma especificidade. */
+.cartao .ver-senha {
+    position: absolute;
+    top: 0;
+    right: 0;
+    height: 41px;
+    width: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    background: none;
+    border: none;
+    border-radius: 7px;
+    color: var(--texto-fraco);
+    cursor: pointer;
+    transition: color 0.15s;
+}
+
+.cartao .ver-senha:hover {
+    color: var(--texto-2);
+    /* .cartao button:hover pinta o fundo de laranja; aqui nao. */
+    background: none;
+}
+
+.cartao .ver-senha:focus-visible {
+    outline: 2px solid var(--marca);
+    outline-offset: -2px;
+}
+
+.cartao .ver-senha svg {
+    width: 17px;
+    height: 17px;
+    fill: currentColor;
+}
+
+/* Com a senha escondida mostra o olho aberto ("clique para ver"); com
+   ela visivel, o olho cortado ("clique para esconder"). */
+.cartao .ver-senha .olho-fechado {
+    display: none;
+}
+
+.cartao .ver-senha.revelado .olho-aberto {
+    display: none;
+}
+
+.cartao .ver-senha.revelado .olho-fechado {
+    display: block;
+}
+
+.cartao .ver-senha.revelado {
+    color: var(--marca);
+}
