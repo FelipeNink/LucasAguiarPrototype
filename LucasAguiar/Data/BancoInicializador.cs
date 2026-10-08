@@ -45,7 +45,10 @@ namespace LucasAguiar.Data
                 // Falhar aqui nao pode derrubar a aplicacao: se o banco
                 // estiver fora do ar, e melhor subir e mostrar o erro na
                 // tela do que o container nem iniciar e esconder a causa.
-                _log.LogError(ex, "Não foi possível preparar o banco de dados.");
+                _log.LogError(ex,
+                    "Não foi possível preparar o banco de dados. Tentativa em: {Onde}. "
+                    + "Confira a variável ConnectionStrings__MySqlConnection.",
+                    _conexao.Descricao);
             }
         }
 
