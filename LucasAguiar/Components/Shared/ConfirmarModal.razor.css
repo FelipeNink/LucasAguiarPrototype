@@ -1,0 +1,120 @@
+.fundo-confirmacao {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background: rgba(15, 18, 22, 0.55);
+    z-index: 1200;
+}
+
+.caixa-confirmacao {
+    position: relative;
+    width: 100%;
+    max-width: 380px;
+    padding: 1.6rem 1.5rem 1.4rem;
+    background: var(--superficie);
+    border: 1px solid var(--borda);
+    border-radius: var(--raio-cartao);
+    box-shadow: var(--sombra-menu);
+    text-align: center;
+}
+
+.fechar {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 2rem;
+    height: 2rem;
+    background: none;
+    border: none;
+    border-radius: 50%;
+    font-size: 1.3rem;
+    line-height: 1;
+    color: var(--texto-fraco);
+    cursor: pointer;
+    transition: background-color 0.15s, color 0.15s;
+}
+
+.fechar:hover {
+    background: var(--superficie-3);
+    color: var(--texto);
+}
+
+h5 {
+    margin: 0 0 0.6rem;
+    font-family: var(--fonte-titulo);
+    font-size: 22px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--texto);
+}
+
+.mensagem {
+    font-size: 15px;
+    color: var(--texto-2);
+}
+
+.erro {
+    margin-top: 0.9rem;
+    padding: 0.55rem 0.7rem;
+    background: var(--perigo-fundo);
+    border-radius: 6px;
+    font-size: 0.85rem;
+    color: var(--perigo-escuro);
+    text-align: left;
+}
+
+.botoes {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 1.3rem;
+}
+
+.botao-cancelar,
+.botao-confirmar {
+    min-width: 120px;
+    height: 42px;
+    padding: 0 16px;
+    border-radius: var(--raio);
+    font-family: var(--fonte);
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.botao-cancelar {
+    background: var(--superficie);
+    border: 1px solid var(--borda-2);
+    color: var(--texto);
+}
+
+.botao-cancelar:hover {
+    background: var(--superficie-3);
+}
+
+.botao-confirmar {
+    background: var(--perigo);
+    border: 1px solid var(--perigo);
+    color: #fff;
+}
+
+.botao-confirmar:hover {
+    background: var(--perigo-escuro);
+    border-color: var(--perigo-escuro);
+}
+
+.botao-confirmar:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.fechar:focus-visible,
+.botao-cancelar:focus-visible,
+.botao-confirmar:focus-visible {
+    outline: none;
+    box-shadow: var(--anel-foco);
+}

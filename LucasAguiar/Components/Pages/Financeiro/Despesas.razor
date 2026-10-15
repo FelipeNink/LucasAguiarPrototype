@@ -182,7 +182,7 @@
                     <td class="col-acao">
                         <AcoesLinha OnVisualizar="() => visualizando = d"
                                     OnEditar="() => Editar(d)"
-                                    OnExcluir="() => Excluir(d.IdDespesa)" />
+                                    OnExcluir="() => excluindo = d" />
                     </td>
                 </tr>
             }
@@ -196,6 +196,12 @@
     </tbody>
 </table>
 </div>
+
+<ConfirmarModal Visivel="@(excluindo != null)" Titulo="Excluir despesa" Erro="@erroExclusao"
+                OnConfirmar="ConfirmarExclusao" OnCancelar="CancelarExclusao">
+    Tem certeza que deseja excluir <strong>@excluindo?.Descricao</strong> (@excluindo?.Valor.ToString("C"))?<br />
+    <span class="text-muted">Esta ação não pode ser desfeita.</span>
+</ConfirmarModal>
 
 <Janela Visivel="@(visualizando != null)" Titulo="@(visualizando?.Descricao ?? "Despesa")" OnFechar="FecharJanelas">
     <ChildContent>
@@ -293,6 +299,24 @@
     private bool modalAberto;
     private string? erro;
     private string? aviso;
+
+    private Despesa? excluindo;
+    private string? erroExclusao;
+
+    private void ConfirmarExclusao()
+    {
+        if (excluindo == null) return;
+
+        var id = excluindo.IdDespesa;
+        excluindo = null;
+        Excluir(id); // o proprio Excluir mostra o erro, se houver
+    }
+
+    private void CancelarExclusao()
+    {
+        excluindo = null;
+        erroExclusao = null;
+    }
 
     private Despesa? visualizando;
     private Despesa? editando;

@@ -2,40 +2,323 @@
 @rendermode InteractiveServer
 
 @inject AgendamentoDAO agendamentoDAO
+@inject ClienteDAO clienteDAO
+@inject FuncionarioDAO funcionarioDAO
+@inject ServicoDAO servicoDAO
 @inject NavigationManager Navigation
 
-<a href="/agendamentos" class="btn btn-sm btn-outline-secondary mb-3">&#8592; Voltar</a>
-
-<h1>Novo agendamento</h1>
+<div class="topo">
+    <a href="/agendamentos" class="voltar">&#8592; Agendamentos</a>
+    <h1>Novo Agendamento</h1>
+</div>
 
 @if (erro != null)
 {
     <div class="alert alert-danger">@erro</div>
 }
 
-<div class="cartao formulario-agendamento">
-    <CamposAgendamento Agendamento="agendamento" OnErro="m => erro = m" />
+<div class="agendamento">
+
+    <div class="coluna-esquerda">
+
+        @* ================= 1. CLIENTE ================= *@
+        <section class="bloco">
+            <h2 class="bloco-titulo">
+                <span class="passo @(agendamento.IdCliente > 0 ? "ok" : "")">@(agendamento.IdCliente > 0 ? "✓" : "1")</span>
+                Cliente
+            </h2>
+
+            <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesCliente"
+                     @bind-Valor="agendamento.IdCliente" TextoDe="o => o.Rotulo" ValorDe="o => o.Id"
+                     ComAvatar="true" Placeholder="Selecione o cliente" />
+
+            <div class="linha-criar">
+                <button type="button" class="btn-criar" @onclick="() => modalAberto = CadastroRapido.TipoCadastro.Cliente">
+                    + Novo cliente
+                </button>
+            </div>
+        </section>
+
+        @* ================= 2. SERVICO E PROFISSIONAL ================= *@
+        <section class="bloco">
+            <h2 class="bloco-titulo">
+                <span class="passo @(agendamento.IdServico > 0 && agendamento.IdFuncionario > 0 ? "ok" : "")">@(agendamento.IdServico > 0 && agendamento.IdFuncionario > 0 ? "✓" : "2")</span>
+                Serviço e profissional
+            </h2>
+
+            <div class="dupla">
+                <div>
+                    <label class="form-label">Serviço <span class="obrigatorio">*</span></label>
+                    <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesServico"
+                             Valor="agendamento.IdServico" ValorChanged="EscolherServico"
+                             TextoDe="o => o.Rotulo" ValorDe="o => o.Id" Placeholder="Selecione" />
+                </div>
+                <div>
+                    <label class="form-label">Profissional <span class="obrigatorio">*</span></label>
+                    <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesFuncionario"
+                             Valor="agendamento.IdFuncionario" ValorChanged="EscolherProfissional"
+                             TextoDe="o => o.Rotulo" ValorDe="o => o.Id"
+                             ComAvatar="true" Placeholder="Selecione" />
+                </div>
+            </div>
+
+            <div class="linha-criar">
+                <button type="button" class="btn-criar" @onclick="() => modalAberto = CadastroRapido.TipoCadastro.Servico">
+                    + Novo serviço
+                </button>
+                <button type="button" class="btn-criar" @onclick="() => modalAberto = CadastroRapido.TipoCadastro.Funcionario">
+                    + Novo profissional
+                </button>
+            </div>
+        </section>
+
+        @* ================= 3. DATA E HORARIO ================= *@
+        <section class="bloco">
+            <h2 class="bloco-titulo">
+                <span class="passo ok">3</span>
+                Data e horário
+            </h2>
+
+            <div class="tripla">
+                <div>
+                    <label class="form-label">Data <span class="obrigatorio">*</span></label>
+                    <input type="date" class="form-control" value="@Data.ToString("yyyy-MM-dd")"
+                           @onchange="AoMudarData" />
+                </div>
+                <div>
+                    <label class="form-label">Hora <span class="obrigatorio">*</span></label>
+                    <input type="time" class="form-control" value="@agendamento.DataHora.ToString("HH:mm")"
+                           @onchange="AoMudarHora" />
+                </div>
+                <div>
+                    <label class="form-label">Duração (min)</label>
+                    <input type="number" min="5" step="5" class="form-control" @bind="agendamento.DuracaoMin" />
+                </div>
+            </div>
+
+            <label class="form-label">Observação</label>
+            <textarea class="form-control" rows="2" placeholder="Ex.: prefere máquina 2 nas laterais"
+                      @bind="agendamento.Observacao"></textarea>
+        </section>
+    </div>
+
+    @* ================= RESUMO ================= *@
+    <aside class="resumo-agenda">
+        <div class="resumo-topo">
+            <span class="resumo-marca">Resumo</span>
+            <span class="resumo-data">@Data.ToString("dd/MM/yyyy")</span>
+        </div>
+
+        <dl class="resumo-itens">
+            <div>
+                <dt>Cliente</dt>
+                <dd class="@(ClienteEscolhido == null ? "suave" : "")">@(ClienteEscolhido?.NomeCliente ?? "Não selecionado")</dd>
+            </div>
+            <div>
+                <dt>Serviço</dt>
+                <dd class="@(ServicoEscolhido == null ? "suave" : "")">@(ServicoEscolhido?.NomeServico ?? "Não selecionado")</dd>
+            </div>
+            <div>
+                <dt>Profissional</dt>
+                <dd class="@(ProfissionalEscolhido == null ? "suave" : "")">@(ProfissionalEscolhido?.NomeFuncionario ?? "Não selecionado")</dd>
+            </div>
+            <div>
+                <dt>Horário</dt>
+                <dd>@agendamento.DataHora.ToString("HH:mm") às @agendamento.Fim.ToString("HH:mm")
+                    <span class="suave">(@agendamento.DuracaoMin min)</span></dd>
+            </div>
+        </dl>
+
+        @if (ServicoEscolhido != null)
+        {
+            <div class="resumo-total">
+                <span>Valor do serviço</span>
+                <strong>@ServicoEscolhido.PrecoServico.ToString("C")</strong>
+            </div>
+        }
+
+        @if (agendamento.IdFuncionario > 0)
+        {
+            <div class="agenda-profissional">
+                <h3>Agenda de @(ProfissionalEscolhido?.NomeFuncionario?.Split(' ')[0]) em @Data.ToString("dd/MM")</h3>
+
+                @if (ocupados.Count == 0)
+                {
+                    <p class="suave">Dia livre.</p>
+                }
+                else
+                {
+                    <ul>
+                        @foreach (var o in ocupados)
+                        {
+                            <li class="@(Conflita(o) ? "conflito" : "")">
+                                <span>@o.DataHora.ToString("HH:mm")–@o.Fim.ToString("HH:mm")</span>
+                                <span>@(o.NomeCliente ?? "—")</span>
+                            </li>
+                        }
+                    </ul>
+
+                    @if (ocupados.Any(Conflita))
+                    {
+                        <p class="aviso-conflito">O horário escolhido bate com um agendamento deste profissional.</p>
+                    }
+                }
+            </div>
+        }
+
+        <button type="button" class="btn btn-primary btn-cta" @onclick="Salvar">Agendar</button>
+        <a href="/agendamentos" class="btn btn-outline-secondary cancelar">Cancelar</a>
+    </aside>
 </div>
 
-<div class="mt-3">
-    <button type="button" class="btn btn-primary" @onclick="Salvar">Agendar</button>
-    <a href="/agendamentos" class="btn btn-outline-secondary ms-2">Cancelar</a>
-</div>
+<CadastroRapido Visivel="@(modalAberto != null)"
+                Tipo="@(modalAberto ?? CadastroRapido.TipoCadastro.Cliente)"
+                OnCriado="AoCriarRegistro"
+                OnCancelado="() => modalAberto = null" />
 
 @code {
+    [SupplyParameterFromQuery(Name = "data")]
+    private DateTime? DataInicial { get; set; }
+
     private string? erro;
+    private CadastroRapido.TipoCadastro? modalAberto;
+
+    private Agendamento agendamento = new();
+    private List<Cliente> clientes = new();
+    private List<Funcionario> funcionarios = new();
+    private List<Servico> servicos = new();
+    private List<Agendamento> ocupados = new();
+
+    private Cliente? ClienteEscolhido => clientes.FirstOrDefault(c => c.IdCliente == agendamento.IdCliente);
+    private Servico? ServicoEscolhido => servicos.FirstOrDefault(s => s.IdServico == agendamento.IdServico);
+    private Funcionario? ProfissionalEscolhido => funcionarios.FirstOrDefault(f => f.IdFuncionario == agendamento.IdFuncionario);
+
+    private DateTime Data => agendamento.DataHora.Date;
+
+    private List<OpcaoId> OpcoesCliente =>
+        clientes.Select(c => new OpcaoId(c.IdCliente, c.Identificacao)).ToList();
+
+    private List<OpcaoId> OpcoesFuncionario =>
+        funcionarios.Select(f => new OpcaoId(f.IdFuncionario, f.NomeFuncionario ?? "Sem nome")).ToList();
+
+    private List<OpcaoId> OpcoesServico =>
+        servicos.Select(s => new OpcaoId(s.IdServico,
+            $"{s.NomeServico} — {s.PrecoServico.ToString("C")} · {s.DuracaoServico} min")).ToList();
+
+    protected override void OnInitialized()
+    {
+        try
+        {
+            clientes = clienteDAO.ListarTodos();
+            funcionarios = funcionarioDAO.ListarTodos();
+            servicos = servicoDAO.ListarTodos();
+        }
+        catch (Exception ex)
+        {
+            erro = "Erro ao carregar os cadastros: " + ex.Message;
+        }
+
+        // Vindo do calendario do painel: abre no dia clicado, de manha.
+        agendamento.DataHora = DataInicial is { } dia && dia.Date >= DateTime.Today
+            ? dia.Date.AddHours(9)
+            : ProximaMeiaHora();
+    }
 
     /// <summary>Sugere o proximo horario redondo de meia hora.</summary>
-    private Agendamento agendamento = new()
-    {
-        DataHora = ProximaMeiaHora()
-    };
-
     private static DateTime ProximaMeiaHora()
     {
         var agora = DateTime.Now;
         var minutos = agora.Minute < 30 ? 30 : 60;
         return agora.Date.AddHours(agora.Hour).AddMinutes(minutos);
+    }
+
+    /// <summary>Trocar o servico traz a duracao dele, que o operador ainda pode ajustar.</summary>
+    private void EscolherServico(int id)
+    {
+        agendamento.IdServico = id;
+
+        var servico = ServicoEscolhido;
+        if (servico != null && servico.DuracaoServico > 0)
+            agendamento.DuracaoMin = servico.DuracaoServico;
+    }
+
+    private void EscolherProfissional(int id)
+    {
+        agendamento.IdFuncionario = id;
+        CarregarOcupados();
+    }
+
+    private void AoMudarData(ChangeEventArgs e)
+    {
+        if (DateTime.TryParse(e.Value?.ToString(), out var nova))
+        {
+            agendamento.DataHora = nova.Date + agendamento.DataHora.TimeOfDay;
+            CarregarOcupados();
+        }
+    }
+
+    private void AoMudarHora(ChangeEventArgs e)
+    {
+        if (TimeSpan.TryParse(e.Value?.ToString(), out var hora))
+            agendamento.DataHora = agendamento.DataHora.Date + hora;
+    }
+
+    /// <summary>Horarios ja marcados do profissional no dia, para ele nao agendar no escuro.</summary>
+    private void CarregarOcupados()
+    {
+        if (agendamento.IdFuncionario <= 0)
+        {
+            ocupados = new();
+            return;
+        }
+
+        try
+        {
+            ocupados = agendamentoDAO.Listar(Data, Data.AddDays(1), StatusAgendamento.Agendado)
+                .Where(a => a.IdFuncionario == agendamento.IdFuncionario)
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            erro = ex.Message;
+        }
+    }
+
+    private bool Conflita(Agendamento outro) =>
+        outro.DataHora < agendamento.Fim && outro.Fim > agendamento.DataHora;
+
+    private void AoCriarRegistro(int id)
+    {
+        try
+        {
+            erro = null;
+
+            switch (modalAberto)
+            {
+                case CadastroRapido.TipoCadastro.Cliente:
+                    clientes = clienteDAO.ListarTodos();
+                    agendamento.IdCliente = id;
+                    break;
+
+                case CadastroRapido.TipoCadastro.Funcionario:
+                    funcionarios = funcionarioDAO.ListarTodos();
+                    EscolherProfissional(id);
+                    break;
+
+                case CadastroRapido.TipoCadastro.Servico:
+                    servicos = servicoDAO.ListarTodos();
+                    EscolherServico(id);
+                    break;
+            }
+        }
+        catch (Exception ex)
+        {
+            erro = ex.Message;
+        }
+        finally
+        {
+            modalAberto = null;
+        }
     }
 
     private void Salvar()

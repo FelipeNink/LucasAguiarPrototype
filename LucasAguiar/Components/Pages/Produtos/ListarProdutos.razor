@@ -21,8 +21,8 @@
         <tr>
             <th class="col-id">#</th>
             <th>Nome</th>
-            <th>Quantidade</th>
-            <th>Valor</th>
+            <th class="al-dir">Quantidade</th>
+            <th class="al-dir">Valor</th>
             <th class="opcional">Descrição</th>
             <th class="opcional">Marca</th>
             <th class="opcional">Fornecedor</th>
@@ -37,8 +37,8 @@
                 <tr>
                     <td>@produto.IdProduto</td>
                     <td>@produto.NomeProduto</td>
-                    <td>@produto.Quantidade</td>
-                    <td>@produto.Valor.ToString("C")</td>
+                    <td class="al-dir">@produto.Quantidade</td>
+                    <td class="al-dir">@produto.Valor.ToString("C")</td>
                     <td class="opcional"> @produto.Descricao</td>
                     <td class="opcional"> @produto.Marca</td>
                     <td class="opcional"> @produto.NomeFornecedor</td>
@@ -46,7 +46,7 @@
                     <td class="col-acoes">
                         <AcoesLinha OnVisualizar="() => visualizando = produto"
                                     OnEditar="() => Editar(produto)"
-                                    HrefExcluir="@($"/produto/{produto.IdProduto}/excluir")" />
+                                    OnExcluir="() => excluindo = produto" />
                     </td>
                 </tr>
             }
@@ -60,6 +60,12 @@
     </tbody>
     </table>
 </div>
+
+<ConfirmarModal Visivel="@(excluindo != null)" Titulo="Excluir produto" Erro="@erroExclusao"
+                OnConfirmar="ConfirmarExclusao" OnCancelar="CancelarExclusao">
+    Tem certeza que deseja excluir <strong>@excluindo?.NomeProduto</strong>?<br />
+    <span class="text-muted">Esta ação não pode ser desfeita.</span>
+</ConfirmarModal>
 
 <Janela Visivel="@(visualizando != null)" Titulo="@(visualizando?.NomeProduto ?? "Produto")"
         OnFechar="Fechar">
@@ -122,6 +128,32 @@
 </Janela>
 
 @code {
+    private Produto? excluindo;
+    private string? erroExclusao;
+
+    private void ConfirmarExclusao()
+    {
+        if (excluindo == null) return;
+
+        try
+        {
+            produtoDAO.Excluir(excluindo.IdProduto);
+            excluindo = null;
+            erroExclusao = null;
+            listaProdutos = produtoDAO.ListarTodos();
+        }
+        catch (Exception ex)
+        {
+            erroExclusao = ex.Message;
+        }
+    }
+
+    private void CancelarExclusao()
+    {
+        excluindo = null;
+        erroExclusao = null;
+    }
+
     private List<Produto> listaProdutos = new();
     private List<Fornecedor> fornecedores = new();
 

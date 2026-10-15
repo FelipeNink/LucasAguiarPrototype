@@ -23,9 +23,9 @@
         <tr>
             <th class="col-id">#</th>
             <th>Data</th>
-            <th>Valor</th>
+            <th class="al-dir">Valor</th>
             <th>Item</th>
-            <th class="opcional">Quantidade</th>
+            <th class="al-dir opcional">Quantidade</th>
             <th class="opcional">Produto</th>
             <th class="opcional">Fornecedor</th>
             <th class="opcional">Funcionário</th>
@@ -42,9 +42,9 @@
                 <tr>
                     <td>@contador</td>
                     <td>@compra.DataCompra.ToShortDateString()</td>
-                    <td>@compra.ValorCompra.ToString("C")</td>
+                    <td class="al-dir">@compra.ValorCompra.ToString("C")</td>
                     <td>@compra.ItemCompra</td>
-                    <td class="opcional">@compra.Quantidade</td>
+                    <td class="al-dir opcional">@compra.Quantidade</td>
                     <td class="opcional">@compra.NomeProduto</td>
                     <td class="opcional">@compra.NomeFornecedor</td>
                     <td class="opcional">@compra.NomeFuncionario</td>
@@ -61,7 +61,7 @@
                     <td class="col-acoes">
                         <AcoesLinha OnVisualizar="() => visualizando = compra"
                                     OnEditar="() => Editar(compra)"
-                                    HrefExcluir="@($"/compra/{compra.IdCompra}/excluir")" />
+                                    OnExcluir="() => excluindo = compra" />
                     </td>
                 </tr>
                 contador++;
@@ -76,6 +76,12 @@
     </tbody>
     </table>
 </div>
+
+<ConfirmarModal Visivel="@(excluindo != null)" Titulo="Excluir compra" Erro="@erroExclusao"
+                OnConfirmar="ConfirmarExclusao" OnCancelar="CancelarExclusao">
+    Tem certeza que deseja excluir <strong>@excluindo?.ItemCompra</strong>?<br /><span class="text-muted">O estoque será estornado e a despesa lançada, excluída.</span><br />
+    <span class="text-muted">Esta ação não pode ser desfeita.</span>
+</ConfirmarModal>
 
 <Janela Visivel="@(visualizando != null)" Titulo="@($"Compra #{visualizando?.IdCompra}")"
         OnFechar="Fechar">
@@ -156,6 +162,32 @@
 </Janela>
 
 @code {
+    private Compra? excluindo;
+    private string? erroExclusao;
+
+    private void ConfirmarExclusao()
+    {
+        if (excluindo == null) return;
+
+        try
+        {
+            compraDAO.Excluir(excluindo.IdCompra);
+            excluindo = null;
+            erroExclusao = null;
+            CarregarCompras();
+        }
+        catch (Exception ex)
+        {
+            erroExclusao = ex.Message;
+        }
+    }
+
+    private void CancelarExclusao()
+    {
+        excluindo = null;
+        erroExclusao = null;
+    }
+
     private List<Compra> listaCompras = new();
 
     private List<Produto> produtos = new();

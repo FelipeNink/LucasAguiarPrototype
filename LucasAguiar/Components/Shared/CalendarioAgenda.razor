@@ -1,0 +1,164 @@
+@inject AgendamentoDAO agendamentoDAO
+
+@*
+    Calendario do mes com a contagem de agendamentos de cada dia. Clicar num
+    dia mostra os horarios dele ao lado.
+*@
+
+<section class="cartao agenda">
+    <header class="topo-agenda">
+        <div>
+            <h2>Agenda</h2>
+            <span class="sub">@Cultura.TextInfo.ToTitleCase(mes.ToString("MMMM 'de' yyyy", Cultura))</span>
+        </div>
+        <div class="navegacao">
+            <button type="button" class="btn-acao" title="Mês anterior" aria-label="Mês anterior" @onclick="MesAnterior">‹</button>
+            <button type="button" class="btn-hoje" @onclick="Hoje">Hoje</button>
+            <button type="button" class="btn-acao" title="Próximo mês" aria-label="Próximo mês" @onclick="MesSeguinte">›</button>
+        </div>
+    </header>
+
+    @if (!string.IsNullOrEmpty(erro))
+    {
+        <div class="alert alert-danger">@erro</div>
+    }
+
+    <div class="corpo-agenda">
+        <div class="calendario">
+            <div class="semana">
+                @foreach (var nome in new[] { "Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb" })
+                {
+                    <span>@nome</span>
+                }
+            </div>
+
+            <div class="dias">
+                @foreach (var dia in Dias)
+                {
+                    var do_dia = DoDia(dia);
+                    var abertos = do_dia.Count(a => a.Status == StatusAgendamento.Agendado);
+
+                    <button type="button"
+                            class="dia @(dia.Month != mes.Month ? "fora" : "") @(dia == DateTime.Today ? "hoje" : "") @(dia == selecionado ? "selecionado" : "")"
+                            @onclick="() => Selecionar(dia)">
+                        <span class="numero">@dia.Day</span>
+                        @if (do_dia.Count > 0)
+                        {
+                            <span class="contagem @(abertos > 0 ? "aberto" : "feito")"
+                                  title="@do_dia.Count agendamento(s)">@do_dia.Count</span>
+                        }
+                    </button>
+                }
+            </div>
+
+            <div class="legenda">
+                <span><i class="aberto"></i>com horários a atender</span>
+                <span><i class="feito"></i>só concluídos/cancelados</span>
+            </div>
+        </div>
+
+        <div class="detalhe-dia">
+            <h3>@Cultura.TextInfo.ToTitleCase(selecionado.ToString("dddd, dd/MM", Cultura))</h3>
+
+            @if (doSelecionado.Count == 0)
+            {
+                <p class="vazio-dia">Nenhum agendamento neste dia.</p>
+            }
+            else
+            {
+                <ul class="lista-dia">
+                    @foreach (var a in doSelecionado)
+                    {
+                        <li class="@(a.Status == StatusAgendamento.Cancelado ? "cancelado" : "")">
+                            <span class="hora">@a.DataHora.ToString("HH:mm")</span>
+                            <div class="info">
+                                <strong>@(a.NomeCliente ?? "—")</strong>
+                                <span>@(a.NomeServico ?? "—") · @(a.NomeFuncionario ?? "—")</span>
+                            </div>
+                            <span class="status @ClasseStatus(a.Status)"><i></i>@StatusAgendamento.Rotulo(a.Status)</span>
+                        </li>
+                    }
+                </ul>
+            }
+
+            <div class="rodape-dia">
+                <a href="/agendamento/novo?data=@selecionado.ToString("yyyy-MM-dd")" class="btn-novo">Agendar neste dia</a>
+                <a href="/agendamentos" class="btn-pdf">Ver todos</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+@code {
+    private static readonly System.Globalization.CultureInfo Cultura = new("pt-BR");
+
+    private DateTime mes = new(DateTime.Today.Year, DateTime.Today.Month, 1);
+    private DateTime selecionado = DateTime.Today;
+    private List<Agendamento> doMes = new();
+    private string? erro;
+
+    /// <summary>Seis semanas completas, começando no domingo, para a grade nunca mudar de altura.</summary>
+    private IEnumerable<DateTime> Dias
+    {
+        get
+        {
+            var inicio = mes.AddDays(-(int)mes.DayOfWeek);
+            return Enumerable.Range(0, 42).Select(i => inicio.AddDays(i));
+        }
+    }
+
+    private List<Agendamento> doSelecionado => DoDia(selecionado);
+
+    private List<Agendamento> DoDia(DateTime dia) =>
+        doMes.Where(a => a.DataHora.Date == dia.Date).OrderBy(a => a.DataHora).ToList();
+
+    protected override void OnInitialized() => Carregar();
+
+    private void Carregar()
+    {
+        try
+        {
+            erro = null;
+            // Uma semana de folga em cada ponta: os dias cinzas da grade tambem mostram a contagem.
+            doMes = agendamentoDAO.Listar(mes.AddDays(-7), mes.AddMonths(1).AddDays(7));
+        }
+        catch (Exception ex)
+        {
+            erro = "Erro ao carregar a agenda: " + ex.Message;
+        }
+    }
+
+    private void Selecionar(DateTime dia)
+    {
+        selecionado = dia;
+
+        if (dia.Month != mes.Month)
+        {
+            mes = new DateTime(dia.Year, dia.Month, 1);
+            Carregar();
+        }
+    }
+
+    private void MesAnterior() => IrParaMes(mes.AddMonths(-1));
+
+    private void MesSeguinte() => IrParaMes(mes.AddMonths(1));
+
+    private void Hoje()
+    {
+        selecionado = DateTime.Today;
+        IrParaMes(new DateTime(selecionado.Year, selecionado.Month, 1));
+    }
+
+    private void IrParaMes(DateTime novo)
+    {
+        mes = new DateTime(novo.Year, novo.Month, 1);
+        Carregar();
+    }
+
+    private static string ClasseStatus(string status) => status switch
+    {
+        StatusAgendamento.Agendado => "pendente",
+        StatusAgendamento.Concluido => "pago",
+        _ => "cancelada"
+    };
+}

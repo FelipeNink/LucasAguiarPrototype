@@ -62,15 +62,16 @@
 .area-nova-venda ::deep .botao-novo-agendamento {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
+    white-space: nowrap;
     width: 100%;
     height: 46px;
     margin-top: 10px;
-    padding: 0 12px;
+    padding: 0 10px;
     background: #fff;
     color: var(--carvao);
     border-radius: var(--raio);
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 700;
     text-decoration: none;
     transition: background-color 0.15s;
@@ -81,6 +82,9 @@
 }
 .area-nova-venda ::deep .botao-novo-agendamento span {
     flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 .area-nova-venda ::deep .botao-novo-agendamento svg {
     width: 18px;
@@ -269,10 +273,10 @@
     background: rgba(255, 255, 255, 0.28);
 }
 .area-nova-venda ::deep .botao-novo-agendamento kbd {
-    padding: 2px 7px;
+    padding: 2px 5px;
     border-radius: 4px;
     background: rgba(20, 23, 28, 0.08);
     font-family: var(--fonte);
-    font-size: 12px;
+    font-size: 11px;
     color: inherit;
 }

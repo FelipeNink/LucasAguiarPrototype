@@ -1,0 +1,49 @@
+@*
+    Confirmacao pequena e centralizada: titulo, mensagem e dois botoes.
+    Mesmo padrao para excluir registros e para sair do sistema.
+*@
+
+@if (Visivel)
+{
+    @* modal-overlay: o ui.js trava a rolagem da pagina enquanto ele existir. *@
+    <div class="fundo-confirmacao modal-overlay">
+        <div class="caixa-confirmacao" role="alertdialog" aria-modal="true" aria-label="@Titulo">
+            <button type="button" class="fechar" aria-label="Fechar" @onclick="OnCancelar">×</button>
+
+            <h5>@Titulo</h5>
+
+            <div class="mensagem">@ChildContent</div>
+
+            @if (!string.IsNullOrEmpty(Erro))
+            {
+                <div class="erro">@Erro</div>
+            }
+
+            <div class="botoes">
+                <button type="button" class="botao-cancelar" @onclick="OnCancelar">Cancelar</button>
+                <button type="button" class="botao-confirmar" disabled="@ocupado" @onclick="Confirmar">
+                    @TextoConfirmar
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool Visivel { get; set; }
+    [Parameter] public string Titulo { get; set; } = "Confirmar";
+    [Parameter] public string TextoConfirmar { get; set; } = "Excluir";
+    [Parameter] public string? Erro { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public EventCallback OnConfirmar { get; set; }
+    [Parameter] public EventCallback OnCancelar { get; set; }
+
+    private bool ocupado;
+
+    private async Task Confirmar()
+    {
+        ocupado = true;
+        try { await OnConfirmar.InvokeAsync(); }
+        finally { ocupado = false; }
+    }
+}

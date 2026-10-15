@@ -21,7 +21,7 @@
             <th>Nome</th>
             <th class="opcional">Descrição</th>
             <th class="opcional">Inclui</th>
-            <th>Valor</th>
+            <th class="al-dir">Valor</th>
             <th class="col-acoes quatro">Ações</th>
         </tr>
     </thead>
@@ -45,11 +45,11 @@
                             <span class="text-muted">sem itens</span>
                         }
                     </td>
-                    <td>@((plano.Valor ?? 0).ToString("C"))</td>
+                    <td class="al-dir">@((plano.Valor ?? 0).ToString("C"))</td>
                     <td class="col-acoes">
                         <AcoesLinha OnVisualizar="() => Visualizar(plano)"
                                     OnEditar="() => Editar(plano)"
-                                    HrefExcluir="@($"/plano/{plano.IdPlano}/excluir")">
+                                    OnExcluir="() => excluindo = plano">
                             <a href="/plano/@plano.IdPlano/componentes" class="btn-acao"
                                title="Componentes" aria-label="Componentes">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
@@ -72,6 +72,12 @@
     </tbody>
     </table>
 </div>
+
+<ConfirmarModal Visivel="@(excluindo != null)" Titulo="Excluir plano" Erro="@erroExclusao"
+                OnConfirmar="ConfirmarExclusao" OnCancelar="CancelarExclusao">
+    Tem certeza que deseja excluir <strong>@excluindo?.NomePlano</strong>?<br /><span class="text-muted">Os componentes do plano serão excluídos junto.</span><br />
+    <span class="text-muted">Esta ação não pode ser desfeita.</span>
+</ConfirmarModal>
 
 <Janela Visivel="@(visualizando != null)" Titulo="@(visualizando?.NomePlano ?? "Plano")"
         OnFechar="Fechar">
@@ -141,6 +147,32 @@
 </Janela>
 
 @code {
+    private Plano? excluindo;
+    private string? erroExclusao;
+
+    private void ConfirmarExclusao()
+    {
+        if (excluindo == null) return;
+
+        try
+        {
+            planoDAO.Excluir(excluindo.IdPlano);
+            excluindo = null;
+            erroExclusao = null;
+            listaPlano = planoDAO.ListarTodos();
+        }
+        catch (Exception ex)
+        {
+            erroExclusao = ex.Message;
+        }
+    }
+
+    private void CancelarExclusao()
+    {
+        excluindo = null;
+        erroExclusao = null;
+    }
+
     private List<Plano> listaPlano = new();
 
     private Plano? visualizando;

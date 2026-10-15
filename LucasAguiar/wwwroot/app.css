@@ -856,6 +856,12 @@ table.table > tbody > tr:hover > td.text-center.text-muted {
     }
 }
 
+/* Coluna numerica: cabecalho e valores alinhados a direita, juntos. */
+table.table > thead > tr > th.al-dir,
+table.table > tbody > tr > td.al-dir {
+    text-align: right;
+}
+
 /* Visualizar, editar e excluir lado a lado na linha. */
 .acoes {
     display: inline-flex;
@@ -1255,4 +1261,32 @@ form .form-check-label {
     --bs-alert-color: var(--ok-escuro);
     --bs-alert-bg: var(--ok-fundo);
     --bs-alert-border-color: var(--ok-borda);
+}
+
+/* Botoes de rodape dos modais de Vendas e Comissoes. */
+.btn-secondary {
+    --bs-btn-color: var(--texto);
+    --bs-btn-bg: var(--superficie);
+    --bs-btn-border-color: var(--borda-2);
+    --bs-btn-hover-color: var(--texto);
+    --bs-btn-hover-bg: var(--superficie-3);
+    --bs-btn-hover-border-color: var(--borda-3);
+}
+
+.btn-danger,
+.btn-outline-danger {
+    --bs-btn-color: #fff;
+    --bs-btn-bg: var(--perigo);
+    --bs-btn-border-color: var(--perigo);
+    --bs-btn-hover-color: #fff;
+    --bs-btn-hover-bg: var(--perigo-escuro);
+    --bs-btn-hover-border-color: var(--perigo-escuro);
+    --bs-btn-disabled-bg: var(--perigo);
+    --bs-btn-disabled-border-color: var(--perigo);
+}
+
+.btn-outline-danger {
+    --bs-btn-color: var(--perigo);
+    --bs-btn-bg: transparent;
+    --bs-btn-hover-color: #fff;
 }

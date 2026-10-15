@@ -89,7 +89,7 @@
                             </td>
                             <td class="col-acoes">
                                 <AcoesLinha OnVisualizar="() => Visualizar(a)" OnEditar="() => Editar(a)"
-                                            HrefExcluir="@($"/agendamento/{a.IdAgendamento}/excluir")">
+                                            OnExcluir="() => excluindo = a">
                                     @if (a.Aberto)
                                     {
                                         <a href="@UrlGerarVenda(a)" class="btn-acao" title="Gerar venda" aria-label="Gerar venda">
@@ -116,6 +116,12 @@
 </div>
 
 @* ---------- visualizar ---------- *@
+<ConfirmarModal Visivel="@(excluindo != null)" Titulo="Excluir agendamento" Erro="@erroExclusao"
+                OnConfirmar="ConfirmarExclusao" OnCancelar="CancelarExclusao">
+    Tem certeza que deseja excluir <strong>@excluindo?.NomeCliente</strong> (@excluindo?.DataHora.ToString("dd/MM 'às' HH:mm"))?<br />
+    <span class="text-muted">Esta ação não pode ser desfeita.</span>
+</ConfirmarModal>
+
 <Janela Visivel="@(visualizando != null)" Titulo="@($"Agendamento #{visualizando?.IdAgendamento}")"
         OnFechar="Fechar">
     <ChildContent>
@@ -197,6 +203,32 @@
 </Janela>
 
 @code {
+    private Agendamento? excluindo;
+    private string? erroExclusao;
+
+    private void ConfirmarExclusao()
+    {
+        if (excluindo == null) return;
+
+        try
+        {
+            agendamentoDAO.Excluir(excluindo.IdAgendamento);
+            excluindo = null;
+            erroExclusao = null;
+            Carregar();
+        }
+        catch (Exception ex)
+        {
+            erroExclusao = ex.Message;
+        }
+    }
+
+    private void CancelarExclusao()
+    {
+        excluindo = null;
+        erroExclusao = null;
+    }
+
     private enum Periodo { Hoje, Amanha, Semana, Todos }
 
     [SupplyParameterFromQuery(Name = "novo")]

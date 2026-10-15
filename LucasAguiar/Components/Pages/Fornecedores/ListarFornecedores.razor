@@ -40,7 +40,7 @@
                     <td class="col-acoes">
                         <AcoesLinha OnVisualizar="() => visualizando = fornecedor"
                                     OnEditar="() => Editar(fornecedor)"
-                                    HrefExcluir="@($"/fornecedores/{fornecedor.IdFornecedor}/excluir")" />
+                                    OnExcluir="() => excluindo = fornecedor" />
                     </td>
                 </tr>
                 contador++;
@@ -55,6 +55,12 @@
     </tbody>
     </table>
 </div>
+
+<ConfirmarModal Visivel="@(excluindo != null)" Titulo="Excluir fornecedor" Erro="@erroExclusao"
+                OnConfirmar="ConfirmarExclusao" OnCancelar="CancelarExclusao">
+    Tem certeza que deseja excluir <strong>@excluindo?.NomeFornecedor</strong>?<br />
+    <span class="text-muted">Esta ação não pode ser desfeita.</span>
+</ConfirmarModal>
 
 <Janela Visivel="@(visualizando != null)" Titulo="@(visualizando?.NomeFornecedor ?? "Fornecedor")"
         OnFechar="Fechar">
@@ -105,6 +111,32 @@
 </Janela>
 
 @code {
+    private Fornecedor? excluindo;
+    private string? erroExclusao;
+
+    private void ConfirmarExclusao()
+    {
+        if (excluindo == null) return;
+
+        try
+        {
+            fornecedorDAO.Excluir(excluindo.IdFornecedor);
+            excluindo = null;
+            erroExclusao = null;
+            CarregarFornecedores();
+        }
+        catch (Exception ex)
+        {
+            erroExclusao = ex.Message;
+        }
+    }
+
+    private void CancelarExclusao()
+    {
+        excluindo = null;
+        erroExclusao = null;
+    }
+
     private List<Fornecedor> listaFornecedores = new();
 
     private Fornecedor? visualizando;

@@ -226,9 +226,10 @@
     </button>
 </div>
 
-<ConfirmLogout IsVisible="mostrarConfirmacao"
-               OnConfirmCallback="ConfirmarSaida"
-               OnCancelCallback="CancelarSaida" />
+<ConfirmarModal Visivel="mostrarConfirmacao" Titulo="Sair do sistema" TextoConfirmar="Sair"
+                OnConfirmar="ConfirmarSaida" OnCancelar="CancelarSaida">
+    Tem certeza que deseja sair do sistema?
+</ConfirmarModal>
 
 @code {
     private bool mostrarConfirmacao = false;
