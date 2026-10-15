@@ -41,23 +41,22 @@
     </div>
     <div class="campo">
         <label>Profissional</label>
-        <select class="form-control" @bind="idFuncionario">
-            <option value="0">Todos</option>
-            @foreach (var f in funcionarios)
-            {
-                <option value="@f.IdFuncionario">@f.NomeFuncionario</option>
-            }
-        </select>
+        <Seletor TItem="OpcaoFuncionario" TValor="int"
+                 Itens="OpcoesFuncionario"
+                 @bind-Valor="idFuncionario"
+                 TextoDe="o => o.Nome"
+                 ValorDe="o => o.Id"
+                 ComAvatar="true"
+                 ContagemDe="o => o.Contagem" />
     </div>
     <div class="campo">
         <label>Pagamento</label>
-        <select class="form-control" @bind="formaPagamento">
-            <option value="">Todos</option>
-            @foreach (var f in FormaPagamento.Todas)
-            {
-                <option value="@f.Valor">@f.Rotulo</option>
-            }
-        </select>
+        <Seletor TItem="OpcaoPagamento" TValor="string"
+                 Itens="OpcoesPagamento"
+                 @bind-Valor="formaPagamento"
+                 TextoDe="o => o.Rotulo"
+                 ValorDe="o => o.Valor"
+                 PontoDe="o => o.Cor" />
     </div>
     <div class="campo-acoes">
         <button type="button" class="btn btn-primary" @onclick="Aplicar">Filtrar</button>
@@ -262,6 +261,32 @@
     private string motivoCancelamento = "";
     private List<Venda> vendas = new();
     private List<Funcionario> funcionarios = new();
+
+    // Opcoes dos filtros. O Seletor recebe uma lista de itens, entao o
+    // "Todos" entra como item comum em vez de <option> solta.
+    private record OpcaoFuncionario(int Id, string Nome, string? Contagem);
+    private record OpcaoPagamento(string Valor, string Rotulo, string? Cor);
+
+    private List<OpcaoFuncionario> OpcoesFuncionario =>
+        new List<OpcaoFuncionario> { new(0, "Todos", null) }
+            .Concat(funcionarios.Select(f => new OpcaoFuncionario(
+                f.IdFuncionario,
+                f.NomeFuncionario ?? "Sem nome",
+                ContagemDoProfissional(f.IdFuncionario))))
+            .ToList();
+
+    /// <summary>Quantas vendas deste profissional ha na lista carregada.</summary>
+    private string? ContagemDoProfissional(int id)
+    {
+        var n = vendas.Count(v => v.IdFuncionario == id);
+        return n == 0 ? null : n.ToString();
+    }
+
+    private List<OpcaoPagamento> OpcoesPagamento =>
+        new List<OpcaoPagamento> { new("", "Todos", null) }
+            .Concat(FormaPagamento.Todas.Select(f =>
+                new OpcaoPagamento(f.Valor, f.Rotulo, "var(--ok)")))
+            .ToList();
     private Venda? detalhe;
     private string? erro;
     private int? idNova;

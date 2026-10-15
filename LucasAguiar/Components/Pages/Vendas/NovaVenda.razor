@@ -365,17 +365,17 @@
                     }
                 </div>
             }
-
             <div class="grade-final">
                 <div>
                     <label class="rotulo">Profissional <span class="obrigatorio">*</span></label>
-                    <select class="form-control" @bind="idFuncionario">
-                        <option value="0">Selecione…</option>
-                        @foreach (var f in funcionarios)
-                        {
-                            <option value="@f.IdFuncionario">@f.NomeFuncionario</option>
-                        }
-                    </select>
+                    <Seletor TItem="Funcionario" TValor="int"
+                             Itens="funcionarios"
+                             @bind-Valor="idFuncionario"
+                             TextoDe="@(f => f.NomeFuncionario ?? "Sem nome")"
+                             ValorDe="@(f => f.IdFuncionario)"
+                             ComAvatar="true"
+                             Placeholder="Selecione…"
+                             Class="seletor-profissional" />
                     <button type="button" class="btn-criar"
                             @onclick="() => modalAberto = CadastroRapido.TipoCadastro.Funcionario">
                         + Cadastrar novo profissional aqui

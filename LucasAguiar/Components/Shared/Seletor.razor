@@ -15,6 +15,7 @@
 <div class="seletor @Class" @ref="raiz">
     <button type="button" class="gatilho @(Aberto ? "aberto" : "")"
             @onclick="Alternar" @onkeydown="AoTeclarNoGatilho"
+            @onkeydown:preventDefault="Aberto"
             aria-haspopup="listbox" aria-expanded="@Aberto.ToString().ToLowerInvariant()">
 
         @if (!string.IsNullOrEmpty(Rotulo))
@@ -234,7 +235,10 @@
             return;
         }
 
-        if (e.Key is "ArrowDown" or "ArrowUp" or "Enter" or " ")
+        // Fechado: Enter e Espaco disparam o clique nativo do <button>, que
+        // ja chama Alternar. Tratar aqui tambem abriria e fecharia na mesma
+        // tecla. So as setas precisam de tratamento proprio.
+        if (e.Key is "ArrowDown" or "ArrowUp")
         {
             await Abrir();
         }
