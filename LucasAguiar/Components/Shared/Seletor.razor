@@ -1,0 +1,307 @@
+@* Dropdown proprio, no lugar do <select> nativo.
+
+   O nativo nao aceita avatar, ponto de status nem contagem na opcao, e
+   muda de cara em cada sistema operacional. Este segue os tokens e e o
+   mesmo em qualquer maquina.
+
+   Acessibilidade e obrigatoria aqui: sem os papeis ARIA e o teclado, um
+   dropdown caseiro e um retrocesso em relacao ao nativo. *@
+
+@typeparam TItem
+@typeparam TValor
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+
+<div class="seletor @Class" @ref="raiz">
+    <button type="button" class="gatilho @(Aberto ? "aberto" : "")"
+            @onclick="Alternar" @onkeydown="AoTeclarNoGatilho"
+            aria-haspopup="listbox" aria-expanded="@Aberto.ToString().ToLowerInvariant()">
+
+        @if (!string.IsNullOrEmpty(Rotulo))
+        {
+            <span class="gatilho-rotulo">@Rotulo</span>
+        }
+
+        @if (ComAvatar && ItemSelecionado is not null)
+        {
+            <span class="avatar" aria-hidden="true">@IniciaisDe(TextoDe(ItemSelecionado))</span>
+        }
+
+        <span class="gatilho-valor @(ItemSelecionado is null ? "vazio" : "")">
+            @(ItemSelecionado is null ? Placeholder : TextoDe(ItemSelecionado))
+        </span>
+
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M6 9l6 6 6-6" />
+        </svg>
+    </button>
+
+    @if (Aberto)
+    {
+        <div class="painel @(ParaCima ? "para-cima" : "")" role="listbox" @ref="painel"
+             aria-label="@(Rotulo ?? Placeholder)">
+
+            @if (UsaBusca)
+            {
+                <div class="busca">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.3-4.3" />
+                    </svg>
+                    <input type="text" placeholder="Buscar…" value="@filtro"
+                           @oninput="AoFiltrar" @onkeydown="AoTeclarNaLista" @ref="campoBusca" />
+                </div>
+            }
+
+            @if (Filtrados.Count == 0)
+            {
+                <p class="sem-resultado">Nada encontrado.</p>
+            }
+
+            @for (var i = 0; i < Filtrados.Count; i++)
+            {
+                var item = Filtrados[i];
+                var indice = i;
+                var selecionado = EhSelecionado(item);
+
+                <div role="option" tabindex="-1"
+                     class="opcao @(selecionado ? "selecionada" : "") @(indice == cursor ? "no-cursor" : "")"
+                     aria-selected="@selecionado.ToString().ToLowerInvariant()"
+                     @onclick="() => Escolher(item)"
+                     @onmouseover="() => cursor = indice">
+
+                    @if (PontoDe is not null && !string.IsNullOrEmpty(PontoDe(item)))
+                    {
+                        <i class="ponto" style="background: @PontoDe(item)" aria-hidden="true"></i>
+                    }
+
+                    @if (ComAvatar)
+                    {
+                        <span class="avatar" aria-hidden="true">@IniciaisDe(TextoDe(item))</span>
+                    }
+
+                    @if (ItemTemplate is not null)
+                    {
+                        @ItemTemplate(item)
+                    }
+                    else
+                    {
+                        <span class="opcao-texto">@TextoDe(item)</span>
+                    }
+
+                    @if (ContagemDe is not null && !string.IsNullOrEmpty(ContagemDe(item)))
+                    {
+                        <span class="contagem num">@ContagemDe(item)</span>
+                    }
+
+                    @if (selecionado)
+                    {
+                        <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                             stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M5 12l5 5 9-10" />
+                        </svg>
+                    }
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public IEnumerable<TItem> Itens { get; set; } = Array.Empty<TItem>();
+    [Parameter] public TValor? Valor { get; set; }
+    [Parameter] public EventCallback<TValor?> ValorChanged { get; set; }
+
+    /// <summary>Texto fixo a esquerda do valor, para filtros ("Profissional:").</summary>
+    [Parameter] public string? Rotulo { get; set; }
+
+    [Parameter, EditorRequired] public Func<TItem, string> TextoDe { get; set; } = _ => "";
+    [Parameter, EditorRequired] public Func<TItem, TValor> ValorDe { get; set; } = default!;
+
+    [Parameter] public RenderFragment<TItem>? ItemTemplate { get; set; }
+
+    /// <summary>Cor do ponto de status da opcao, ou nulo para nao mostrar.</summary>
+    [Parameter] public Func<TItem, string?>? PontoDe { get; set; }
+
+    /// <summary>Texto discreto a direita da opcao, como a contagem de vendas.</summary>
+    [Parameter] public Func<TItem, string?>? ContagemDe { get; set; }
+
+    [Parameter] public bool ComAvatar { get; set; }
+    [Parameter] public string Placeholder { get; set; } = "Selecione…";
+    [Parameter] public string? Class { get; set; }
+
+    /// <summary>Nulo liga a busca sozinho acima de 8 itens.</summary>
+    [Parameter] public bool? ComBusca { get; set; }
+
+    private ElementReference raiz;
+    private ElementReference painel;
+    private ElementReference campoBusca;
+
+    private bool Aberto { get; set; }
+    private bool ParaCima { get; set; }
+    private string filtro = "";
+    private int cursor = -1;
+    private string? idCliqueFora;
+    private DotNetObjectReference<Seletor<TItem, TValor>>? referencia;
+    private bool focarBusca;
+
+    private List<TItem> Lista => Itens?.ToList() ?? new();
+
+    private bool UsaBusca => ComBusca ?? Lista.Count > 8;
+
+    private List<TItem> Filtrados =>
+        string.IsNullOrWhiteSpace(filtro)
+            ? Lista
+            : Lista.Where(i => TextoDe(i).Contains(filtro.Trim(), StringComparison.OrdinalIgnoreCase)).ToList();
+
+    private TItem? ItemSelecionado =>
+        Lista.FirstOrDefault(i => EhSelecionado(i));
+
+    private bool EhSelecionado(TItem item) =>
+        Valor is not null && EqualityComparer<TValor>.Default.Equals(ValorDe(item), Valor);
+
+    private static string IniciaisDe(string nome)
+    {
+        var partes = nome.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (partes.Length == 0) return "?";
+        if (partes.Length == 1) return partes[0][..1].ToUpperInvariant();
+        return (partes[0][..1] + partes[^1][..1]).ToUpperInvariant();
+    }
+
+    private async Task Alternar()
+    {
+        if (Aberto) { Fechar(); return; }
+        await Abrir();
+    }
+
+    private async Task Abrir()
+    {
+        Aberto = true;
+        filtro = "";
+        cursor = Filtrados.FindIndex(EhSelecionado);
+
+        referencia ??= DotNetObjectReference.Create(this);
+        idCliqueFora = await JS.InvokeAsync<string>("seletor.registrarCliqueFora", raiz, referencia);
+        ParaCima = await JS.InvokeAsync<bool>("seletor.abrirParaCima", raiz, 320);
+
+        focarBusca = UsaBusca;
+    }
+
+    private void Fechar()
+    {
+        Aberto = false;
+        cursor = -1;
+        _ = CancelarCliqueFora();
+    }
+
+    private async Task CancelarCliqueFora()
+    {
+        if (idCliqueFora is null) return;
+        var id = idCliqueFora;
+        idCliqueFora = null;
+        try { await JS.InvokeVoidAsync("seletor.cancelarCliqueFora", id); }
+        catch (JSDisconnectedException) { /* circuito ja caiu */ }
+    }
+
+    [JSInvokable]
+    public void FecharPorCliqueFora()
+    {
+        if (!Aberto) return;
+        Fechar();
+        StateHasChanged();
+    }
+
+    private async Task Escolher(TItem item)
+    {
+        Valor = ValorDe(item);
+        await ValorChanged.InvokeAsync(Valor);
+        Fechar();
+        await JS.InvokeVoidAsync("seletor.focar", raiz);
+    }
+
+    private void AoFiltrar(ChangeEventArgs e)
+    {
+        filtro = e.Value?.ToString() ?? "";
+        cursor = Filtrados.Count > 0 ? 0 : -1;
+    }
+
+    private async Task AoTeclarNoGatilho(KeyboardEventArgs e)
+    {
+        if (Aberto)
+        {
+            await AoTeclarNaLista(e);
+            return;
+        }
+
+        if (e.Key is "ArrowDown" or "ArrowUp" or "Enter" or " ")
+        {
+            await Abrir();
+        }
+    }
+
+    private async Task AoTeclarNaLista(KeyboardEventArgs e)
+    {
+        var lista = Filtrados;
+
+        switch (e.Key)
+        {
+            case "ArrowDown":
+                cursor = lista.Count == 0 ? -1 : (cursor + 1) % lista.Count;
+                break;
+
+            case "ArrowUp":
+                cursor = lista.Count == 0 ? -1 : (cursor - 1 + lista.Count) % lista.Count;
+                break;
+
+            case "Home":
+                cursor = lista.Count == 0 ? -1 : 0;
+                break;
+
+            case "End":
+                cursor = lista.Count - 1;
+                break;
+
+            case "Enter":
+            case " ":
+                if (cursor >= 0 && cursor < lista.Count) await Escolher(lista[cursor]);
+                return;
+
+            case "Escape":
+            case "Tab":
+                Fechar();
+                if (e.Key == "Escape") await JS.InvokeVoidAsync("seletor.focar", raiz);
+                return;
+
+            default:
+                // Digitar letras pula para a opcao, como no select nativo.
+                if (!UsaBusca && e.Key.Length == 1 && !char.IsControl(e.Key[0]))
+                {
+                    var achado = lista.FindIndex(i =>
+                        TextoDe(i).StartsWith(e.Key, StringComparison.OrdinalIgnoreCase));
+                    if (achado >= 0) cursor = achado;
+                }
+                return;
+        }
+
+        if (cursor >= 0)
+        {
+            await JS.InvokeVoidAsync("seletor.rolarAteOpcao", painel, cursor);
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool primeiraVez)
+    {
+        if (focarBusca)
+        {
+            focarBusca = false;
+            await JS.InvokeVoidAsync("seletor.focar", campoBusca);
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await CancelarCliqueFora();
+        referencia?.Dispose();
+    }
+}

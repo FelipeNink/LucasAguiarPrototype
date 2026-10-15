@@ -66,3 +66,62 @@ document.addEventListener('click', function (evento) {
     // clicar de novo para continuar digitando.
     campo.focus();
 });
+
+// Apoio do componente Seletor.
+//
+// Duas coisas que o Blazor sozinho nao resolve: saber que o clique caiu
+// fora do componente, e saber se o painel cabe abaixo do gatilho.
+window.seletor = {
+    // Fecha ao clicar fora. Devolve um id para o componente cancelar o
+    // registro quando for descartado, senao o ouvinte vaza a cada
+    // dropdown aberto.
+    registrarCliqueFora: function (elemento, referenciaDotNet) {
+        const aoClicar = function (evento) {
+            if (elemento && !elemento.contains(evento.target)) {
+                referenciaDotNet.invokeMethodAsync('FecharPorCliqueFora');
+            }
+        };
+
+        document.addEventListener('mousedown', aoClicar, true);
+
+        const id = 'sel-' + Math.random().toString(36).slice(2);
+        this._registros = this._registros || {};
+        this._registros[id] = aoClicar;
+        return id;
+    },
+
+    cancelarCliqueFora: function (id) {
+        if (!this._registros || !this._registros[id]) return;
+        document.removeEventListener('mousedown', this._registros[id], true);
+        delete this._registros[id];
+    },
+
+    // true quando falta espaco abaixo e sobra acima: o painel abre para cima.
+    abrirParaCima: function (elemento, alturaPainel) {
+        if (!elemento) return false;
+        const caixa = elemento.getBoundingClientRect();
+        const abaixo = window.innerHeight - caixa.bottom;
+        return abaixo < alturaPainel && caixa.top > abaixo;
+    },
+
+    // Mantem a opcao sob o cursor do teclado visivel na rolagem.
+    rolarAteOpcao: function (painel, indice) {
+        if (!painel) return;
+        const opcao = painel.querySelectorAll('[role="option"]')[indice];
+        if (opcao) opcao.scrollIntoView({ block: 'nearest' });
+    },
+
+    focar: function (elemento) {
+        if (elemento) elemento.focus();
+    }
+};
+
+// Envio do login: a tela e renderizacao estatica, entao nao ha circuito
+// Blazor para desabilitar o botao. Feito aqui, no submit do formulario.
+document.addEventListener('submit', function (evento) {
+    const botao = evento.target.querySelector('button[type="submit"][data-texto-enviando]');
+    if (!botao) return;
+
+    botao.disabled = true;
+    botao.textContent = botao.dataset.textoEnviando;
+});

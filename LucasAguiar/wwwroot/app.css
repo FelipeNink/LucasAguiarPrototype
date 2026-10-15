@@ -95,6 +95,15 @@
     /* ---------- graficos ---------- */
     --grafico-barra: var(--borda-2);
 
+    /* ---------- login ---------- */
+    --login-letra: #14171c;
+    --login-rotulo: #4b5563;
+    --login-campo: #ffffff;
+    --login-campo-borda: #dcdfe4;
+    --login-campo-borda-hover: #d1d5db;
+    --login-placeholder: #9ca3af;
+    --login-rodape: #6b7280;
+
     color-scheme: light;
 }
 
@@ -161,6 +170,14 @@
     --sombra-menu: 0 12px 32px rgba(0, 0, 0, 0.5);
     --selecionado-texto: var(--marca-clara);
     /* --lateral-ativo herda var(--marca), que no escuro ja e #ff7a33 */
+
+    --login-letra: #ffffff;
+    --login-rotulo: #a0a7b2;
+    --login-campo: #1b1f26;
+    --login-campo-borda: #2c323d;
+    --login-campo-borda-hover: #3a414e;
+    --login-placeholder: #7d8491;
+    --login-rodape: #7d8491;
 
     color-scheme: dark;
 }
