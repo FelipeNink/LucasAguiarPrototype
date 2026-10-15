@@ -43,33 +43,21 @@
 
         <div class="campo">
             <label>Categoria</label>
-            <select class="form-control" @bind="nova.Categoria">
-                @foreach (var c in CategoriaDespesa.Todas)
-                {
-                    <option value="@c.Valor">@c.Rotulo</option>
-                }
-            </select>
+            <Seletor TItem="Opcao" TValor="string" Itens="OpcoesCategoria"
+                     @bind-Valor="nova.Categoria" TextoDe="o => o.Rotulo" ValorDe="o => o.Valor" />
         </div>
 
         <div class="campo">
             <label>Forma de pagamento</label>
-            <select class="form-control" @bind="nova.FormaPagamentoDespesa">
-                @foreach (var f in FormaPagamento.Todas)
-                {
-                    <option value="@f.Valor">@f.Rotulo</option>
-                }
-            </select>
+            <Seletor TItem="Opcao" TValor="string" Itens="OpcoesForma"
+                     @bind-Valor="nova.FormaPagamentoDespesa" TextoDe="o => o.Rotulo"
+                     ValorDe="o => o.Valor" PontoDe="o => o.Cor" />
         </div>
 
         <div class="campo">
             <label>Fornecedor</label>
-            <select class="form-control" @bind="idFornecedor">
-                <option value="0">Nenhum</option>
-                @foreach (var f in fornecedores)
-                {
-                    <option value="@f.IdFornecedor">@f.NomeFornecedor</option>
-                }
-            </select>
+            <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesFornecedor"
+                     @bind-Valor="idFornecedor" TextoDe="o => o.Rotulo" ValorDe="o => o.Id" />
         </div>
     </div>
 
@@ -113,23 +101,14 @@
     </div>
     <div class="campo">
         <label>Categoria</label>
-        <select class="form-control" @bind="filtroCategoria">
-            <option value="">Todas</option>
-            @foreach (var c in CategoriaDespesa.Todas)
-            {
-                <option value="@c.Valor">@c.Rotulo</option>
-            }
-        </select>
+        <Seletor TItem="Opcao" TValor="string" Itens="OpcoesCategoriaFiltro"
+                 @bind-Valor="filtroCategoria" TextoDe="o => o.Rotulo" ValorDe="o => o.Valor" />
     </div>
     <div class="campo">
         <label>Pagamento</label>
-        <select class="form-control" @bind="filtroForma">
-            <option value="">Todos</option>
-            @foreach (var f in FormaPagamento.Todas)
-            {
-                <option value="@f.Valor">@f.Rotulo</option>
-            }
-        </select>
+        <Seletor TItem="Opcao" TValor="string" Itens="OpcoesFormaFiltro"
+                 @bind-Valor="filtroForma" TextoDe="o => o.Rotulo" ValorDe="o => o.Valor"
+                 PontoDe="o => o.Cor" />
     </div>
     <div class="campo-acoes">
         <button type="button" class="btn btn-primary" @onclick="Carregar">Filtrar</button>
@@ -226,6 +205,25 @@
     private Despesa nova = new();
     private List<Despesa> despesas = new();
     private List<Fornecedor> fornecedores = new();
+
+    // Opcoes dos seletores. O "Todas"/"Nenhum" entra como item da lista,
+    // porque o Seletor nao tem <option> solta como o select nativo.
+    private List<Opcao> OpcoesCategoria =>
+        CategoriaDespesa.Todas.Select(c => new Opcao(c.Valor, c.Rotulo)).ToList();
+
+    private List<Opcao> OpcoesCategoriaFiltro =>
+        new List<Opcao> { new("", "Todas") }.Concat(OpcoesCategoria).ToList();
+
+    private List<Opcao> OpcoesForma =>
+        FormaPagamento.Todas.Select(f => new Opcao(f.Valor, f.Rotulo, "var(--ok)")).ToList();
+
+    private List<Opcao> OpcoesFormaFiltro =>
+        new List<Opcao> { new("", "Todos") }.Concat(OpcoesForma).ToList();
+
+    private List<OpcaoId> OpcoesFornecedor =>
+        new List<OpcaoId> { new(0, "Nenhum") }
+            .Concat(fornecedores.Select(f => new OpcaoId(f.IdFornecedor, f.NomeFornecedor ?? "Sem nome")))
+            .ToList();
     private Caixa? caixaAberto;
 
     private int idFornecedor;

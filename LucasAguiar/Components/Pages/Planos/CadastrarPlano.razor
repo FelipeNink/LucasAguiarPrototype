@@ -68,23 +68,9 @@
                 </button>
             </div>
 
-            <select class="form-control" @bind="idEscolhido">
-                <option value="0">Selecione…</option>
-                @if (tipo == TipoItem.Servico)
-                {
-                    @foreach (var s in servicos)
-                    {
-                        <option value="@s.IdServico">@s.NomeServico — @s.PrecoServico.ToString("C")</option>
-                    }
-                }
-                else
-                {
-                    @foreach (var p in produtos)
-                    {
-                        <option value="@p.IdProduto">@p.NomeProduto — @p.Valor.ToString("C")</option>
-                    }
-                }
-            </select>
+            <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesItem"
+                     @bind-Valor="idEscolhido" TextoDe="o => o.Rotulo" ValorDe="o => o.Id"
+                     Placeholder="Selecione…" />
 
             <div class="contador">
                 <button type="button" @onclick="() => AjustarNovo(-1)" disabled="@(quantidade <= 1)">−</button>
@@ -184,6 +170,14 @@
                 OnCancelado="() => modalAberto = null" />
 
 @code {
+
+    /// <summary>Servicos ou produtos, conforme o tipo escolhido, com o preco no rotulo.</summary>
+    private List<OpcaoId> OpcoesItem =>
+        tipo == TipoItem.Servico
+            ? servicos.Select(s => new OpcaoId(s.IdServico,
+                $"{s.NomeServico} — {s.PrecoServico.ToString("C")}")).ToList()
+            : produtos.Select(p => new OpcaoId(p.IdProduto,
+                $"{p.NomeProduto} — {p.Valor.ToString("C")}")).ToList();
     private CadastroRapido.TipoCadastro? modalAberto;
     private Plano plano = new();
     private decimal valor;

@@ -191,12 +191,9 @@
                 </div>
 
                 <label>Forma de pagamento</label>
-                <select class="form-control" @bind="formaPagamento">
-                    @foreach (var f in FormaPagamento.Todas)
-                    {
-                        <option value="@f.Valor">@f.Rotulo</option>
-                    }
-                </select>
+                <Seletor TItem="Opcao" TValor="string" Itens="OpcoesForma"
+                         @bind-Valor="formaPagamento" TextoDe="o => o.Rotulo" ValorDe="o => o.Valor"
+                         PontoDe="o => o.Cor" />
 
                 @if (formaPagamento == FormaPagamento.Dinheiro)
                 {
@@ -230,6 +227,9 @@
 }
 
 @code {
+
+    private List<Opcao> OpcoesForma =>
+        FormaPagamento.Todas.Select(f => new Opcao(f.Valor, f.Rotulo, "var(--ok)")).ToList();
     private static readonly System.Globalization.CultureInfo Cultura = new("pt-BR");
 
     private List<FolhaDAO.LinhaFolha> linhas = new();

@@ -32,13 +32,11 @@
             <InputText class="form-control mb-2" @bind-Value="_novoCliente.RG" placeholder="RG" />
 
             <label>Plano</label>
-            <select class="form-control mb-2" @bind="_novoCliente.IdPlano">
-                <option value="">Selecione</option>
-                @foreach (var p in planos)
-                {
-                    <option value="@p.IdPlano">@p.NomePlano</option>
-                }
-            </select>
+            <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesPlano"
+                     Valor="_novoCliente.IdPlano ?? 0"
+                     ValorChanged="v => _novoCliente.IdPlano = v == 0 ? null : v"
+                     TextoDe="o => o.Rotulo" ValorDe="o => o.Id"
+                     Placeholder="Selecione" Class="mb-2" />
         </div>
 
         <div class="col-md-6">
@@ -70,6 +68,12 @@
                 OnCancelado="() => modalAberto = false" />
 
 @code {
+
+    /// <summary>Sem plano e uma escolha valida, entao entra como item zero.</summary>
+    private List<OpcaoId> OpcoesPlano =>
+        new List<OpcaoId> { new(0, "Nenhum") }
+            .Concat(planos.Select(p => new OpcaoId(p.IdPlano, p.NomePlano ?? "Sem nome")))
+            .ToList();
     private string? erro = null;
     private bool modalAberto;
     private Cliente _novoCliente = new();

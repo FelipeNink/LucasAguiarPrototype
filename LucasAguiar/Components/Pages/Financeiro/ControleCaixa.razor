@@ -120,10 +120,8 @@ else
             </p>
 
             <div class="grade-movimento">
-                <select class="form-control" @bind="tipoMovimento">
-                    <option value="@TipoMovimento.Sangria">Sangria (retirar)</option>
-                    <option value="@TipoMovimento.Suprimento">Suprimento (colocar)</option>
-                </select>
+                <Seletor TItem="Opcao" TValor="string" Itens="OpcoesMovimento"
+                         @bind-Valor="tipoMovimento" TextoDe="o => o.Rotulo" ValorDe="o => o.Valor" />
                 <input type="number" step="0.01" min="0" class="form-control"
                        placeholder="Valor" @bind="valorMovimento" />
                 <input class="form-control" placeholder="Motivo" @bind="descricaoMovimento" />
@@ -267,6 +265,12 @@ else
 }
 
 @code {
+
+    private List<Opcao> OpcoesMovimento => new()
+    {
+        new(TipoMovimento.Sangria, "Sangria (retirar)"),
+        new(TipoMovimento.Suprimento, "Suprimento (colocar)")
+    };
     private Caixa? caixa;
     private List<Caixa> historico = new();
     private string? erro;

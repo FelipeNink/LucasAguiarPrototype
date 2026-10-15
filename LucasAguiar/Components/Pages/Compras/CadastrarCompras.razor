@@ -37,39 +37,24 @@
             <InputNumber class="form-control mb-2" @bind-Value="_novaCompra.Quantidade" />
 
             <label>Forma de pagamento</label>
-            <select class="form-control mb-2" @bind="formaPagamento">
-                @foreach (var f in FormaPagamento.Todas)
-                {
-                    <option value="@f.Valor">@f.Rotulo</option>
-                }
-            </select>
+            <Seletor TItem="Opcao" TValor="string" Itens="OpcoesForma"
+                     @bind-Valor="formaPagamento" TextoDe="o => o.Rotulo" ValorDe="o => o.Valor"
+                     PontoDe="o => o.Cor" Class="mb-2" />
 
             <label>Produto</label>
-            <select class="form-control mb-2" @bind="_novaCompra.IdProduto">
-                <option value="">Selecione</option>
-                @foreach (var p in produtos)
-                {
-                    <option value="@p.IdProduto">@p.NomeProduto</option>
-                }
-            </select>
+            <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesProduto"
+                     @bind-Valor="_novaCompra.IdProduto" TextoDe="o => o.Rotulo" ValorDe="o => o.Id"
+                     Placeholder="Selecione" Class="mb-2" />
 
             <label>Fornecedor</label>
-            <select class="form-control mb-2" @bind="_novaCompra.IdFornecedor">
-                <option value="">Selecione</option>
-                @foreach (var f in fornecedores)
-                {
-                    <option value="@f.IdFornecedor">@f.NomeFornecedor</option>
-                }
-            </select>
+            <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesFornecedor"
+                     @bind-Valor="_novaCompra.IdFornecedor" TextoDe="o => o.Rotulo" ValorDe="o => o.Id"
+                     Placeholder="Selecione" Class="mb-2" />
 
             <label>Funcionário</label>
-            <select class="form-control mb-2" @bind="_novaCompra.IdFuncionario">
-                <option value="">Selecione</option>
-                @foreach (var u in funcionarios)
-                {
-                    <option value="@u.IdFuncionario">@u.NomeFuncionario</option>
-                }
-            </select>
+            <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesFuncionario"
+                     @bind-Valor="_novaCompra.IdFuncionario" TextoDe="o => o.Rotulo" ValorDe="o => o.Id"
+                     ComAvatar="true" Placeholder="Selecione" Class="mb-2" />
 
             <div class="linha-criar">
                 <button type="button" class="btn-criar" @onclick="() => modalAberto = CadastroRapido.TipoCadastro.Produto">
@@ -104,6 +89,18 @@
                 OnCancelado="() => modalAberto = null" />
 
 @code {
+
+    private List<Opcao> OpcoesForma =>
+        FormaPagamento.Todas.Select(f => new Opcao(f.Valor, f.Rotulo, "var(--ok)")).ToList();
+
+    private List<OpcaoId> OpcoesProduto =>
+        produtos.Select(p => new OpcaoId(p.IdProduto, p.NomeProduto ?? "Sem nome")).ToList();
+
+    private List<OpcaoId> OpcoesFornecedor =>
+        fornecedores.Select(f => new OpcaoId(f.IdFornecedor, f.NomeFornecedor ?? "Sem nome")).ToList();
+
+    private List<OpcaoId> OpcoesFuncionario =>
+        funcionarios.Select(u => new OpcaoId(u.IdFuncionario, u.NomeFuncionario ?? "Sem nome")).ToList();
     
     private string? erro = null;
     private CadastroRapido.TipoCadastro? modalAberto;

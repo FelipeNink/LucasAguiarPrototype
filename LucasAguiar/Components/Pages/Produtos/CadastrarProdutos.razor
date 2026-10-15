@@ -28,13 +28,9 @@
             <InputText class="form-control mb-2" @bind-Value="_novoProduto.Marca" placeholder="Marca" />
 
             <label>Fornecedor</label>
-            <select class="form-control mb-2" @bind="_novoProduto.IdFornecedor">
-                <option value="">Selecione</option>
-                @foreach (var f in fornecedores)
-                {
-                    <option value="@f.IdFornecedor">@f.NomeFornecedor</option>
-                }
-            </select>
+            <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesFornecedor"
+                     @bind-Valor="_novoProduto.IdFornecedor" TextoDe="o => o.Rotulo"
+                     ValorDe="o => o.Id" Placeholder="Selecione" Class="mb-2" />
 
             <div class="linha-criar">
                 <button type="button" class="btn-criar" @onclick="() => modalAberto = true">
@@ -58,6 +54,9 @@
                 OnCancelado="() => modalAberto = false" />
 
 @code {
+
+    private List<OpcaoId> OpcoesFornecedor =>
+        fornecedores.Select(f => new OpcaoId(f.IdFornecedor, f.NomeFornecedor ?? "Sem nome")).ToList();
     private string? erro = null;
     private Produto _novoProduto = new();
     private List<Fornecedor> fornecedores = new();

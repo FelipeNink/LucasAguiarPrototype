@@ -34,28 +34,12 @@ else
     </p>
 
     <div class="linha-adicionar">
-        <select class="form-control" @bind="tipoEscolhido">
-            <option value="@TipoItem.Servico">Serviço</option>
-            <option value="@TipoItem.Produto">Produto</option>
-        </select>
+        <Seletor TItem="Opcao" TValor="string" Itens="OpcoesTipo"
+                 @bind-Valor="tipoEscolhido" TextoDe="o => o.Rotulo" ValorDe="o => o.Valor" />
 
-        <select class="form-control" @bind="idEscolhido">
-            <option value="0">Selecione…</option>
-            @if (tipoEscolhido == TipoItem.Servico)
-            {
-                @foreach (var s in servicos)
-                {
-                    <option value="@s.IdServico">@s.NomeServico — @s.PrecoServico.ToString("C")</option>
-                }
-            }
-            else
-            {
-                @foreach (var p in produtos)
-                {
-                    <option value="@p.IdProduto">@p.NomeProduto — @p.Valor.ToString("C")</option>
-                }
-            }
-        </select>
+        <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesItem"
+                 @bind-Valor="idEscolhido" TextoDe="o => o.Rotulo" ValorDe="o => o.Id"
+                 Placeholder="Selecione…" />
 
         <input type="number" class="form-control campo-qtd" min="1" @bind="quantidadeEscolhida" />
 
@@ -135,6 +119,20 @@ else
 }
 
 @code {
+
+    private List<Opcao> OpcoesTipo => new()
+    {
+        new(TipoItem.Servico, "Serviço"),
+        new(TipoItem.Produto, "Produto")
+    };
+
+    /// <summary>Servicos ou produtos, conforme o tipo escolhido, com o preco no rotulo.</summary>
+    private List<OpcaoId> OpcoesItem =>
+        tipoEscolhido == TipoItem.Servico
+            ? servicos.Select(s => new OpcaoId(s.IdServico,
+                $"{s.NomeServico} — {s.PrecoServico.ToString("C")}")).ToList()
+            : produtos.Select(p => new OpcaoId(p.IdProduto,
+                $"{p.NomeProduto} — {p.Valor.ToString("C")}")).ToList();
     [Parameter] public int Id { get; set; }
 
     private Plano? plano;
