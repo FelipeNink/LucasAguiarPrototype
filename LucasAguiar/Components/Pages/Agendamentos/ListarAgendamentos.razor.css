@@ -1,0 +1,29 @@
+.filtros-agenda {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 1.25rem;
+}
+
+.filtros-agenda ::deep .filtro-status {
+    min-width: 200px;
+}
+
+.col-horario {
+    width: 120px;
+}
+
+.col-status {
+    width: 140px;
+}
+
+@media (max-width: 760px) {
+    .col-horario {
+        width: 96px;
+    }
+
+    .col-status {
+        width: 110px;
+    }
+}

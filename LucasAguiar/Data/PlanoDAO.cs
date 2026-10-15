@@ -59,6 +59,38 @@ namespace LucasAguiar.Data
             return lista;
         }
 
+        public void Atualizar(Plano plano)
+        {
+            using var conexao = _conexao.GetConnection();
+            using var comando = new MySqlCommand(@"
+                UPDATE plano SET nome_plan = @nome, descricao_plan = @descricao, valor_plan = @valor
+                WHERE id_plan = @id", conexao);
+
+            comando.Parameters.AddWithValue("@nome", plano.NomePlano ?? (object)DBNull.Value);
+            comando.Parameters.AddWithValue("@descricao", plano.Descricao ?? (object)DBNull.Value);
+            comando.Parameters.AddWithValue("@valor", plano.Valor ?? (object)DBNull.Value);
+            comando.Parameters.AddWithValue("@id", plano.IdPlano);
+
+            comando.ExecuteNonQuery();
+        }
+
+        /// <summary>Os componentes saem junto, pelo ON DELETE CASCADE de plano_item.</summary>
+        public void Excluir(int id)
+        {
+            try
+            {
+                using var conexao = _conexao.GetConnection();
+                using var comando = new MySqlCommand("DELETE FROM plano WHERE id_plan = @id", conexao);
+                comando.Parameters.AddWithValue("@id", id);
+                comando.ExecuteNonQuery();
+            }
+            catch (MySqlException ex) when (DAOHelper.EhRegistroEmUso(ex))
+            {
+                throw new Exception(
+                    "Este plano está ligado a clientes ou assinaturas e não pode ser excluído.");
+            }
+        }
+
         public Plano? BuscarPorId(int id)
         {
             using var conexao = _conexao.GetConnection();

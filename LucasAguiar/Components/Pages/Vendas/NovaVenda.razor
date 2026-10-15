@@ -10,10 +10,10 @@
 @inject VendaDAO vendaDAO
 @inject AssinaturaDAO assinaturaDAO
 @inject CaixaDAO caixaDAO
+@inject AgendamentoDAO agendamentoDAO
 @inject LucasAguiar.Services.AuthenticationService auth
 @inject NavigationManager Navigation
 
-<PageTitle>Nova Venda</PageTitle>
 
 <div class="topo">
     <a href="/vendas" class="voltar">&#8592; Vendas</a>
@@ -524,6 +524,10 @@
 
 @code {
     private string? erro;
+
+    /// <summary>Agendamento que originou a venda: ao confirmar, ele fica concluído.</summary>
+    [SupplyParameterFromQuery(Name = "agendamento")]
+    private int? IdAgendamento { get; set; }
     private CadastroRapido.TipoCadastro? modalAberto;
     private Caixa? caixaAberto;
     private decimal valorAberturaCaixa;
@@ -633,6 +637,34 @@
         catch (Exception ex)
         {
             erro = "Erro ao carregar os cadastros: " + ex.Message;
+        }
+
+        PreencherPeloAgendamento();
+    }
+
+    /// <summary>Venda vinda da agenda: cliente, profissional e serviço já entram na nota.</summary>
+    private void PreencherPeloAgendamento()
+    {
+        if (IdAgendamento is not > 0) return;
+
+        try
+        {
+            var agendamento = agendamentoDAO.BuscarPorId(IdAgendamento.Value);
+            if (agendamento == null || !agendamento.Aberto)
+            {
+                IdAgendamento = null;
+                return;
+            }
+
+            if (agendamento.IdCliente > 0) SelecionarCliente(agendamento.IdCliente);
+            idFuncionario = agendamento.IdFuncionario;
+
+            var servico = servicos.FirstOrDefault(s => s.IdServico == agendamento.IdServico);
+            if (servico != null) AdicionarServico(servico);
+        }
+        catch (Exception ex)
+        {
+            erro = "Erro ao carregar o agendamento: " + ex.Message;
         }
     }
 
@@ -1016,6 +1048,15 @@
             }
 
             var id = vendaDAO.Inserir(venda);
+
+            // A venda ja foi gravada: se marcar o agendamento falhar, nao
+            // desfaz a venda. Ele so continua aberto na agenda.
+            if (IdAgendamento is > 0)
+            {
+                try { agendamentoDAO.Concluir(IdAgendamento.Value, id); }
+                catch { }
+            }
+
             Navigation.NavigateTo($"/vendas?nova={id}");
         }
         catch (Exception ex)

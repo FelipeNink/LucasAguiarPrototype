@@ -5,71 +5,34 @@
 @inject ProdutoDAO produtoDAO;
 @inject NavigationManager Navigation;
 
-<PageTitle>Produtos</PageTitle>
-
-<h1>Exclusão de Produto</h1>
-
-@if (erro != string.Empty)
-{
-  <div class="alert alert-danger" role="alert">
-    <strong>Erro!</strong>
-    <span>@erro</span>
-  </div>
-}
-
-
-<EditForm Model="produto" OnSubmit="Excluir">
-  <div class="alert alert-danger" role="alert">
-    <strong>Atenção!</strong>
-    <span>Esta ação não pode ser desfeita.</span>
-
-
-    <p>Tem certeza que deseja excluir o produto <strong>@produto.NomeProduto</strong>?</p>
-  </div>
-
-
-  <button type="submit" class="btn-acao perigo">Excluir</button>
-  <a href="/produto" class="btn-acao">Cancelar</a>
-
-</EditForm>
+<TelaExclusao Entidade="produto" Nome="@produto?.NomeProduto" Voltar="/produto"
+              Aviso="Planos que incluem este produto passam a mostrá-lo como item removido."
+              Encontrado="@(produto != null)" Erro="@erro" OnConfirmar="Excluir" />
 
 @code {
 
-  private string erro = string.Empty;
+  private string? erro;
 
   [Parameter]
   public int Id { get; set; }
 
-  [SupplyParameterFromForm]
-  private Produto produto { get; set; } = new();
+  private Produto? produto;
 
   protected override void OnInitialized()
   {
-    var _produto = produtoDAO.BuscarPorId(Id);
+    produto = produtoDAO.BuscarPorId(Id);
 
-    if (_produto != null)
-    {
-      produto = _produto;
-    }
-    else
+    if (produto == null)
     {
       erro = "Produto não encontrado.";
     }
   }
 
-  private void cancela()
-  {
-  
- 
-      Navigation.NavigateTo("/produto");
- 
-
-  }
   private void Excluir()
   {
     try
     {
-      produtoDAO.Excluir(produto.IdProduto);
+      produtoDAO.Excluir(Id);
 
       Navigation.NavigateTo("/produto");
     }
@@ -79,6 +42,4 @@
     }
 
   }
-  
-}
 }

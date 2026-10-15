@@ -9,6 +9,13 @@ using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// O container nao traz LANG definido e o .NET cai na cultura invariante,
+// cujo simbolo de moeda e o "¤": todo ToString("C") saia com ele no lugar
+// do R$. Fixa pt-BR para moeda, data e separador decimal.
+var culturaPadrao = new System.Globalization.CultureInfo("pt-BR");
+System.Globalization.CultureInfo.DefaultThreadCurrentCulture = culturaPadrao;
+System.Globalization.CultureInfo.DefaultThreadCurrentUICulture = culturaPadrao;
+
 // Hospedagem em container: Render, Railway, Fly e afins informam a porta
 // pela variavel PORT, mas o ASP.NET Core so olha para ASPNETCORE_URLS.
 var porta = Environment.GetEnvironmentVariable("PORT");
@@ -42,6 +49,7 @@ builder.Services.AddScoped<CompraDAO>();
 builder.Services.AddScoped<ClienteDAO>();
 builder.Services.AddScoped<PlanoDAO>();
 builder.Services.AddScoped<VendaDAO>();
+builder.Services.AddScoped<AgendamentoDAO>();
 builder.Services.AddScoped<AssinaturaDAO>();
 builder.Services.AddScoped<CaixaDAO>();
 builder.Services.AddScoped<DespesaDAO>();

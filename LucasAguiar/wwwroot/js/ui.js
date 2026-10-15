@@ -44,6 +44,29 @@ window.tema = {
     }
 };
 
+// A navegacao aprimorada do Blazor sincroniza os atributos do <html> com o
+// HTML vindo do servidor, que nao tem data-tema: o atributo sumia e a tela
+// voltava para o claro a cada troca de pagina. O script do <head> nao roda
+// de novo nessa navegacao, entao o tema e reaplicado aqui.
+(function () {
+    const raiz = document.documentElement;
+
+    function reaplicar() {
+        const salvo = window.tema.ler();
+        if (raiz.getAttribute('data-tema') !== salvo) {
+            raiz.setAttribute('data-tema', salvo);
+        }
+    }
+
+    new MutationObserver(reaplicar).observe(raiz, {
+        attributes: true,
+        attributeFilter: ['data-tema']
+    });
+
+    document.addEventListener('enhancedload', reaplicar);
+    reaplicar();
+})();
+
 // Olhinho de mostrar senha. Ouvinte delegado no documento em vez de um
 // onclick no botao: a tela de login e renderizacao estatica e a navegacao
 // aprimorada do Blazor troca o DOM, entao um ouvinte preso ao elemento

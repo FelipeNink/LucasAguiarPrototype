@@ -1,0 +1,110 @@
+/* Quem rola e o fundo, nao o corpo: o painel do Seletor e absoluto e
+   seria cortado por um corpo com overflow. */
+.fundo-janela {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    overflow-y: auto;
+    padding: 1.5rem;
+    background: rgba(15, 18, 22, 0.55);
+    z-index: 1100;
+}
+
+.janela {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    /* margin auto centraliza e, se a caixa passar da tela, deixa o topo
+       alcancavel pela rolagem (align-items: center cortaria o topo). */
+    margin: auto;
+    background: var(--superficie);
+    border: 1px solid var(--borda);
+    border-radius: var(--raio-cartao);
+    box-shadow: var(--sombra-menu);
+}
+
+.cabecalho {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--borda-suave);
+}
+
+.cabecalho h5 {
+    margin: 0;
+    font-family: var(--fonte-titulo);
+    font-size: 22px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--texto);
+}
+
+.fechar {
+    width: 2rem;
+    height: 2rem;
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    border-radius: 50%;
+    font-size: 1.35rem;
+    line-height: 1;
+    color: var(--texto-fraco);
+    cursor: pointer;
+    transition: background-color 0.15s, color 0.15s;
+}
+
+.fechar:hover {
+    background: var(--superficie-3);
+    color: var(--texto);
+}
+
+.fechar:focus-visible {
+    outline: none;
+    box-shadow: var(--anel-foco);
+}
+
+.corpo {
+    padding: 1.25rem;
+}
+
+.erro {
+    margin-bottom: 1rem;
+    padding: 0.6rem 0.75rem;
+    background: var(--perigo-fundo);
+    border-left: 3px solid var(--perigo-escuro);
+    border-radius: 5px;
+    font-size: 0.85rem;
+    color: var(--perigo-escuro);
+}
+
+.rodape {
+    display: flex;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    padding: 0.9rem 1.25rem;
+    border-top: 1px solid var(--borda-suave);
+}
+
+/* Duas colunas de campos no formulario de edicao. */
+.corpo ::deep .grade-campos {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 16px;
+}
+
+.corpo ::deep .grade-campos .largo {
+    grid-column: 1 / -1;
+}
+
+@media (max-width: 520px) {
+    .fundo-janela {
+        padding: 0.75rem;
+    }
+
+    .corpo ::deep .grade-campos {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}

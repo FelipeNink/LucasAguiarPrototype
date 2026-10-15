@@ -57,6 +57,45 @@ namespace LucasAguiar.Data
             }
         }
 
+        public Fornecedor? BuscarPorId(int id)
+        {
+            return ListarTodos().FirstOrDefault(f => f.IdFornecedor == id);
+        }
+
+        public void Atualizar(Fornecedor fornecedor)
+        {
+            using var conexao = _conexao.GetConnection();
+            using var comando = new MySqlCommand(@"
+                UPDATE fornecedor SET
+                    nome_forn = @nome, email_forn = @email,
+                    telefone_forn = @telefone, tipo_prod_forn = @tipo
+                WHERE id_forn = @id", conexao);
+
+            comando.Parameters.AddWithValue("@nome", fornecedor.NomeFornecedor ?? (object)DBNull.Value);
+            comando.Parameters.AddWithValue("@email", fornecedor.Email ?? (object)DBNull.Value);
+            comando.Parameters.AddWithValue("@telefone", fornecedor.Telefone ?? (object)DBNull.Value);
+            comando.Parameters.AddWithValue("@tipo", fornecedor.TipoProd ?? (object)DBNull.Value);
+            comando.Parameters.AddWithValue("@id", fornecedor.IdFornecedor);
+
+            comando.ExecuteNonQuery();
+        }
+
+        public void Excluir(int id)
+        {
+            try
+            {
+                using var conexao = _conexao.GetConnection();
+                using var comando = new MySqlCommand("DELETE FROM fornecedor WHERE id_forn = @id", conexao);
+                comando.Parameters.AddWithValue("@id", id);
+                comando.ExecuteNonQuery();
+            }
+            catch (MySqlException ex) when (DAOHelper.EhRegistroEmUso(ex))
+            {
+                throw new Exception(
+                    "Este fornecedor está ligado a produtos, compras ou despesas e não pode ser excluído.");
+            }
+        }
+
         public List<Fornecedor> ListarTodos()
         {
             var lista = new List<Fornecedor>();

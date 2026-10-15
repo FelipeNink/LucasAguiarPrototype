@@ -82,6 +82,7 @@ namespace LucasAguiar.Data
                         produto.Marca = DAOHelper.GetString(leitor, "marca_prod");
                         produto.Quantidade = leitor.GetInt32("quantidade_prod");
                         produto.Valor = leitor.GetFloat("valor_prod");
+                        produto.IdFornecedor = DAOHelper.IsNull(leitor, "id_forn_fk") ? 0 : leitor.GetInt32("id_forn_fk");
 
                         return produto;
                     }
@@ -99,13 +100,15 @@ namespace LucasAguiar.Data
             {
                 using (var comando = _conexao.CreateCommand(
                     "UPDATE produto SET nome_prod = @_nome, descricao_prod = @_descricao, marca_prod = @_marca," +
-                    "quantidade_prod = @_quantidade, valor_prod = @_preco WHERE id_prod = @_id;"))
+                    "quantidade_prod = @_quantidade, valor_prod = @_preco, id_forn_fk = @_idForn WHERE id_prod = @_id;"))
                 {
                     comando.Parameters.AddWithValue("@_nome", produto.NomeProduto ?? (object)DBNull.Value);
                     comando.Parameters.AddWithValue("@_descricao", produto.Descricao ?? (object)DBNull.Value);
                     comando.Parameters.AddWithValue("@_marca", produto.Marca ?? (object)DBNull.Value);
                     comando.Parameters.AddWithValue("@_quantidade", produto.Quantidade);
                     comando.Parameters.AddWithValue("@_preco", produto.Valor);
+                    comando.Parameters.AddWithValue("@_idForn",
+                        produto.IdFornecedor > 0 ? produto.IdFornecedor : (object)DBNull.Value);
                     comando.Parameters.AddWithValue("@_id", produto.IdProduto);
 
                     comando.ExecuteNonQuery();
@@ -127,9 +130,10 @@ namespace LucasAguiar.Data
                     comando.ExecuteNonQuery();
                 }
             }
-            catch
+            catch (MySqlException ex) when (DAOHelper.EhRegistroEmUso(ex))
             {
-                throw;
+                throw new Exception(
+                    "Este produto já foi usado em vendas ou compras e não pode ser excluído.");
             }
         }
 

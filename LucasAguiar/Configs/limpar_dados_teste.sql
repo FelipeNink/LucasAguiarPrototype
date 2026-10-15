@@ -4,6 +4,7 @@
 
 USE BarbeariaAguiar_2_0;
 
+DELETE FROM agendamento;
 DELETE FROM venda_item;
 DELETE FROM venda;
 DELETE FROM plano_item;
@@ -13,6 +14,7 @@ DELETE FROM produto;
 DELETE FROM servico;
 DELETE FROM funcionario;
 
+ALTER TABLE agendamento AUTO_INCREMENT = 1;
 ALTER TABLE venda       AUTO_INCREMENT = 1;
 ALTER TABLE venda_item  AUTO_INCREMENT = 1;
 ALTER TABLE cliente     AUTO_INCREMENT = 1;

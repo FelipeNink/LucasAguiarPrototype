@@ -4,8 +4,10 @@
 @using LucasAguiar.Configs
 @using LucasAguiar.Models
 @inject CompraDAO compraDAO
+@inject ProdutoDAO produtoDAO
+@inject FornecedorDAO fornecedorDAO
+@inject FuncionarioDAO funcionarioDAO
 
-<PageTitle>Compras</PageTitle>
 
 <h1>Lista de Compras</h1>
 
@@ -14,19 +16,20 @@
     <a href="/relatorio/compras" class="btn-pdf" data-enhance-nav="false">Relatório PDF</a>
 </div>
 
-<div class="tabela">
+<div class="tabela fixa">
     <table class="table table-striped">
     <thead>
         <tr>
-            <th>#</th>
+            <th class="col-id">#</th>
             <th>Data</th>
             <th>Valor</th>
             <th>Item</th>
-            <th>Quantidade</th>
-            <th>Produto</th>
-            <th>Fornecedor</th>
-            <th>Funcionário</th>
-            <th>Despesa</th>
+            <th class="opcional">Quantidade</th>
+            <th class="opcional">Produto</th>
+            <th class="opcional">Fornecedor</th>
+            <th class="opcional">Funcionário</th>
+            <th class="opcional">Despesa</th>
+            <th class="col-acoes"></th>
         </tr>
     </thead>
     <tbody>
@@ -40,11 +43,11 @@
                     <td>@compra.DataCompra.ToShortDateString()</td>
                     <td>@compra.ValorCompra.ToString("C")</td>
                     <td>@compra.ItemCompra</td>
-                    <td>@compra.Quantidade</td>
-                    <td>@compra.NomeProduto</td>
-                    <td>@compra.NomeFornecedor</td>
-                    <td>@compra.NomeFuncionario</td>
-                    <td>
+                    <td class="opcional">@compra.Quantidade</td>
+                    <td class="opcional">@compra.NomeProduto</td>
+                    <td class="opcional">@compra.NomeFornecedor</td>
+                    <td class="opcional">@compra.NomeFuncionario</td>
+                    <td class="opcional">
                         @if (compra.IdDespesa.HasValue)
                         {
                             <a href="/despesas">lançada</a>
@@ -54,6 +57,11 @@
                             <span class="text-muted">—</span>
                         }
                     </td>
+                    <td class="col-acoes">
+                        <AcoesLinha OnVisualizar="() => visualizando = compra"
+                                    OnEditar="() => Editar(compra)"
+                                    HrefExcluir="@($"/compra/{compra.IdCompra}/excluir")" />
+                    </td>
                 </tr>
                 contador++;
             }
@@ -61,16 +69,110 @@
         else
         {
             <tr>
-                <td colspan="9" class="text-center text-muted">Nenhuma compra encontrada.</td>
+                <td colspan="10" class="text-center text-muted">Nenhuma compra encontrada.</td>
             </tr>
         }
     </tbody>
     </table>
 </div>
 
+<Janela Visivel="@(visualizando != null)" Titulo="@($"Compra #{visualizando?.IdCompra}")"
+        OnFechar="Fechar">
+    <ChildContent>
+        @if (visualizando != null)
+        {
+            <dl class="ficha">
+                <div><dt>Data</dt><dd>@visualizando.DataCompra.ToString("dd/MM/yyyy")</dd></div>
+                <div><dt>Item</dt><dd>@Valor(visualizando.ItemCompra)</dd></div>
+                <div><dt>Valor total</dt><dd>@visualizando.ValorCompra.ToString("C")</dd></div>
+                <div><dt>Quantidade</dt><dd>@visualizando.Quantidade (@visualizando.ValorUnitario.ToString("C") cada)</dd></div>
+                <div><dt>Produto</dt><dd>@Valor(visualizando.NomeProduto)</dd></div>
+                <div><dt>Fornecedor</dt><dd>@Valor(visualizando.NomeFornecedor)</dd></div>
+                <div><dt>Funcionário</dt><dd>@Valor(visualizando.NomeFuncionario)</dd></div>
+                <div>
+                    <dt>Despesa</dt>
+                    <dd>@(visualizando.IdDespesa.HasValue ? $"Lançada (#{visualizando.IdDespesa})" : "—")</dd>
+                </div>
+            </dl>
+        }
+    </ChildContent>
+    <Rodape>
+        <button type="button" class="btn btn-outline-secondary" @onclick="Fechar">Fechar</button>
+        <button type="button" class="btn btn-primary" @onclick="() => Editar(visualizando!)">Editar</button>
+    </Rodape>
+</Janela>
+
+<Janela Visivel="@(editando != null)" Titulo="@($"Editar compra #{editando?.IdCompra}")" Largura="640"
+        Erro="@erroModal" OnFechar="Fechar">
+    <ChildContent>
+        @if (editando != null)
+        {
+            <div class="grade-campos">
+                <div>
+                    <label class="form-label">Data</label>
+                    <input type="date" class="form-control" @bind="editando.DataCompra" />
+                </div>
+                <div>
+                    <label class="form-label">Item</label>
+                    <input class="form-control" @bind="editando.ItemCompra" />
+                </div>
+                <div>
+                    <label class="form-label">Valor total pago</label>
+                    <input type="number" step="0.01" min="0" class="form-control" @bind="editando.ValorCompra" />
+                </div>
+                <div>
+                    <label class="form-label">Quantidade</label>
+                    <input type="number" min="1" class="form-control" @bind="editando.Quantidade" />
+                </div>
+                <div>
+                    <label class="form-label">Produto</label>
+                    <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesProduto"
+                             @bind-Valor="editando.IdProduto" TextoDe="o => o.Rotulo" ValorDe="o => o.Id"
+                             Placeholder="Selecione" Class="mb-3" />
+                </div>
+                <div>
+                    <label class="form-label">Fornecedor</label>
+                    <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesFornecedor"
+                             @bind-Valor="editando.IdFornecedor" TextoDe="o => o.Rotulo" ValorDe="o => o.Id"
+                             Placeholder="Selecione" Class="mb-3" />
+                </div>
+                <div class="largo">
+                    <label class="form-label">Funcionário</label>
+                    <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesFuncionario"
+                             @bind-Valor="editando.IdFuncionario" TextoDe="o => o.Rotulo" ValorDe="o => o.Id"
+                             ComAvatar="true" Placeholder="Selecione" Class="mb-3" />
+                </div>
+            </div>
+            <p class="text-muted mb-0" style="font-size: 13px;">
+                O estoque do produto e a despesa lançada são ajustados junto.
+            </p>
+        }
+    </ChildContent>
+    <Rodape>
+        <button type="button" class="btn btn-outline-secondary" @onclick="Fechar">Cancelar</button>
+        <button type="button" class="btn btn-primary" @onclick="Salvar">Salvar</button>
+    </Rodape>
+</Janela>
 
 @code {
     private List<Compra> listaCompras = new();
+
+    private List<Produto> produtos = new();
+    private List<Fornecedor> fornecedores = new();
+    private List<Funcionario> funcionarios = new();
+
+    private Compra? visualizando;
+    private Compra? editando;
+    private string? erroModal;
+
+    private List<OpcaoId> OpcoesProduto =>
+        produtos.Select(p => new OpcaoId(p.IdProduto, p.NomeProduto ?? "Sem nome")).ToList();
+
+    private List<OpcaoId> OpcoesFornecedor =>
+        fornecedores.Select(f => new OpcaoId(f.IdFornecedor, f.NomeFornecedor ?? "Sem nome")).ToList();
+
+    private List<OpcaoId> OpcoesFuncionario =>
+        funcionarios.Select(u => new OpcaoId(u.IdFuncionario, u.NomeFuncionario ?? "Sem nome")).ToList();
 
     protected override void OnInitialized()
     {
@@ -86,6 +188,66 @@
         catch (Exception ex)
         {
             Console.WriteLine("Erro ao carregar compras: " + ex.Message);
+        }
+    }
+
+    private static string Valor(string? texto) =>
+        string.IsNullOrWhiteSpace(texto) ? "—" : texto;
+
+    /// <summary>Edita uma copia: cancelar o modal nao pode alterar a linha da tabela.</summary>
+    private void Editar(Compra c)
+    {
+        visualizando = null;
+        erroModal = null;
+
+        try
+        {
+            if (produtos.Count == 0) produtos = produtoDAO.ListarTodos();
+            if (fornecedores.Count == 0) fornecedores = fornecedorDAO.ListarTodos();
+            if (funcionarios.Count == 0) funcionarios = funcionarioDAO.ListarTodos();
+        }
+        catch (Exception ex)
+        {
+            erroModal = ex.Message;
+        }
+
+        editando = new Compra
+        {
+            IdCompra = c.IdCompra,
+            DataCompra = c.DataCompra,
+            ValorCompra = c.ValorCompra,
+            ItemCompra = c.ItemCompra,
+            Quantidade = c.Quantidade,
+            IdProduto = c.IdProduto,
+            IdFornecedor = c.IdFornecedor,
+            IdFuncionario = c.IdFuncionario,
+            IdDespesa = c.IdDespesa
+        };
+    }
+
+    private void Fechar()
+    {
+        visualizando = null;
+        editando = null;
+        erroModal = null;
+    }
+
+    private void Salvar()
+    {
+        if (editando == null) return;
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(editando.ItemCompra))
+                throw new Exception("O campo item é obrigatório.");
+
+            compraDAO.Atualizar(editando);
+            Fechar();
+            CarregarCompras();
+        }
+        catch (Exception ex)
+        {
+            erroModal = ex.Message;
         }
     }
 }

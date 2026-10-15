@@ -42,5 +42,15 @@ namespace LucasAguiar.Configs
         {
             return reader.IsDBNull(reader.GetOrdinal(column_name));
         }
+
+        /// <summary>
+        /// DELETE barrado por chave estrangeira: o registro ainda e usado
+        /// em outra tabela (venda, compra, assinatura...).
+        /// </summary>
+        public static bool EhRegistroEmUso(MySqlException ex)
+        {
+            return ex.ErrorCode == MySqlErrorCode.RowIsReferenced2
+                || ex.ErrorCode == MySqlErrorCode.RowIsReferenced;
+        }
     }
 }

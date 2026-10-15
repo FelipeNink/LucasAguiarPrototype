@@ -5,7 +5,6 @@
 @using LucasAguiar.Models
 @inject ServicoDAO servicoDAO
 
-<PageTitle>Serviços</PageTitle>
 
 <h1>Lista de Serviços</h1>
 
@@ -14,15 +13,16 @@
     <a href="/relatorio/servicos" class="btn-pdf" data-enhance-nav="false">Relatório PDF</a>
 </div>
 
-<div class="tabela">
+<div class="tabela fixa">
     <table class="table table-striped">
     <thead>
-        <tr> 
-            <th>#</th>
+        <tr>
+            <th class="col-id">#</th>
             <th>Nome</th>
             <th>Preço</th>
-            <th>Duração</th>
-            <th>Valor Comissão</th>
+            <th class="opcional">Duração</th>
+            <th class="opcional">Valor Comissão</th>
+            <th class="col-acoes"></th>
         </tr>
     </thead>
     <tbody>
@@ -35,8 +35,13 @@
                     <td>@contador</td>
                     <td>@servico.NomeServico</td>
                     <td>@servico.PrecoServico.ToString("C")</td>  @* mostra como moeda *@
-                    <td>@servico.DuracaoServico min</td>
-                    <td>@servico.ComissaoServico.ToString("C")</td>
+                    <td class="opcional">@servico.DuracaoServico min</td>
+                    <td class="opcional">@servico.ComissaoServico.ToString("C")</td>
+                    <td class="col-acoes">
+                        <AcoesLinha OnVisualizar="() => visualizando = servico"
+                                    OnEditar="() => Editar(servico)"
+                                    HrefExcluir="@($"/servico/{servico.IdServico}/excluir")" />
+                    </td>
                 </tr>
                 contador++;
             }
@@ -44,14 +49,67 @@
         else
         {
             <tr>
-                <td colspan="5" class="text-center text-muted">Nenhum serviço encontrado.</td>
+                <td colspan="6" class="text-center text-muted">Nenhum serviço encontrado.</td>
             </tr>
         }
     </tbody>
     </table>
 </div>
+
+<Janela Visivel="@(visualizando != null)" Titulo="@(visualizando?.NomeServico ?? "Serviço")"
+        OnFechar="Fechar">
+    <ChildContent>
+        @if (visualizando != null)
+        {
+            <dl class="ficha">
+                <div><dt>Preço</dt><dd>@visualizando.PrecoServico.ToString("C")</dd></div>
+                <div><dt>Duração</dt><dd>@visualizando.DuracaoServico min</dd></div>
+                <div><dt>Comissão</dt><dd>@visualizando.ComissaoServico.ToString("C")</dd></div>
+            </dl>
+        }
+    </ChildContent>
+    <Rodape>
+        <button type="button" class="btn btn-outline-secondary" @onclick="Fechar">Fechar</button>
+        <button type="button" class="btn btn-primary" @onclick="() => Editar(visualizando!)">Editar</button>
+    </Rodape>
+</Janela>
+
+<Janela Visivel="@(editando != null)" Titulo="Editar serviço" Erro="@erroModal" OnFechar="Fechar">
+    <ChildContent>
+        @if (editando != null)
+        {
+            <div class="grade-campos">
+                <div class="largo">
+                    <label class="form-label">Nome</label>
+                    <input class="form-control" @bind="editando.NomeServico" />
+                </div>
+                <div>
+                    <label class="form-label">Preço</label>
+                    <input type="number" step="0.01" min="0" class="form-control" @bind="editando.PrecoServico" />
+                </div>
+                <div>
+                    <label class="form-label">Duração (minutos)</label>
+                    <input type="number" min="1" class="form-control" @bind="editando.DuracaoServico" />
+                </div>
+                <div>
+                    <label class="form-label">Comissão</label>
+                    <input type="number" step="0.01" min="0" class="form-control" @bind="editando.ComissaoServico" />
+                </div>
+            </div>
+        }
+    </ChildContent>
+    <Rodape>
+        <button type="button" class="btn btn-outline-secondary" @onclick="Fechar">Cancelar</button>
+        <button type="button" class="btn btn-primary" @onclick="Salvar">Salvar</button>
+    </Rodape>
+</Janela>
+
 @code {
     private List<Servico> listaServico = new(); // 🔹 nome minúsculo (padrão)
+
+    private Servico? visualizando;
+    private Servico? editando;
+    private string? erroModal;
 
     protected override void OnInitialized()
     {
@@ -67,6 +125,47 @@
         catch (Exception ex)
         {
             Console.WriteLine("Erro ao carregar serviços: " + ex.Message);
+        }
+    }
+
+    /// <summary>Edita uma copia: cancelar o modal nao pode alterar a linha da tabela.</summary>
+    private void Editar(Servico s)
+    {
+        visualizando = null;
+        erroModal = null;
+        editando = new Servico
+        {
+            IdServico = s.IdServico,
+            NomeServico = s.NomeServico,
+            PrecoServico = s.PrecoServico,
+            DuracaoServico = s.DuracaoServico,
+            ComissaoServico = s.ComissaoServico
+        };
+    }
+
+    private void Fechar()
+    {
+        visualizando = null;
+        editando = null;
+        erroModal = null;
+    }
+
+    private void Salvar()
+    {
+        if (editando == null) return;
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(editando.NomeServico))
+                throw new Exception("O campo Nome é obrigatório.");
+
+            servicoDAO.Atualizar(editando);
+            Fechar();
+            CarregarServico();
+        }
+        catch (Exception ex)
+        {
+            erroModal = ex.Message;
         }
     }
 }

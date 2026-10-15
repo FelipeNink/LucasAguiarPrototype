@@ -1,0 +1,183 @@
+@inject ClienteDAO clienteDAO
+@inject FuncionarioDAO funcionarioDAO
+@inject ServicoDAO servicoDAO
+
+@*
+    Campos do agendamento, usados na tela de novo e no modal de edicao.
+    Carrega os proprios cadastros e cria o que faltar sem sair da tela.
+*@
+
+<div class="grade-agendamento">
+    <div class="largo">
+        <label class="form-label">Cliente <span class="obrigatorio">*</span></label>
+        <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesCliente"
+                 @bind-Valor="Agendamento.IdCliente" TextoDe="o => o.Rotulo" ValorDe="o => o.Id"
+                 ComAvatar="true" Placeholder="Selecione o cliente" Class="mb-3" />
+    </div>
+
+    <div>
+        <label class="form-label">Profissional <span class="obrigatorio">*</span></label>
+        <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesFuncionario"
+                 @bind-Valor="Agendamento.IdFuncionario" TextoDe="o => o.Rotulo" ValorDe="o => o.Id"
+                 ComAvatar="true" Placeholder="Selecione" Class="mb-3" />
+    </div>
+
+    <div>
+        <label class="form-label">Serviço <span class="obrigatorio">*</span></label>
+        <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesServico"
+                 Valor="Agendamento.IdServico" ValorChanged="EscolherServico"
+                 TextoDe="o => o.Rotulo" ValorDe="o => o.Id"
+                 Placeholder="Selecione" Class="mb-3" />
+    </div>
+
+    <div>
+        <label class="form-label">Data <span class="obrigatorio">*</span></label>
+        <input type="date" class="form-control" @bind="Data" />
+    </div>
+
+    <div class="dupla">
+        <div>
+            <label class="form-label">Hora <span class="obrigatorio">*</span></label>
+            <input type="time" class="form-control" @bind="Hora" />
+        </div>
+        <div>
+            <label class="form-label">Duração (min)</label>
+            <input type="number" min="5" step="5" class="form-control" @bind="Agendamento.DuracaoMin" />
+        </div>
+    </div>
+
+    @if (MostrarStatus)
+    {
+        <div class="largo">
+            <label class="form-label">Status</label>
+            <Seletor TItem="Opcao" TValor="string" Itens="OpcoesStatus"
+                     @bind-Valor="Agendamento.Status" TextoDe="o => o.Rotulo" ValorDe="o => o.Valor"
+                     PontoDe="o => o.Cor" Class="mb-3" />
+        </div>
+    }
+
+    <div class="largo">
+        <label class="form-label">Observação</label>
+        <textarea class="form-control" rows="2" placeholder="Ex.: prefere máquina 2 nas laterais"
+                  @bind="Agendamento.Observacao"></textarea>
+    </div>
+</div>
+
+<div class="linha-criar">
+    <button type="button" class="btn-criar" @onclick="() => modalAberto = CadastroRapido.TipoCadastro.Cliente">
+        + Novo cliente
+    </button>
+    <button type="button" class="btn-criar" @onclick="() => modalAberto = CadastroRapido.TipoCadastro.Funcionario">
+        + Novo profissional
+    </button>
+    <button type="button" class="btn-criar" @onclick="() => modalAberto = CadastroRapido.TipoCadastro.Servico">
+        + Novo serviço
+    </button>
+</div>
+
+<CadastroRapido Visivel="@(modalAberto != null)"
+                Tipo="@(modalAberto ?? CadastroRapido.TipoCadastro.Cliente)"
+                OnCriado="AoCriarRegistro"
+                OnCancelado="() => modalAberto = null" />
+
+@code {
+    [Parameter, EditorRequired] public Agendamento Agendamento { get; set; } = new();
+
+    /// <summary>Status so faz sentido ao editar: todo agendamento nasce Agendado.</summary>
+    [Parameter] public bool MostrarStatus { get; set; }
+
+    [Parameter] public EventCallback<string> OnErro { get; set; }
+
+    private CadastroRapido.TipoCadastro? modalAberto;
+
+    private List<Cliente> clientes = new();
+    private List<Funcionario> funcionarios = new();
+    private List<Servico> servicos = new();
+
+    private List<OpcaoId> OpcoesCliente =>
+        clientes.Select(c => new OpcaoId(c.IdCliente, c.Identificacao)).ToList();
+
+    private List<OpcaoId> OpcoesFuncionario =>
+        funcionarios.Select(f => new OpcaoId(f.IdFuncionario, f.NomeFuncionario ?? "Sem nome")).ToList();
+
+    private List<OpcaoId> OpcoesServico =>
+        servicos.Select(s => new OpcaoId(s.IdServico,
+            $"{s.NomeServico} — {s.PrecoServico.ToString("C")} · {s.DuracaoServico} min")).ToList();
+
+    private static readonly List<Opcao> OpcoesStatus = new()
+    {
+        new(StatusAgendamento.Agendado, "Agendado", "var(--alerta)"),
+        new(StatusAgendamento.Concluido, "Concluído", "var(--ok)"),
+        new(StatusAgendamento.Cancelado, "Cancelado", "var(--texto-fraco)")
+    };
+
+    /// <summary>Data e hora em campos separados: o datetime-local do navegador e ruim de usar no celular.</summary>
+    private DateTime Data
+    {
+        get => Agendamento.DataHora.Date;
+        set => Agendamento.DataHora = value.Date + Agendamento.DataHora.TimeOfDay;
+    }
+
+    private TimeOnly Hora
+    {
+        get => TimeOnly.FromDateTime(Agendamento.DataHora);
+        set => Agendamento.DataHora = Agendamento.DataHora.Date + value.ToTimeSpan();
+    }
+
+    protected override void OnInitialized()
+    {
+        try
+        {
+            clientes = clienteDAO.ListarTodos();
+            funcionarios = funcionarioDAO.ListarTodos();
+            servicos = servicoDAO.ListarTodos();
+        }
+        catch (Exception ex)
+        {
+            OnErro.InvokeAsync("Erro ao carregar os cadastros: " + ex.Message);
+        }
+    }
+
+    /// <summary>Trocar o servico traz a duracao dele, que o operador ainda pode ajustar.</summary>
+    private void EscolherServico(int id)
+    {
+        Agendamento.IdServico = id;
+
+        var servico = servicos.FirstOrDefault(s => s.IdServico == id);
+        if (servico != null && servico.DuracaoServico > 0)
+            Agendamento.DuracaoMin = servico.DuracaoServico;
+    }
+
+    /// <summary>Recarrega e ja seleciona, sem perder o que estava preenchido.</summary>
+    private async Task AoCriarRegistro(int id)
+    {
+        try
+        {
+            switch (modalAberto)
+            {
+                case CadastroRapido.TipoCadastro.Cliente:
+                    clientes = clienteDAO.ListarTodos();
+                    Agendamento.IdCliente = id;
+                    break;
+
+                case CadastroRapido.TipoCadastro.Funcionario:
+                    funcionarios = funcionarioDAO.ListarTodos();
+                    Agendamento.IdFuncionario = id;
+                    break;
+
+                case CadastroRapido.TipoCadastro.Servico:
+                    servicos = servicoDAO.ListarTodos();
+                    EscolherServico(id);
+                    break;
+            }
+        }
+        catch (Exception ex)
+        {
+            await OnErro.InvokeAsync(ex.Message);
+        }
+        finally
+        {
+            modalAberto = null;
+        }
+    }
+}

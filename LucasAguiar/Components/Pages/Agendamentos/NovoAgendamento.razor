@@ -1,0 +1,54 @@
+@page "/agendamento/novo"
+@rendermode InteractiveServer
+
+@inject AgendamentoDAO agendamentoDAO
+@inject NavigationManager Navigation
+
+<a href="/agendamentos" class="btn btn-sm btn-outline-secondary mb-3">&#8592; Voltar</a>
+
+<h1>Novo agendamento</h1>
+
+@if (erro != null)
+{
+    <div class="alert alert-danger">@erro</div>
+}
+
+<div class="cartao formulario-agendamento">
+    <CamposAgendamento Agendamento="agendamento" OnErro="m => erro = m" />
+</div>
+
+<div class="mt-3">
+    <button type="button" class="btn btn-primary" @onclick="Salvar">Agendar</button>
+    <a href="/agendamentos" class="btn btn-outline-secondary ms-2">Cancelar</a>
+</div>
+
+@code {
+    private string? erro;
+
+    /// <summary>Sugere o proximo horario redondo de meia hora.</summary>
+    private Agendamento agendamento = new()
+    {
+        DataHora = ProximaMeiaHora()
+    };
+
+    private static DateTime ProximaMeiaHora()
+    {
+        var agora = DateTime.Now;
+        var minutos = agora.Minute < 30 ? 30 : 60;
+        return agora.Date.AddHours(agora.Hour).AddMinutes(minutos);
+    }
+
+    private void Salvar()
+    {
+        try
+        {
+            erro = null;
+            var id = agendamentoDAO.Inserir(agendamento);
+            Navigation.NavigateTo($"/agendamentos?novo={id}");
+        }
+        catch (Exception ex)
+        {
+            erro = ex.Message;
+        }
+    }
+}

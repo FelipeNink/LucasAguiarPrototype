@@ -22,6 +22,31 @@
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `agendamento` (
+  `id_agend` int NOT NULL AUTO_INCREMENT,
+  `data_hora` datetime NOT NULL,
+  `duracao_min` int NOT NULL DEFAULT '30',
+  `id_cli_fk` int NOT NULL,
+  `id_fun_fk` int NOT NULL,
+  `id_serv_fk` int NOT NULL,
+  `observacao` varchar(300) DEFAULT NULL,
+  `status` varchar(20) NOT NULL DEFAULT 'AGENDADO',
+  `id_vend_fk` int DEFAULT NULL,
+  `data_criacao` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id_agend`),
+  KEY `idx_agendamento_data` (`data_hora`),
+  KEY `idx_agendamento_funcionario` (`id_fun_fk`,`data_hora`),
+  KEY `fk_agendamento_cliente` (`id_cli_fk`),
+  KEY `fk_agendamento_servico` (`id_serv_fk`),
+  KEY `fk_agendamento_venda` (`id_vend_fk`),
+  CONSTRAINT `fk_agendamento_cliente` FOREIGN KEY (`id_cli_fk`) REFERENCES `cliente` (`id_cli`),
+  CONSTRAINT `fk_agendamento_funcionario` FOREIGN KEY (`id_fun_fk`) REFERENCES `funcionario` (`id_fun`),
+  CONSTRAINT `fk_agendamento_servico` FOREIGN KEY (`id_serv_fk`) REFERENCES `servico` (`id_serv`),
+  CONSTRAINT `fk_agendamento_venda` FOREIGN KEY (`id_vend_fk`) REFERENCES `venda` (`id_vend`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `assinatura` (
   `id_assinatura` int NOT NULL AUTO_INCREMENT,
   `id_cli_fk` int NOT NULL,

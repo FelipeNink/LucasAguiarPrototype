@@ -5,7 +5,6 @@
 @using LucasAguiar.Configs
 @inject FuncionarioDAO funcionarioDAO
 
-<PageTitle>Funcionários</PageTitle>
 
 <h1>Lista de Funcionários</h1>
 
@@ -14,16 +13,17 @@
     <a href="/relatorio/funcionarios" class="btn-pdf" data-enhance-nav="false">Relatório PDF</a>
 </div>
 
-<div class="tabela">
+<div class="tabela fixa">
     <table class="table table-striped">
     <thead>
         <tr>
-            <th>#</th>
+            <th class="col-id">#</th>
             <th>Nome</th>
             <th>Telefone</th>
-            <th>CPF</th>
-            <th>Email</th>
-            <th>Cidade</th>
+            <th class="opcional">CPF</th>
+            <th class="opcional">Email</th>
+            <th class="opcional">Cidade</th>
+            <th class="col-acoes"></th>
         </tr>
     </thead>
     <tbody>
@@ -36,9 +36,14 @@
                     <td>@contador</td>
                     <td>@funcionario.NomeFuncionario</td>
                     <td>@funcionario.Telefone</td>
-                    <td>@funcionario.CPF</td>
-                    <td>@funcionario.Email</td>
-                    <td>@funcionario.Cidade</td>
+                    <td class="opcional">@funcionario.CPF</td>
+                    <td class="opcional">@funcionario.Email</td>
+                    <td class="opcional">@funcionario.Cidade</td>
+                    <td class="col-acoes">
+                        <AcoesLinha OnVisualizar="() => visualizando = funcionario"
+                                    OnEditar="() => Editar(funcionario)"
+                                    HrefExcluir="@($"/funcionario/{funcionario.IdFuncionario}/excluir")" />
+                    </td>
                 </tr>
                 contador++;
             }
@@ -46,17 +51,171 @@
         else
         {
             <tr>
-                <td colspan="6" class="text-center text-muted">Nenhum funcionário encontrado.</td>
+                <td colspan="7" class="text-center text-muted">Nenhum funcionário encontrado.</td>
             </tr>
         }
     </tbody>
     </table>
 </div>
+
+<Janela Visivel="@(visualizando != null)" Titulo="@(visualizando?.NomeFuncionario ?? "Funcionário")"
+        OnFechar="Fechar">
+    <ChildContent>
+        @if (visualizando != null)
+        {
+            <dl class="ficha">
+                <div><dt>Telefone</dt><dd>@Valor(visualizando.Telefone)</dd></div>
+                <div><dt>Email</dt><dd>@Valor(visualizando.Email)</dd></div>
+                <div><dt>CPF</dt><dd>@Valor(visualizando.CPF)</dd></div>
+                <div><dt>RG</dt><dd>@Valor(visualizando.RG)</dd></div>
+                <div><dt>CTPS</dt><dd>@Valor(visualizando.CTPS)</dd></div>
+                <div><dt>Nascimento</dt><dd>@Valor(visualizando.DataNascimento?.ToString("dd/MM/yyyy"))</dd></div>
+                <div><dt>Salário fixo</dt><dd>@visualizando.SalarioFixo.ToString("C")</dd></div>
+                <div class="largo">
+                    <dt>Endereço</dt>
+                    <dd>@Valor(string.Join(", ", new[] { visualizando.Rua, visualizando.Numero, visualizando.Bairro, visualizando.Cidade, visualizando.Estado }.Where(p => !string.IsNullOrWhiteSpace(p))))</dd>
+                </div>
+            </dl>
+        }
+    </ChildContent>
+    <Rodape>
+        <button type="button" class="btn btn-outline-secondary" @onclick="Fechar">Fechar</button>
+        <button type="button" class="btn btn-primary" @onclick="() => Editar(visualizando!)">Editar</button>
+    </Rodape>
+</Janela>
+
+<Janela Visivel="@(editando != null)" Titulo="Editar funcionário" Largura="640" Erro="@erroModal"
+        OnFechar="Fechar">
+    <ChildContent>
+        @if (editando != null)
+        {
+            <div class="grade-campos">
+                <div class="largo">
+                    <label class="form-label">Nome</label>
+                    <input class="form-control" @bind="editando.NomeFuncionario" />
+                </div>
+                <div>
+                    <label class="form-label">Telefone</label>
+                    <input class="form-control" @bind="editando.Telefone" />
+                </div>
+                <div>
+                    <label class="form-label">Email</label>
+                    <input class="form-control" @bind="editando.Email" />
+                </div>
+                <div>
+                    <label class="form-label">CPF</label>
+                    <input class="form-control" @bind="editando.CPF" />
+                </div>
+                <div>
+                    <label class="form-label">RG</label>
+                    <input class="form-control" @bind="editando.RG" />
+                </div>
+                <div>
+                    <label class="form-label">CTPS</label>
+                    <input class="form-control" @bind="editando.CTPS" />
+                </div>
+                <div>
+                    <label class="form-label">Nascimento</label>
+                    <input type="date" class="form-control" @bind="editando.DataNascimento" />
+                </div>
+                <div>
+                    <label class="form-label">Estado</label>
+                    <input class="form-control" @bind="editando.Estado" />
+                </div>
+                <div>
+                    <label class="form-label">Cidade</label>
+                    <input class="form-control" @bind="editando.Cidade" />
+                </div>
+                <div>
+                    <label class="form-label">Bairro</label>
+                    <input class="form-control" @bind="editando.Bairro" />
+                </div>
+                <div>
+                    <label class="form-label">Rua</label>
+                    <input class="form-control" @bind="editando.Rua" />
+                </div>
+                <div>
+                    <label class="form-label">Número</label>
+                    <input class="form-control" @bind="editando.Numero" />
+                </div>
+                <div>
+                    <label class="form-label">Salário fixo mensal</label>
+                    <input type="number" step="0.01" min="0" class="form-control" @bind="editando.SalarioFixo" />
+                </div>
+            </div>
+        }
+    </ChildContent>
+    <Rodape>
+        <button type="button" class="btn btn-outline-secondary" @onclick="Fechar">Cancelar</button>
+        <button type="button" class="btn btn-primary" @onclick="Salvar">Salvar</button>
+    </Rodape>
+</Janela>
+
 @code {
     private List<Funcionario> listaFuncionarios = new();
+
+    private Funcionario? visualizando;
+    private Funcionario? editando;
+    private string? erroModal;
 
     protected override void OnInitialized()
     {
         listaFuncionarios = funcionarioDAO.ListarTodos();
+    }
+
+    private static string Valor(string? texto) =>
+        string.IsNullOrWhiteSpace(texto) ? "—" : texto;
+
+    /// <summary>Edita uma copia: cancelar o modal nao pode alterar a linha da tabela.</summary>
+    private void Editar(Funcionario f)
+    {
+        visualizando = null;
+        erroModal = null;
+        editando = new Funcionario
+        {
+            IdFuncionario = f.IdFuncionario,
+            NomeFuncionario = f.NomeFuncionario,
+            Telefone = f.Telefone,
+            CPF = f.CPF,
+            DataNascimento = f.DataNascimento,
+            CTPS = f.CTPS,
+            RG = f.RG,
+            Email = f.Email,
+            Estado = f.Estado,
+            Cidade = f.Cidade,
+            Bairro = f.Bairro,
+            Rua = f.Rua,
+            Numero = f.Numero,
+            SalarioFixo = f.SalarioFixo
+        };
+    }
+
+    private void Fechar()
+    {
+        visualizando = null;
+        editando = null;
+        erroModal = null;
+    }
+
+    private void Salvar()
+    {
+        if (editando == null) return;
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(editando.NomeFuncionario))
+                throw new Exception("O nome é obrigatório.");
+
+            if (editando.SalarioFixo < 0)
+                throw new Exception("O salário não pode ser negativo.");
+
+            funcionarioDAO.Atualizar(editando);
+            Fechar();
+            listaFuncionarios = funcionarioDAO.ListarTodos();
+        }
+        catch (Exception ex)
+        {
+            erroModal = ex.Message;
+        }
     }
 }

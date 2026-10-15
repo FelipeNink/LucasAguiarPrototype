@@ -1,0 +1,59 @@
+@*
+    Corpo comum das telas /x/{id}/excluir. A pagina carrega o registro e
+    faz a exclusao no DAO; aqui fica so a confirmacao.
+*@
+
+<a href="@Voltar" class="btn btn-sm btn-outline-secondary mb-3">&#8592; Voltar</a>
+
+<h1>Excluir @Entidade</h1>
+
+@if (!string.IsNullOrEmpty(Erro))
+{
+    <div class="alert alert-danger">@Erro</div>
+}
+
+@if (Encontrado)
+{
+    <div class="cartao confirmacao">
+        <p class="pergunta">Tem certeza que deseja excluir <strong>@Nome</strong>?</p>
+
+        @if (!string.IsNullOrEmpty(Aviso))
+        {
+            <p class="aviso">@Aviso</p>
+        }
+
+        <p class="irreversivel">Esta ação não pode ser desfeita.</p>
+
+        <div class="botoes">
+            <button type="button" class="botao-excluir" disabled="@excluindo" @onclick="Confirmar">
+                @(excluindo ? "Excluindo…" : "Excluir")
+            </button>
+            <a href="@Voltar" class="btn btn-outline-secondary">Cancelar</a>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public string Entidade { get; set; } = "";
+    [Parameter] public string? Nome { get; set; }
+    [Parameter] public string Voltar { get; set; } = "/";
+    [Parameter] public string? Aviso { get; set; }
+    [Parameter] public bool Encontrado { get; set; }
+    [Parameter] public string? Erro { get; set; }
+    [Parameter] public EventCallback OnConfirmar { get; set; }
+
+    private bool excluindo;
+
+    private async Task Confirmar()
+    {
+        excluindo = true;
+        try
+        {
+            await OnConfirmar.InvokeAsync();
+        }
+        finally
+        {
+            excluindo = false;
+        }
+    }
+}

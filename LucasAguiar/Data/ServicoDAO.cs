@@ -63,6 +63,62 @@ namespace LucasAguiar.Data
             }
         }
 
+        public Servico? BuscarPorId(int id)
+        {
+            using var conexao = _conexao.GetConnection();
+            using var comando = new MySqlCommand("SELECT * FROM servico WHERE id_serv = @id", conexao);
+            comando.Parameters.AddWithValue("@id", id);
+
+            using var leitor = comando.ExecuteReader();
+            if (!leitor.Read()) return null;
+
+            return new Servico
+            {
+                IdServico = leitor.GetInt32("id_serv"),
+                NomeServico = leitor.IsDBNull(leitor.GetOrdinal("nome_serv")) ? "" : leitor.GetString("nome_serv"),
+                PrecoServico = leitor.IsDBNull(leitor.GetOrdinal("preco_serv")) ? 0f : leitor.GetFloat(leitor.GetOrdinal("preco_serv")),
+                DuracaoServico = leitor.IsDBNull(leitor.GetOrdinal("duracao_min")) ? 0 : leitor.GetInt32("duracao_min"),
+                ComissaoServico = leitor.IsDBNull(leitor.GetOrdinal("comis_funcionario_cli")) ? 0f : leitor.GetFloat(leitor.GetOrdinal("comis_funcionario_cli"))
+            };
+        }
+
+        public void Atualizar(Servico servico)
+        {
+            if (servico.PrecoServico < 0) throw new Exception("O preço não pode ser negativo.");
+            if (servico.ComissaoServico < 0) throw new Exception("A comissão não pode ser negativa.");
+
+            using var conexao = _conexao.GetConnection();
+            using var comando = new MySqlCommand(@"
+                UPDATE servico SET
+                    nome_serv = @nome, preco_serv = @preco,
+                    duracao_min = @duracao, comis_funcionario_cli = @comissao
+                WHERE id_serv = @id", conexao);
+
+            comando.Parameters.AddWithValue("@nome", servico.NomeServico ?? (object)DBNull.Value);
+            comando.Parameters.AddWithValue("@preco", servico.PrecoServico);
+            comando.Parameters.AddWithValue("@duracao", servico.DuracaoServico);
+            comando.Parameters.AddWithValue("@comissao", servico.ComissaoServico);
+            comando.Parameters.AddWithValue("@id", servico.IdServico);
+
+            comando.ExecuteNonQuery();
+        }
+
+        public void Excluir(int id)
+        {
+            try
+            {
+                using var conexao = _conexao.GetConnection();
+                using var comando = new MySqlCommand("DELETE FROM servico WHERE id_serv = @id", conexao);
+                comando.Parameters.AddWithValue("@id", id);
+                comando.ExecuteNonQuery();
+            }
+            catch (MySqlException ex) when (DAOHelper.EhRegistroEmUso(ex))
+            {
+                throw new Exception(
+                    "Este serviço já foi usado em vendas ou agendamentos e não pode ser excluído.");
+            }
+        }
+
         public List<Servico> ListarTodos()
         {
             var lista = new List<Servico>();

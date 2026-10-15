@@ -1,0 +1,43 @@
+@*
+    Moldura de modal para visualizar e editar registros sem sair da
+    listagem. Nao fecha no clique do fundo de proposito: arrastar o mouse
+    ao selecionar texto de um campo e soltar fora da caixa dispara esse
+    clique e jogaria fora a edicao.
+*@
+
+@if (Visivel)
+{
+    @* modal-overlay: o ui.js trava a rolagem da pagina enquanto ele existir. *@
+    <div class="fundo-janela modal-overlay">
+        <div class="janela" style="max-width: @(Largura)px" role="dialog" aria-modal="true" aria-label="@Titulo">
+            <div class="cabecalho">
+                <h5>@Titulo</h5>
+                <button type="button" class="fechar" @onclick="OnFechar" aria-label="Fechar">×</button>
+            </div>
+
+            <div class="corpo">
+                @if (!string.IsNullOrEmpty(Erro))
+                {
+                    <div class="erro">@Erro</div>
+                }
+
+                @ChildContent
+            </div>
+
+            @if (Rodape != null)
+            {
+                <div class="rodape">@Rodape</div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool Visivel { get; set; }
+    [Parameter] public string Titulo { get; set; } = "";
+    [Parameter] public int Largura { get; set; } = 560;
+    [Parameter] public string? Erro { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public RenderFragment? Rodape { get; set; }
+    [Parameter] public EventCallback OnFechar { get; set; }
+}

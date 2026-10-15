@@ -107,6 +107,52 @@ namespace LucasAguiar.Data
             return lista;
         }
 
+        public void Atualizar(Cliente cliente)
+        {
+            using var conexao = _conexao.GetConnection();
+            using var comando = new MySqlCommand(@"
+                UPDATE cliente SET
+                    nome_cli = @nome, telefone_cli = @telefone, cpf_cli = @cpf,
+                    data_nasc_cli = @dataNasc, rg_cli = @rg, estado_cli = @estado,
+                    cidade_cli = @cidade, bairro_cli = @bairro, rua_cli = @rua,
+                    numero_cli = @numero, id_plan_fk = @idPlano
+                WHERE id_cli = @id", conexao);
+
+            comando.Parameters.AddWithValue("@nome", cliente.NomeCliente ?? (object)DBNull.Value);
+            comando.Parameters.AddWithValue("@telefone", cliente.Telefone ?? (object)DBNull.Value);
+            comando.Parameters.AddWithValue("@cpf", cliente.CPF ?? (object)DBNull.Value);
+            comando.Parameters.AddWithValue("@dataNasc", cliente.DataNascimento ?? (object)DBNull.Value);
+            comando.Parameters.AddWithValue("@rg", cliente.RG ?? (object)DBNull.Value);
+            comando.Parameters.AddWithValue("@estado", cliente.Estado ?? (object)DBNull.Value);
+            comando.Parameters.AddWithValue("@cidade", cliente.Cidade ?? (object)DBNull.Value);
+            comando.Parameters.AddWithValue("@bairro", cliente.Bairro ?? (object)DBNull.Value);
+            comando.Parameters.AddWithValue("@rua", cliente.Rua ?? (object)DBNull.Value);
+            comando.Parameters.AddWithValue("@numero", cliente.Numero ?? (object)DBNull.Value);
+            comando.Parameters.AddWithValue("@idPlano",
+                cliente.IdPlano.HasValue && cliente.IdPlano.Value > 0
+                    ? cliente.IdPlano.Value
+                    : (object)DBNull.Value);
+            comando.Parameters.AddWithValue("@id", cliente.IdCliente);
+
+            comando.ExecuteNonQuery();
+        }
+
+        public void Excluir(int id)
+        {
+            try
+            {
+                using var conexao = _conexao.GetConnection();
+                using var comando = new MySqlCommand("DELETE FROM cliente WHERE id_cli = @id", conexao);
+                comando.Parameters.AddWithValue("@id", id);
+                comando.ExecuteNonQuery();
+            }
+            catch (MySqlException ex) when (DAOHelper.EhRegistroEmUso(ex))
+            {
+                throw new Exception(
+                    "Este cliente tem vendas, assinaturas ou agendamentos registrados e não pode ser excluído.");
+            }
+        }
+
         private static Cliente Ler(MySqlDataReader leitor)
         {
             string? Texto(string coluna)

@@ -1,0 +1,41 @@
+@page "/funcionario/{Id:int}/excluir"
+@rendermode InteractiveServer
+
+@inject FuncionarioDAO funcionarioDAO
+@inject NavigationManager Navigation
+
+<TelaExclusao Entidade="funcionário" Nome="@funcionario?.NomeFuncionario" Voltar="/funcionario"
+              Encontrado="@(funcionario != null)" Erro="@erro" OnConfirmar="Excluir" />
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private Funcionario? funcionario;
+    private string? erro;
+
+    protected override void OnInitialized()
+    {
+        try
+        {
+            funcionario = funcionarioDAO.BuscarPorId(Id);
+            if (funcionario == null) erro = "Funcionário não encontrado.";
+        }
+        catch (Exception ex)
+        {
+            erro = ex.Message;
+        }
+    }
+
+    private void Excluir()
+    {
+        try
+        {
+            funcionarioDAO.Excluir(Id);
+            Navigation.NavigateTo("/funcionario");
+        }
+        catch (Exception ex)
+        {
+            erro = ex.Message;
+        }
+    }
+}

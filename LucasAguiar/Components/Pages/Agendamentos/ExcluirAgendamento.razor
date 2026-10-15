@@ -1,0 +1,51 @@
+@page "/agendamento/{Id:int}/excluir"
+@rendermode InteractiveServer
+
+@inject AgendamentoDAO agendamentoDAO
+@inject NavigationManager Navigation
+
+<TelaExclusao Entidade="agendamento" Nome="@Descricao" Voltar="/agendamentos"
+              Aviso="@Aviso" Encontrado="@(agendamento != null)" Erro="@erro"
+              OnConfirmar="Excluir" />
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private Agendamento? agendamento;
+    private string? erro;
+
+    private string? Descricao => agendamento == null
+        ? null
+        : $"{agendamento.NomeCliente} — {agendamento.DataHora:dd/MM 'às' HH:mm}";
+
+    /// <summary>Para tirar da agenda sem perder o historico, o caminho e cancelar.</summary>
+    private string Aviso => agendamento?.IdVenda != null
+        ? $"A venda #{agendamento.IdVenda} gerada por este agendamento não será afetada."
+        : "Se o cliente só desmarcou, prefira editar e mudar o status para Cancelado.";
+
+    protected override void OnInitialized()
+    {
+        try
+        {
+            agendamento = agendamentoDAO.BuscarPorId(Id);
+            if (agendamento == null) erro = "Agendamento não encontrado.";
+        }
+        catch (Exception ex)
+        {
+            erro = ex.Message;
+        }
+    }
+
+    private void Excluir()
+    {
+        try
+        {
+            agendamentoDAO.Excluir(Id);
+            Navigation.NavigateTo("/agendamentos");
+        }
+        catch (Exception ex)
+        {
+            erro = ex.Message;
+        }
+    }
+}

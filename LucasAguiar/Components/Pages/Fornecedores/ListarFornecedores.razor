@@ -1,10 +1,10 @@
 ﻿@page "/fornecedores"
+@rendermode InteractiveServer
 
 @using LucasAguiar.Configs
 @using LucasAguiar.Models
 @inject FornecedorDAO fornecedorDAO
 
-<PageTitle>Fornecedores</PageTitle>
 
 <h1>Lista de Fornecedores</h1>
 
@@ -13,15 +13,16 @@
     <a href="/relatorio/fornecedores" class="btn-pdf" data-enhance-nav="false">Relatório PDF</a>
 </div>
 
-<div class="tabela">
+<div class="tabela fixa">
     <table class="table table-striped">
     <thead>
         <tr>
-            <th>#</th>
+            <th class="col-id">#</th>
             <th>Nome</th>
-            <th>Email</th>
+            <th class="opcional">Email</th>
             <th>Telefone</th>
-            <th>Tipo de Produto</th>
+            <th class="opcional">Tipo de Produto</th>
+            <th class="col-acoes"></th>
         </tr>
     </thead>
     <tbody>
@@ -33,9 +34,14 @@
                 <tr>
                     <td>@contador</td>
                     <td>@fornecedor.NomeFornecedor</td>
-                    <td>@fornecedor.Email</td>
+                    <td class="opcional">@fornecedor.Email</td>
                     <td>@fornecedor.Telefone</td>
-                    <td>@fornecedor.TipoProd</td>
+                    <td class="opcional">@fornecedor.TipoProd</td>
+                    <td class="col-acoes">
+                        <AcoesLinha OnVisualizar="() => visualizando = fornecedor"
+                                    OnEditar="() => Editar(fornecedor)"
+                                    HrefExcluir="@($"/fornecedores/{fornecedor.IdFornecedor}/excluir")" />
+                    </td>
                 </tr>
                 contador++;
             }
@@ -43,14 +49,67 @@
         else
         {
             <tr>
-                <td colspan="5" class="text-center text-muted">Nenhum fornecedor encontrado.</td>
+                <td colspan="6" class="text-center text-muted">Nenhum fornecedor encontrado.</td>
             </tr>
         }
     </tbody>
     </table>
 </div>
+
+<Janela Visivel="@(visualizando != null)" Titulo="@(visualizando?.NomeFornecedor ?? "Fornecedor")"
+        OnFechar="Fechar">
+    <ChildContent>
+        @if (visualizando != null)
+        {
+            <dl class="ficha">
+                <div><dt>Telefone</dt><dd>@Valor(visualizando.Telefone)</dd></div>
+                <div><dt>Email</dt><dd>@Valor(visualizando.Email)</dd></div>
+                <div class="largo"><dt>Tipo de produto</dt><dd>@Valor(visualizando.TipoProd)</dd></div>
+            </dl>
+        }
+    </ChildContent>
+    <Rodape>
+        <button type="button" class="btn btn-outline-secondary" @onclick="Fechar">Fechar</button>
+        <button type="button" class="btn btn-primary" @onclick="() => Editar(visualizando!)">Editar</button>
+    </Rodape>
+</Janela>
+
+<Janela Visivel="@(editando != null)" Titulo="Editar fornecedor" Erro="@erroModal" OnFechar="Fechar">
+    <ChildContent>
+        @if (editando != null)
+        {
+            <div class="grade-campos">
+                <div class="largo">
+                    <label class="form-label">Nome</label>
+                    <input class="form-control" @bind="editando.NomeFornecedor" />
+                </div>
+                <div>
+                    <label class="form-label">Email</label>
+                    <input class="form-control" @bind="editando.Email" />
+                </div>
+                <div>
+                    <label class="form-label">Telefone</label>
+                    <input class="form-control" @bind="editando.Telefone" />
+                </div>
+                <div class="largo">
+                    <label class="form-label">Tipo de produto</label>
+                    <textarea class="form-control" rows="4" @bind="editando.TipoProd"></textarea>
+                </div>
+            </div>
+        }
+    </ChildContent>
+    <Rodape>
+        <button type="button" class="btn btn-outline-secondary" @onclick="Fechar">Cancelar</button>
+        <button type="button" class="btn btn-primary" @onclick="Salvar">Salvar</button>
+    </Rodape>
+</Janela>
+
 @code {
     private List<Fornecedor> listaFornecedores = new();
+
+    private Fornecedor? visualizando;
+    private Fornecedor? editando;
+    private string? erroModal;
 
     private void CarregarFornecedores()
     {
@@ -60,5 +119,49 @@
     protected override void OnInitialized()
     {
         CarregarFornecedores();
+    }
+
+    private static string Valor(string? texto) =>
+        string.IsNullOrWhiteSpace(texto) ? "—" : texto;
+
+    /// <summary>Edita uma copia: cancelar o modal nao pode alterar a linha da tabela.</summary>
+    private void Editar(Fornecedor f)
+    {
+        visualizando = null;
+        erroModal = null;
+        editando = new Fornecedor
+        {
+            IdFornecedor = f.IdFornecedor,
+            NomeFornecedor = f.NomeFornecedor,
+            Email = f.Email,
+            Telefone = f.Telefone,
+            TipoProd = f.TipoProd
+        };
+    }
+
+    private void Fechar()
+    {
+        visualizando = null;
+        editando = null;
+        erroModal = null;
+    }
+
+    private void Salvar()
+    {
+        if (editando == null) return;
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(editando.NomeFornecedor))
+                throw new Exception("O campo nome é obrigatório");
+
+            fornecedorDAO.Atualizar(editando);
+            Fechar();
+            CarregarFornecedores();
+        }
+        catch (Exception ex)
+        {
+            erroModal = ex.Message;
+        }
     }
 }

@@ -4,8 +4,8 @@
 @using LucasAguiar.Models
 @using LucasAguiar.Configs
 @inject ProdutoDAO produtoDAO
+@inject FornecedorDAO fornecedorDAO
 
-<PageTitle>Produtos</PageTitle>
 
 <h1>Lista de Produtos</h1>
 
@@ -14,18 +14,18 @@
     <a href="/relatorio/produtos" class="btn-pdf" data-enhance-nav="false">Relatório PDF</a>
 </div>
 
-<div class="tabela">
+<div class="tabela fixa">
     <table class="table table-striped">
     <thead>
         <tr>
-            <th>#</th>
+            <th class="col-id">#</th>
             <th>Nome</th>
             <th>Quantidade</th>
             <th>Valor</th>
-            <th>Descrição</th>
-            <th>Marca</th>
-            <th>Fornecedor</th>
-            <th></th>
+            <th class="opcional">Descrição</th>
+            <th class="opcional">Marca</th>
+            <th class="opcional">Fornecedor</th>
+            <th class="col-acoes"></th>
         </tr>
     </thead>
     <tbody>
@@ -37,16 +37,15 @@
                     <td>@produto.IdProduto</td>
                     <td>@produto.NomeProduto</td>
                     <td>@produto.Quantidade</td>
-                    <td>R$ @produto.Valor</td>
-                    <td> @produto.Descricao</td>
-                    <td> @produto.Marca</td>
-                    <td> @produto.NomeFornecedor</td>
+                    <td>@produto.Valor.ToString("C")</td>
+                    <td class="opcional"> @produto.Descricao</td>
+                    <td class="opcional"> @produto.Marca</td>
+                    <td class="opcional"> @produto.NomeFornecedor</td>
 
                     <td class="col-acoes">
-                        <span class="acoes">
-                            <a href="/produto/@produto.IdProduto/editar" class="btn-acao">Editar</a>
-                            <a href="/produto/@produto.IdProduto/excluir" class="btn-acao perigo">Excluir</a>
-                        </span>
+                        <AcoesLinha OnVisualizar="() => visualizando = produto"
+                                    OnEditar="() => Editar(produto)"
+                                    HrefExcluir="@($"/produto/{produto.IdProduto}/excluir")" />
                     </td>
                 </tr>
             }
@@ -60,11 +59,130 @@
     </tbody>
     </table>
 </div>
+
+<Janela Visivel="@(visualizando != null)" Titulo="@(visualizando?.NomeProduto ?? "Produto")"
+        OnFechar="Fechar">
+    <ChildContent>
+        @if (visualizando != null)
+        {
+            <dl class="ficha">
+                <div><dt>Valor</dt><dd>@visualizando.Valor.ToString("C")</dd></div>
+                <div><dt>Estoque</dt><dd>@visualizando.Quantidade</dd></div>
+                <div><dt>Marca</dt><dd>@Valor(visualizando.Marca)</dd></div>
+                <div><dt>Fornecedor</dt><dd>@Valor(visualizando.NomeFornecedor)</dd></div>
+                <div class="largo"><dt>Descrição</dt><dd>@Valor(visualizando.Descricao)</dd></div>
+            </dl>
+        }
+    </ChildContent>
+    <Rodape>
+        <button type="button" class="btn btn-outline-secondary" @onclick="Fechar">Fechar</button>
+        <button type="button" class="btn btn-primary" @onclick="() => Editar(visualizando!)">Editar</button>
+    </Rodape>
+</Janela>
+
+<Janela Visivel="@(editando != null)" Titulo="Editar produto" Erro="@erroModal" OnFechar="Fechar">
+    <ChildContent>
+        @if (editando != null)
+        {
+            <div class="grade-campos">
+                <div class="largo">
+                    <label class="form-label">Nome</label>
+                    <input class="form-control" @bind="editando.NomeProduto" />
+                </div>
+                <div>
+                    <label class="form-label">Quantidade</label>
+                    <input type="number" class="form-control" @bind="editando.Quantidade" />
+                </div>
+                <div>
+                    <label class="form-label">Valor</label>
+                    <input type="number" step="0.01" min="0" class="form-control" @bind="editando.Valor" />
+                </div>
+                <div>
+                    <label class="form-label">Marca</label>
+                    <input class="form-control" @bind="editando.Marca" />
+                </div>
+                <div>
+                    <label class="form-label">Fornecedor</label>
+                    <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesFornecedor"
+                             @bind-Valor="editando.IdFornecedor" TextoDe="o => o.Rotulo"
+                             ValorDe="o => o.Id" Placeholder="Selecione" Class="mb-3" />
+                </div>
+                <div class="largo">
+                    <label class="form-label">Descrição</label>
+                    <textarea class="form-control" rows="3" @bind="editando.Descricao"></textarea>
+                </div>
+            </div>
+        }
+    </ChildContent>
+    <Rodape>
+        <button type="button" class="btn btn-outline-secondary" @onclick="Fechar">Cancelar</button>
+        <button type="button" class="btn btn-primary" @onclick="Salvar">Salvar</button>
+    </Rodape>
+</Janela>
+
 @code {
     private List<Produto> listaProdutos = new();
+    private List<Fornecedor> fornecedores = new();
+
+    private Produto? visualizando;
+    private Produto? editando;
+    private string? erroModal;
+
+    private List<OpcaoId> OpcoesFornecedor =>
+        fornecedores.Select(f => new OpcaoId(f.IdFornecedor, f.NomeFornecedor ?? "Sem nome")).ToList();
 
     protected override void OnInitialized()
     {
         listaProdutos = produtoDAO.ListarTodos();
+    }
+
+    private static string Valor(string? texto) =>
+        string.IsNullOrWhiteSpace(texto) ? "—" : texto;
+
+    /// <summary>Edita uma copia: cancelar o modal nao pode alterar a linha da tabela.</summary>
+    private void Editar(Produto p)
+    {
+        visualizando = null;
+        erroModal = null;
+
+        try { if (fornecedores.Count == 0) fornecedores = fornecedorDAO.ListarTodos(); }
+        catch (Exception ex) { erroModal = ex.Message; }
+
+        editando = new Produto
+        {
+            IdProduto = p.IdProduto,
+            NomeProduto = p.NomeProduto,
+            Quantidade = p.Quantidade,
+            Valor = p.Valor,
+            Descricao = p.Descricao,
+            Marca = p.Marca,
+            IdFornecedor = p.IdFornecedor
+        };
+    }
+
+    private void Fechar()
+    {
+        visualizando = null;
+        editando = null;
+        erroModal = null;
+    }
+
+    private void Salvar()
+    {
+        if (editando == null) return;
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(editando.NomeProduto))
+                throw new Exception("O nome do produto é obrigatório.");
+
+            produtoDAO.Atualizar(editando);
+            Fechar();
+            listaProdutos = produtoDAO.ListarTodos();
+        }
+        catch (Exception ex)
+        {
+            erroModal = $"Erro ao salvar o produto: {ex.Message}";
+        }
     }
 }

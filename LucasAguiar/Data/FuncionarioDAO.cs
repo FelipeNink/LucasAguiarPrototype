@@ -67,6 +67,57 @@ namespace LucasAguiar.Data
             }
         }
 
+        public Funcionario? BuscarPorId(int id)
+        {
+            return ListarTodos().FirstOrDefault(f => f.IdFuncionario == id);
+        }
+
+        public void Atualizar(Funcionario funcionario)
+        {
+            using var conexao = _conexao.GetConnection();
+            using var comando = new MySqlCommand(@"
+                UPDATE funcionario SET
+                    nome_fun = @nome, telefone_fun = @telefone, cpf_fun = @cpf,
+                    data_nasc_fun = @dataNasc, ctps_fun = @ctps, rg_fun = @rg,
+                    email_fun = @email, estado_fun = @estado, cidade_fun = @cidade,
+                    bairro_fun = @bairro, rua_fun = @rua, numero_fun = @numero,
+                    salario_fixo = @salario
+                WHERE id_fun = @id", conexao);
+
+            comando.Parameters.AddWithValue("@nome", funcionario.NomeFuncionario ?? (object)DBNull.Value);
+            comando.Parameters.AddWithValue("@telefone", funcionario.Telefone ?? (object)DBNull.Value);
+            comando.Parameters.AddWithValue("@cpf", funcionario.CPF ?? (object)DBNull.Value);
+            comando.Parameters.AddWithValue("@dataNasc", funcionario.DataNascimento ?? (object)DBNull.Value);
+            comando.Parameters.AddWithValue("@ctps", funcionario.CTPS ?? (object)DBNull.Value);
+            comando.Parameters.AddWithValue("@rg", funcionario.RG ?? (object)DBNull.Value);
+            comando.Parameters.AddWithValue("@email", funcionario.Email ?? (object)DBNull.Value);
+            comando.Parameters.AddWithValue("@estado", funcionario.Estado ?? (object)DBNull.Value);
+            comando.Parameters.AddWithValue("@cidade", funcionario.Cidade ?? (object)DBNull.Value);
+            comando.Parameters.AddWithValue("@bairro", funcionario.Bairro ?? (object)DBNull.Value);
+            comando.Parameters.AddWithValue("@rua", funcionario.Rua ?? (object)DBNull.Value);
+            comando.Parameters.AddWithValue("@numero", funcionario.Numero ?? (object)DBNull.Value);
+            comando.Parameters.AddWithValue("@salario", funcionario.SalarioFixo);
+            comando.Parameters.AddWithValue("@id", funcionario.IdFuncionario);
+
+            comando.ExecuteNonQuery();
+        }
+
+        public void Excluir(int id)
+        {
+            try
+            {
+                using var conexao = _conexao.GetConnection();
+                using var comando = new MySqlCommand("DELETE FROM funcionario WHERE id_fun = @id", conexao);
+                comando.Parameters.AddWithValue("@id", id);
+                comando.ExecuteNonQuery();
+            }
+            catch (MySqlException ex) when (DAOHelper.EhRegistroEmUso(ex))
+            {
+                throw new Exception(
+                    "Este funcionário tem vendas, compras, folhas ou agendamentos registrados e não pode ser excluído.");
+            }
+        }
+
         public List<Funcionario> ListarTodos()
         {
             var lista = new List<Funcionario>();

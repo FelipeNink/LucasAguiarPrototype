@@ -778,6 +778,97 @@ table.table > tbody > tr:hover > td.text-center.text-muted {
     background: transparent;
 }
 
+/* ---------- tabela fixa ----------
+   Listagens de cadastro: largura das colunas travada e texto longo
+   quebrando dentro da celula, em vez de esticar a tabela e criar
+   rolagem lateral. No celular as colunas .opcional saem. */
+
+.tabela.fixa {
+    overflow-x: visible;
+}
+
+.tabela.fixa .table {
+    table-layout: fixed;
+    min-width: 0;
+}
+
+.tabela.fixa td {
+    overflow-wrap: anywhere;
+}
+
+.tabela.fixa th {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tabela.fixa .col-id {
+    width: 64px;
+}
+
+/* Tres botoes de 40px + folgas. */
+.tabela.fixa th.col-acoes {
+    width: 160px;
+}
+
+.tabela.fixa th.col-acoes.quatro {
+    width: 204px;
+}
+
+@media (max-width: 760px) {
+    .tabela.fixa .opcional {
+        display: none;
+    }
+
+    .tabela.fixa .col-id {
+        width: 44px;
+    }
+}
+
+/* Visualizar, editar e excluir lado a lado na linha. */
+.acoes {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* ---------- ficha (visualizar) ---------- */
+
+.ficha {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px 22px;
+    margin: 0;
+}
+
+.ficha .largo {
+    grid-column: 1 / -1;
+}
+
+.ficha dt {
+    font-size: 11.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--texto-3);
+}
+
+.ficha dd {
+    margin: 3px 0 0;
+    font-size: 15px;
+    color: var(--texto);
+    overflow-wrap: anywhere;
+}
+
+.ficha dd.vazio-campo {
+    color: var(--texto-fraco);
+}
+
+@media (max-width: 520px) {
+    .ficha {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
 /* ===========================================================
    SUPERFICIES E INDICADORES
    =========================================================== */
