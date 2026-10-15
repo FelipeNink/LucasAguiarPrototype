@@ -35,7 +35,9 @@
     @if (caixaAberto != null)
     {
         <div>
-            <strong>Caixa #@caixaAberto.IdCaixa aberto</strong>
+            <strong class="status aberto-caixa">
+                <i></i>Caixa #@caixaAberto.IdCaixa aberto
+            </strong>
             <span>desde @caixaAberto.DataAbertura.ToString("dd/MM 'às' HH:mm")</span>
         </div>
         <div class="gaveta-agora">
@@ -94,7 +96,6 @@
     <section class="cartao cartao-pizza">
         <header class="cartao-topo">
             <h2>Formas de pagamento</h2>
-            <span class="cartao-sub">@RotuloPeriodo</span>
         </header>
         <div class="area-grafico">
             <canvas id="pieChart"></canvas>

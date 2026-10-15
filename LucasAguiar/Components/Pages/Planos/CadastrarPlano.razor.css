@@ -357,3 +357,10 @@
         row-gap: 0.5rem;
     }
 }
+
+/* Quantidade do item do plano em condensada, como os demais numeros. */
+.contador span {
+    font-family: var(--fonte-titulo);
+    font-size: 17px;
+    font-variant-numeric: tabular-nums;
+}

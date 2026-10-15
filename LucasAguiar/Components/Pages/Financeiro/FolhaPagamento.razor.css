@@ -276,3 +276,45 @@ tr.pago {
         grid-template-columns: repeat(2, 1fr);
     }
 }
+
+/* Seletor de mes: setas como botao de icone e o mes em condensada,
+   que e a fonte dos numeros grandes no resto do sistema. */
+.seletor-mes .seta {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    background: none;
+    border: 1px solid var(--borda-2);
+    border-radius: var(--raio);
+    font-size: 18px;
+    color: var(--texto-2);
+    cursor: pointer;
+    transition: background-color 0.15s, border-color 0.15s;
+}
+
+.seletor-mes .seta:hover:enabled {
+    background: var(--superficie-3);
+    border-color: var(--borda-3);
+}
+
+.seletor-mes .seta:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.seletor-mes .mes-atual {
+    font-family: var(--fonte-titulo);
+    font-size: 24px;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--texto);
+}
+
+/* Numeros de servicos e produtos tambem na condensada. */
+.contador {
+    font-family: var(--fonte-titulo);
+    font-variant-numeric: tabular-nums;
+}

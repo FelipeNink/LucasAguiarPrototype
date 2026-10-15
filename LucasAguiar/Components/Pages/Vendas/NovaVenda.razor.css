@@ -1100,3 +1100,10 @@
     background: var(--superficie-3);
     color: var(--texto-apagado);
 }
+
+/* Quantidade do item na nota, em condensada. */
+.contador span {
+    font-family: var(--fonte-titulo);
+    font-size: 17px;
+    font-variant-numeric: tabular-nums;
+}
