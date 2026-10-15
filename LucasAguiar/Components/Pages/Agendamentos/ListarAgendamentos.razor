@@ -8,6 +8,7 @@
 
 <div class="barra-acoes">
     <a href="/agendamento/novo" class="btn-novo">Novo agendamento</a>
+    <a href="/excel/agendamentos" class="btn-pdf" data-enhance-nav="false">Excel</a>
 </div>
 
 @if (Novo.HasValue)
@@ -57,7 +58,7 @@
                 <th class="opcional">Serviço</th>
                 <th class="opcional">Profissional</th>
                 <th class="col-status">Status</th>
-                <th class="col-acoes quatro"></th>
+                <th class="col-acoes quatro">Ações</th>
             </tr>
         </thead>
         <tbody>

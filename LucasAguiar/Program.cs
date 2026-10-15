@@ -135,6 +135,7 @@ app.MapStaticAssets();
 app.MapGet("/health", () => Results.Ok("ok"));
 
 app.MapearRelatorios();
+app.MapearExcel();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 

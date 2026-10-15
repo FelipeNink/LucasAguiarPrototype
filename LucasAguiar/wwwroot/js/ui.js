@@ -67,6 +67,28 @@ window.tema = {
     reaplicar();
 })();
 
+// Atalhos globais: F2 abre a nova venda e F3 o novo agendamento, de qualquer
+// tela. Vale tambem digitando num campo: tecla de funcao nao escreve nada.
+document.addEventListener('keydown', function (evento) {
+    if (evento.ctrlKey || evento.altKey || evento.metaKey || evento.shiftKey) return;
+
+    const destino = { F2: '/venda/nova', F3: '/agendamento/novo' }[evento.key];
+    if (!destino) return;
+
+    // Na tela de login nao ha sistema para navegar.
+    if (location.pathname.toLowerCase().startsWith('/login')) return;
+
+    evento.preventDefault(); // o F3 do navegador abre a busca na pagina
+
+    if (location.pathname === destino) return;
+
+    if (window.Blazor && typeof window.Blazor.navigateTo === 'function') {
+        window.Blazor.navigateTo(destino);
+    } else {
+        location.href = destino;
+    }
+});
+
 // Olhinho de mostrar senha. Ouvinte delegado no documento em vez de um
 // onclick no botao: a tela de login e renderizacao estatica e a navegacao
 // aprimorada do Blazor troca o DOM, entao um ouvinte preso ao elemento

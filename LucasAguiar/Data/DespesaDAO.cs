@@ -59,6 +59,34 @@ namespace LucasAguiar.Data
             return Convert.ToInt32(comando.ExecuteScalar());
         }
 
+        /// <summary>
+        /// Corrige os dados descritivos. Valor, forma e situação ficam de
+        /// fora de propósito: já compõem o fechamento do caixa.
+        /// </summary>
+        public void AtualizarDados(Despesa despesa)
+        {
+            if (string.IsNullOrWhiteSpace(despesa.Descricao))
+                throw new Exception("Informe a descrição da despesa.");
+
+            using var conexao = _conexao.GetConnection();
+            using var comando = new MySqlCommand(@"
+                UPDATE despesa SET
+                    data_desp = @data, descricao = @descricao, categoria = @categoria,
+                    id_forn_fk = @idFornecedor, observacao = @observacao
+                WHERE id_desp = @id", conexao);
+
+            comando.Parameters.AddWithValue("@data", despesa.DataDespesa.Date);
+            comando.Parameters.AddWithValue("@descricao", despesa.Descricao.Trim());
+            comando.Parameters.AddWithValue("@categoria", despesa.Categoria);
+            comando.Parameters.AddWithValue("@idFornecedor",
+                despesa.IdFornecedor > 0 ? despesa.IdFornecedor : (object)DBNull.Value);
+            comando.Parameters.AddWithValue("@observacao",
+                string.IsNullOrWhiteSpace(despesa.Observacao) ? (object)DBNull.Value : despesa.Observacao.Trim());
+            comando.Parameters.AddWithValue("@id", despesa.IdDespesa);
+
+            comando.ExecuteNonQuery();
+        }
+
         public void Excluir(int id)
         {
             using var conexao = _conexao.GetConnection();

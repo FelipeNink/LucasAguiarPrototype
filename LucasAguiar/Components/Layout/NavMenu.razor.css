@@ -99,6 +99,7 @@
     flex: 1;
     min-height: 0;
     overflow-y: auto;
+    scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
     padding: 22px 16px;
 }
 .grupo + .grupo {
@@ -258,4 +259,20 @@
     .navbar-toggler:checked ~ .rodape-lateral {
         display: flex;
     }
+}
+
+/* Haste clara sobre o carvao da lateral. */
+.nav-scrollable::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.16);
+}
+.nav-scrollable::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.28);
+}
+.area-nova-venda ::deep .botao-novo-agendamento kbd {
+    padding: 2px 7px;
+    border-radius: 4px;
+    background: rgba(20, 23, 28, 0.08);
+    font-family: var(--fonte);
+    font-size: 12px;
+    color: inherit;
 }

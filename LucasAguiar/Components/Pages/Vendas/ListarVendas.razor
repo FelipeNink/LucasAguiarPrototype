@@ -13,6 +13,7 @@
 <div class="barra-acoes">
     <a href="/venda/nova" class="btn-novo">Nova Venda</a>
     <a href="@UrlRelatorio" class="btn-pdf" data-enhance-nav="false">Relatório PDF</a>
+    <a href="@UrlRelatorio.Replace("/relatorio/", "/excel/")" class="btn-pdf" data-enhance-nav="false">Excel</a>
 </div>
 
 @if (idNova.HasValue)
@@ -101,7 +102,7 @@
             <th>Profissional</th>
             <th>Pagamento</th>
             <th class="col-num">Valor</th>
-            <th class="col-acoes"></th>
+            <th class="col-acoes">Ações</th>
         </tr>
     </thead>
     <tbody>
@@ -139,9 +140,12 @@
                         </td>
                         <td class="col-num">@v.ValorVenda.ToString("C")</td>
                         <td class="col-acoes">
-                            <button type="button" class="btn-acao com-texto"
-                                    @onclick:stopPropagation="true"
-                                    @onclick="() => Visualizar(v.IdVenda)">Ver</button>
+                            <span @onclick:stopPropagation="true">
+                                <AcoesLinha OnVisualizar="() => Visualizar(v.IdVenda)"
+                                            OnEditar="() => Editar(v.IdVenda)"
+                                            OnExcluir="() => AbrirCancelamento(v.IdVenda)"
+                                            RotuloExcluir="Cancelar venda" />
+                            </span>
                         </td>
                     </tr>
                 }
@@ -285,6 +289,29 @@
     </div>
 }
 
+<Janela Visivel="@(editandoVenda != null)" Titulo="@($"Editar venda #{editandoVenda?.IdVenda}")"
+        Largura="460" Erro="@erroEdicao" OnFechar="FecharEdicao">
+    <ChildContent>
+        @if (editandoVenda != null)
+        {
+            <p class="text-muted" style="font-size: 14px;">
+                @editandoVenda.DataVenda.ToString("dd/MM/yyyy HH:mm") · @(editandoVenda.NomeCliente ?? "Sem cliente") · @editandoVenda.ValorVenda.ToString("C")
+            </p>
+            <label class="form-label">Profissional</label>
+            <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesEdicao"
+                     @bind-Valor="idFuncionarioEdicao" TextoDe="o => o.Rotulo" ValorDe="o => o.Id"
+                     ComAvatar="true" Placeholder="Selecione" Class="mb-3" />
+            <p class="text-muted mb-0" style="font-size: 13px;">
+                Itens, valores e pagamento não mudam: para corrigir isso, cancele a venda e lance outra.
+            </p>
+        }
+    </ChildContent>
+    <Rodape>
+        <button type="button" class="btn btn-outline-secondary" @onclick="FecharEdicao">Cancelar</button>
+        <button type="button" class="btn btn-primary" @onclick="SalvarEdicao">Salvar</button>
+    </Rodape>
+</Janela>
+
 @code {
     private bool cancelando;
     private string motivoCancelamento = "";
@@ -352,6 +379,11 @@
                 new OpcaoPagamento(f.Valor, f.Rotulo, "var(--ok)")))
             .ToList();
     private Venda? detalhe;
+
+    private Venda? editandoVenda;
+    private int idFuncionarioEdicao;
+    private string? erroEdicao;
+    private List<OpcaoId> OpcoesEdicao = new();
     private string? erro;
     private int? idNova;
 
@@ -460,6 +492,62 @@
         catch (Exception ex)
         {
             erro = ex.Message;
+        }
+    }
+
+    /// <summary>Excluir uma venda e cancelar: abre o detalhe ja com o pedido de motivo.</summary>
+    private void AbrirCancelamento(int id)
+    {
+        Visualizar(id);
+        if (detalhe != null && detalhe.Status != StatusVenda.Cancelada) cancelando = true;
+    }
+
+    private void Editar(int id)
+    {
+        try
+        {
+            erro = null;
+            erroEdicao = null;
+
+            var venda = vendaDAO.BuscarPorId(id);
+            if (venda == null) return;
+
+            if (venda.Status == StatusVenda.Cancelada)
+            {
+                erro = "Venda cancelada não pode ser editada.";
+                return;
+            }
+
+            OpcoesEdicao = funcionarioDAO.ListarTodos()
+                .Select(f => new OpcaoId(f.IdFuncionario, f.NomeFuncionario ?? "Sem nome")).ToList();
+            idFuncionarioEdicao = venda.IdFuncionario ?? 0;
+            editandoVenda = venda;
+        }
+        catch (Exception ex)
+        {
+            erro = ex.Message;
+        }
+    }
+
+    private void FecharEdicao()
+    {
+        editandoVenda = null;
+        erroEdicao = null;
+    }
+
+    private void SalvarEdicao()
+    {
+        if (editandoVenda == null) return;
+
+        try
+        {
+            vendaDAO.TrocarProfissional(editandoVenda.IdVenda, idFuncionarioEdicao);
+            FecharEdicao();
+            Carregar();
+        }
+        catch (Exception ex)
+        {
+            erroEdicao = ex.Message;
         }
     }
 

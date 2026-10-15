@@ -25,6 +25,7 @@
     <button type="button" class="@(periodo == -1 ? "ativo" : "")" @onclick="() => TrocarPeriodo(-1)">Este mês</button>
     <span class="periodo-texto">@Intervalo.De.ToString("dd/MM/yyyy") a @Intervalo.Ate.AddDays(-1).ToString("dd/MM/yyyy")</span>
     <a href="@UrlRelatorio" class="btn-pdf" data-enhance-nav="false">Relatório PDF</a>
+    <a href="@UrlRelatorio.Replace("/relatorio/", "/excel/")" class="btn-pdf" data-enhance-nav="false">Excel</a>
 </div>
 
 <div class="resumo">
@@ -62,7 +63,7 @@
             <th class="dir">Vendido</th>
             <th class="dir">Comissão</th>
             <th class="dir">%</th>
-            <th></th>
+            <th class="col-acoes">Ações</th>
         </tr>
     </thead>
     <tbody>
@@ -81,9 +82,17 @@
                     <td class="dir">@r.TotalVendido.ToString("C")</td>
                     <td class="dir destaque">@r.TotalComissao.ToString("C")</td>
                     <td class="dir suave">@r.PercentualSobreVenda.ToString("0.#")%</td>
-                    <td class="dir acoes">
-                        <button type="button" class="btn-acao"
-                                @onclick="() => VerDetalhe(r)">Detalhe</button>
+                    <td class="col-acoes">
+                        @* Comissão é calculada das vendas: só há o que visualizar. *@
+                        <span class="acoes">
+                            <button type="button" class="btn-acao" title="Ver detalhe" aria-label="Ver detalhe"
+                                    @onclick="() => VerDetalhe(r)">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" />
+                                </svg>
+                            </button>
+                        </span>
                     </td>
                 </tr>
             }

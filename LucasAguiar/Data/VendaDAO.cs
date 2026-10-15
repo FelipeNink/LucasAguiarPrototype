@@ -17,6 +17,26 @@ namespace LucasAguiar.Data
         /// Grava a venda e seus itens numa única transação: ou entra tudo,
         /// ou nada. Devolve o id gerado.
         /// </summary>
+        /// <summary>
+        /// Troca quem atendeu, e com isso quem recebe a comissão. Valores,
+        /// itens e pagamento ficam intactos: o caixa não é afetado.
+        /// </summary>
+        public void TrocarProfissional(int idVenda, int idFuncionario)
+        {
+            if (idFuncionario <= 0) throw new Exception("Selecione o profissional.");
+
+            using var conexao = _conexao.GetConnection();
+            using var comando = new MySqlCommand(@"
+                UPDATE venda SET id_fun_fk = @idFuncionario
+                WHERE id_vend = @id AND status_vend <> 'CANCELADA'", conexao);
+            comando.Parameters.AddWithValue("@idFuncionario", idFuncionario);
+            comando.Parameters.AddWithValue("@id", idVenda);
+
+            // 0 linhas tambem acontece com o mesmo profissional; so e erro
+            // se a venda deixou de existir ou foi cancelada nesse meio tempo.
+            comando.ExecuteNonQuery();
+        }
+
         public int Inserir(Venda venda)
         {
             if (venda.Itens == null || venda.Itens.Count == 0)
