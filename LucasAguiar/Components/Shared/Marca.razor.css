@@ -1,0 +1,66 @@
+/* O bigode e a assinatura da marca: sempre laranja, nas tres variantes. */
+.bigode,
+.marca-bigode path,
+.marca-icone path {
+    fill: var(--marca);
+}
+
+/* ---------- completa ---------- */
+
+.marca-completa {
+    display: block;
+    height: auto;
+    max-width: 100%;
+}
+
+/* ---------- compacta (lateral) ---------- */
+
+.marca-compacta {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.marca-barbearia {
+    font-family: var(--fonte);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.32em;
+    /* O letter-spacing sobra depois da ultima letra e desloca o texto
+       para a esquerda; o padding compensa e devolve o centro optico. */
+    padding-left: 0.32em;
+    color: var(--lateral-fraco);
+}
+
+.marca-nome {
+    font-family: var(--fonte-titulo);
+    font-size: 32px;
+    font-weight: 700;
+    line-height: 0.92;
+    text-transform: uppercase;
+    color: #fff;
+}
+
+.marca-bigode {
+    width: 64px;
+    height: auto;
+    margin-top: 5px;
+}
+
+/* ---------- icone (avatar) ---------- */
+
+.marca-icone {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: var(--carvao);
+    border-radius: 14px;
+}
+
+.marca-icone svg {
+    width: 62%;
+    height: auto;
+}

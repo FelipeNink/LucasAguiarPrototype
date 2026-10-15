@@ -58,7 +58,6 @@
     gap: 1rem;
     flex-wrap: wrap;
     margin-bottom: 1.25rem;
-    border-left: 4px solid var(--ok);
 }
 
 .etiqueta {
@@ -115,7 +114,6 @@
 }
 
 .gaveta {
-    border-left: 4px solid var(--marca);
 }
 
 .linhas > div {

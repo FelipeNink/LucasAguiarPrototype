@@ -19,6 +19,7 @@
             vermelho: token('--perigo-escuro', '#c9302c'),
             texto: token('--texto-3', '#6b7280'),
             grade: token('--borda', '#eceff3'),
+            barra: token('--grafico-barra', '#dcdfe4'),
             superficie: token('--superficie', '#fff'),
             // Balao invertido em relacao a pagina: escuro no tema claro,
             // claro no escuro. Legivel nos dois sem cor propria.
@@ -72,7 +73,8 @@
         const existentePizza = Chart.getChart(alvoPizza);
         if (existentePizza) existentePizza.destroy();
 
-        Chart.defaults.font.family = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+        // A fonte do grafico sai do mesmo token do resto do sistema.
+        Chart.defaults.font.family = token('--fonte', 'sans-serif');
         Chart.defaults.font.size = 12;
         Chart.defaults.color = paleta.texto;
 
@@ -86,17 +88,17 @@
                         data: dados.receitas,
                         backgroundColor: paleta.laranja,
                         hoverBackgroundColor: paleta.laranjaClaro,
-                        borderRadius: 4,
+                        borderRadius: { topLeft: 3, topRight: 3 },
                         borderSkipped: false,
-                        maxBarThickness: 26
+                        maxBarThickness: 34
                     },
                     {
                         label: 'Despesas',
                         data: dados.despesas,
                         backgroundColor: paleta.vermelho,
-                        borderRadius: 4,
+                        borderRadius: { topLeft: 3, topRight: 3 },
                         borderSkipped: false,
-                        maxBarThickness: 26
+                        maxBarThickness: 34
                     }
                 ]
             },
@@ -126,7 +128,7 @@
                     y: {
                         beginAtZero: true,
                         border: { display: false },
-                        grid: { color: paleta.grade },
+                        grid: { color: paleta.grade, borderDash: [3, 3] },
                         ticks: {
                             callback: function (v) {
                                 return v >= 1000 ? 'R$ ' + (v / 1000) + 'k' : 'R$ ' + v;

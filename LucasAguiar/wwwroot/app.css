@@ -7,8 +7,8 @@
 
 :root {
     /* Tipografia */
-    --fonte: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-    --fonte-titulo: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --fonte: "Barlow", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --fonte-titulo: "Barlow Condensed", "Barlow", system-ui, sans-serif;
 
     /* Marca: a mesma nos dois temas. O laranja e a identidade. */
     --marca: #f0651a;
@@ -66,6 +66,34 @@
     /* Sombra */
     --sombra: 0 1px 2px rgba(17, 24, 39, 0.04);
     --sombra-media: 0 4px 16px rgba(17, 24, 39, 0.08);
+
+    /* ---------- marca / navalha ---------- */
+    --carvao: #14171c;
+    /* Texto sobre o laranja: 5,7:1 de contraste. Branco daria 3,2:1,
+       abaixo do minimo legivel. */
+    --sobre-marca: #14171c;
+
+    /* ---------- lateral ---------- */
+    --lateral-fundo: #14171c;
+    --lateral-texto: #c3c8d0;
+    --lateral-fraco: #7d8491;
+    --lateral-linha: rgba(255, 255, 255, 0.08);
+    --lateral-ativo-fundo: rgba(255, 255, 255, 0.07);
+    --lateral-ativo: var(--marca);
+
+    /* ---------- controles ---------- */
+    --raio: 8px;
+    --raio-cartao: 10px;
+    --altura-controle: 44px;
+    --anel-foco: 0 0 0 3px rgba(240, 101, 26, 0.18);
+    --segmento-ativo: #ffffff;
+    --sombra-menu: 0 12px 32px rgba(17, 24, 39, 0.14);
+    --selecionado-fundo: var(--morno);
+    --selecionado-texto: var(--marca-escura);
+    --selecionado-avatar: var(--morno-borda);
+
+    /* ---------- graficos ---------- */
+    --grafico-barra: var(--borda-2);
 
     color-scheme: light;
 }
@@ -125,6 +153,14 @@
 
     --sombra: 0 1px 2px rgba(0, 0, 0, 0.4);
     --sombra-media: 0 4px 16px rgba(0, 0, 0, 0.45);
+
+    /* Um tom abaixo do --fundo, para a lateral se separar da pagina. */
+    --lateral-fundo: #0f1216;
+    --anel-foco: 0 0 0 3px rgba(255, 122, 51, 0.28);
+    --segmento-ativo: #3a414e;
+    --sombra-menu: 0 12px 32px rgba(0, 0, 0, 0.5);
+    --selecionado-texto: var(--marca-clara);
+    /* --lateral-ativo herda var(--marca), que no escuro ja e #ff7a33 */
 
     color-scheme: dark;
 }
@@ -200,64 +236,57 @@ button {
     font-family: inherit;
 }
 
-/* Altura e acabamento iguais entre input e select, incluindo a seta. */
-select.form-control {
-    height: calc(1.5em + 0.75rem + 2px);
-    padding-right: 2rem;
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%236b7280'%3e%3cpath d='M3.2 5.6a.7.7 0 0 1 1 0L8 9.4l3.8-3.8a.7.7 0 1 1 1 1l-4.3 4.3a.7.7 0 0 1-1 0L3.2 6.6a.7.7 0 0 1 0-1z'/%3e%3c/svg%3e");
-    background-repeat: no-repeat;
-    background-position: right 0.6rem center;
-    background-size: 1rem;
-    appearance: none;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-}
-
 .form-control:focus {
     border-color: var(--marca);
     box-shadow: 0 0 0 3px rgba(240, 101, 26, 0.15);
 }
-
-/* Titulo de pagina: fonte propria, mais espessa, sem a linha de baixo. */
+/* Titulo de pagina: condensada, caixa alta, entrelinha apertada. */
 h1 {
     font-family: var(--fonte-titulo);
-    font-size: 1.6rem;
+    font-size: 46px;
     font-weight: 700;
-    letter-spacing: -0.022em;
-    line-height: 1.2;
+    text-transform: uppercase;
+    letter-spacing: 0;
+    line-height: 0.95;
     color: var(--texto);
-    margin: 1.5rem 0 1.5rem;
+    margin: 0 0 1.25rem;
     padding-bottom: 0;
     border-bottom: none;
 }
 
-a, .btn-link {
-    color: #006bb7;
+@media (max-width: 760px) {
+    h1 {
+        font-size: 34px;
+    }
 }
 
-/* Cor da marca. Antes era o azul padrao do template do Blazor, e cada
-   pagina reescrevia isso no proprio <style>. */
-.btn-primary {
-    --bs-btn-color: #fff;
-    --bs-btn-bg: var(--marca-clara);
-    --bs-btn-border-color: var(--marca-clara);
-    --bs-btn-hover-color: #fff;
-    --bs-btn-hover-bg: var(--marca-escura);
-    --bs-btn-hover-border-color: var(--marca-escura);
-    --bs-btn-active-color: #fff;
-    --bs-btn-active-bg: var(--marca-escura);
-    --bs-btn-active-border-color: var(--marca-escura);
-    --bs-btn-disabled-color: #fff;
-    --bs-btn-disabled-bg: var(--marca-fraca);
-    --bs-btn-disabled-border-color: var(--marca-fraca);
-    --bs-btn-focus-shadow-rgb: 230, 126, 34;
+/* Linha acima do titulo: data, periodo, base de comparacao. */
+.linha-titulo {
+    font-size: 13px;
+    color: var(--texto-3);
+    margin-bottom: 2px;
+}
+
+h2 {
+    font-family: var(--fonte);
+    font-size: 15px;
     font-weight: 600;
+    color: var(--texto);
+}
+
+/* Numeros de largura fixa: valores empilhados em coluna nao dancam. */
+.num {
+    font-variant-numeric: tabular-nums;
+}
+
+a, .btn-link {
+    color: var(--marca-escura);
 }
 
 /* O anel de foco vinha azul (#258cfb) do template do Blazor e vencia a regra
    laranja acima por vir depois. Agora todo foco usa a cor da marca. */
 .btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 3px rgba(240, 101, 26, 0.3);
+  box-shadow: var(--anel-foco);
 }
 
 /* Criar o que falta sem sair da tela e perder o que ja foi preenchido. */
@@ -269,44 +298,9 @@ a, .btn-link {
     margin-top: 0.85rem;
 }
 
-.btn-criar {
-    padding: 0.3rem 0.7rem;
-    background: none;
-    border: 1px dashed var(--marca);
-    border-radius: 6px;
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: var(--marca-escura);
-    cursor: pointer;
-    transition: background 0.15s, color 0.15s;
-}
-
-.btn-criar:hover {
-    background: var(--marca);
-    border-style: solid;
-    color: #fff;
-}
-
 .linha-criar .aviso {
     font-size: 0.8rem;
     color: var(--texto-fraco);
-}
-
-/* Botao de relatorio: cinza solido, destacado do fundo claro das listagens.
-   Definido pelas variaveis do Bootstrap 5 para valer em todos os estados. */
-.btn-relatorio {
-    --bs-btn-color: #fff;
-    --bs-btn-bg: var(--texto-3);
-    --bs-btn-border-color: var(--texto-3);
-    --bs-btn-hover-color: #fff;
-    --bs-btn-hover-bg: var(--texto-2);
-    --bs-btn-hover-border-color: var(--texto-2);
-    --bs-btn-active-color: #fff;
-    --bs-btn-active-bg: var(--texto-2);
-    --bs-btn-active-border-color: var(--texto-2);
-    --bs-btn-focus-shadow-rgb: 107, 114, 128;
-    font-weight: 600;
-    text-decoration: none;
 }
 
 .content {
@@ -352,20 +346,280 @@ h1:focus {
     text-align: start;
 }
 /* ===========================================================
-   TABELAS
-   Padrao unico para todas as listagens. Antes cada pagina
-   trazia o proprio <style> com regras globais de .table, e a
-   ultima pagina visitada vencia — por isso a mesma tabela
-   aparecia estilizada numa hora e crua na outra.
+   BOTOES
+   Forma unica: mesma altura, mesmo raio, mesma fonte. O hover
+   muda fundo ou borda e nada mais -- o antigo translateY com
+   brilho laranja fazia a tela inteira tremer ao passar o mouse.
    =========================================================== */
 
-/* A tabela vive dentro de um cartao. O wrapper tambem resolve
-   a rolagem horizontal das tabelas largas no celular. */
+.btn-primary,
+.btn-criar,
+.btn-novo,
+.btn-salvar,
+.btn-outline-secondary,
+.btn-pdf,
+.btn-relatorio,
+.link-caixa,
+.btn-acao {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    height: var(--altura-controle);
+    padding: 0 16px;
+    border-radius: var(--raio);
+    font-family: var(--fonte);
+    font-size: 15px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+}
+
+/* ---------- primario ---------- */
+
+.btn-primary,
+.btn-criar,
+.btn-novo,
+.btn-salvar {
+    background: var(--marca);
+    border: 1px solid var(--marca);
+    color: var(--sobre-marca);
+    font-weight: 700;
+}
+
+.btn-primary:hover,
+.btn-criar:hover,
+.btn-novo:hover,
+.btn-salvar:hover {
+    background: var(--marca-escura);
+    border-color: var(--marca-escura);
+    color: var(--sobre-marca);
+}
+
+/* Ponte Bootstrap: sem reescrever as variaveis dele, o .btn-primary
+   volta a pintar sozinho em outros estados. */
+.btn-primary {
+    --bs-btn-color: var(--sobre-marca);
+    --bs-btn-bg: var(--marca);
+    --bs-btn-border-color: var(--marca);
+    --bs-btn-hover-color: var(--sobre-marca);
+    --bs-btn-hover-bg: var(--marca-escura);
+    --bs-btn-hover-border-color: var(--marca-escura);
+    --bs-btn-active-color: var(--sobre-marca);
+    --bs-btn-active-bg: var(--marca-escura);
+    --bs-btn-active-border-color: var(--marca-escura);
+    --bs-btn-disabled-color: var(--sobre-marca);
+    --bs-btn-disabled-bg: var(--marca-fraca);
+    --bs-btn-disabled-border-color: var(--marca-fraca);
+}
+
+/* CTA principal de tela, como "Finalizar venda". */
+.btn-cta {
+    height: 54px;
+    font-size: 16px;
+}
+
+/* ---------- secundario ---------- */
+
+.btn-outline-secondary,
+.btn-pdf,
+.btn-relatorio,
+.link-caixa {
+    background: var(--superficie);
+    border: 1px solid var(--borda-2);
+    color: var(--texto);
+}
+
+.btn-outline-secondary:hover,
+.btn-pdf:hover,
+.btn-relatorio:hover,
+.link-caixa:hover {
+    background: var(--superficie-3);
+    border-color: var(--borda-2);
+    color: var(--texto);
+}
+
+.btn-outline-secondary {
+    --bs-btn-color: var(--texto);
+    --bs-btn-bg: var(--superficie);
+    --bs-btn-border-color: var(--borda-2);
+    --bs-btn-hover-color: var(--texto);
+    --bs-btn-hover-bg: var(--superficie-3);
+    --bs-btn-hover-border-color: var(--borda-2);
+    --bs-btn-active-color: var(--texto);
+    --bs-btn-active-bg: var(--superficie-3);
+    --bs-btn-active-border-color: var(--borda-2);
+}
+
+/* ---------- fantasma ---------- */
+
+.btn-link,
+.btn-fantasma {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: var(--altura-controle);
+    padding: 0;
+    background: none;
+    border: none;
+    font-family: var(--fonte);
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--marca-escura);
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.btn-link:hover,
+.btn-fantasma:hover {
+    color: var(--marca-escura);
+    text-decoration: underline;
+}
+
+/* ---------- so icone ---------- */
+
+.btn-acao {
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    background: none;
+    border: none;
+    font-size: 14px;
+    color: var(--texto-3);
+}
+
+.btn-acao svg {
+    width: 17px;
+    height: 17px;
+}
+
+.btn-acao:hover {
+    background: var(--superficie-3);
+    color: var(--texto);
+}
+
+/* Com rotulo de texto ele volta a ter largura automatica. */
+.btn-acao.com-texto {
+    width: auto;
+    padding: 0 12px;
+}
+
+.btn-acao.perigo {
+    background: none;
+    border: 1px solid var(--perigo-fundo);
+    color: var(--perigo);
+}
+
+.btn-acao.perigo:hover {
+    background: var(--perigo-fundo);
+    color: var(--perigo);
+}
+
+.btn-acao:disabled,
+.btn-acao[disabled] {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ---------- foco e atalho ---------- */
+
+.btn-primary:focus-visible,
+.btn-criar:focus-visible,
+.btn-novo:focus-visible,
+.btn-salvar:focus-visible,
+.btn-outline-secondary:focus-visible,
+.btn-pdf:focus-visible,
+.btn-relatorio:focus-visible,
+.link-caixa:focus-visible,
+.btn-acao:focus-visible,
+.btn-link:focus-visible,
+.btn-fantasma:focus-visible {
+    outline: none;
+    box-shadow: var(--anel-foco);
+}
+
+kbd {
+    padding: 2px 7px;
+    border-radius: 4px;
+    background: var(--superficie-3);
+    font-family: var(--fonte);
+    font-size: 12px;
+    color: var(--texto-3);
+}
+
+/* Sobre laranja o cinza claro sumiria. */
+.btn-primary kbd,
+.btn-novo kbd,
+.btn-salvar kbd,
+.btn-cta kbd {
+    background: rgba(20, 23, 28, 0.16);
+    color: inherit;
+}
+
+/* Barra acima da tabela: acao principal + relatorio. */
+.barra-acoes {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin: 0 0 1.25rem;
+}
+
+.barra-acoes .espaco {
+    margin-left: auto;
+}
+
+/* ===========================================================
+   CONTROLE SEGMENTADO DE PERIODO
+   Substitui as pilulas soltas: o trilho mostra que as opcoes
+   sao do mesmo conjunto e so uma vale por vez.
+   =========================================================== */
+
+.atalhos-periodo {
+    display: inline-flex;
+    gap: 0;
+    padding: 3px;
+    border-radius: var(--raio);
+    background: var(--superficie-3);
+}
+
+.atalhos-periodo button {
+    height: 38px;
+    padding: 0 15px;
+    border: 0;
+    border-radius: 6px;
+    background: none;
+    font: 500 14px var(--fonte);
+    color: var(--texto-3);
+    cursor: pointer;
+    transition: background-color 0.15s, color 0.15s;
+}
+
+.atalhos-periodo button:hover {
+    color: var(--texto);
+}
+
+.atalhos-periodo button.ativo {
+    background: var(--segmento-ativo);
+    color: var(--texto);
+    font-weight: 600;
+    box-shadow: 0 1px 2px rgba(17, 24, 39, 0.10);
+}
+
+.atalhos-periodo button:focus-visible {
+    outline: none;
+    box-shadow: var(--anel-foco);
+}
+
+/* ===========================================================
+   TABELAS
+   =========================================================== */
+
 .tabela {
     background: var(--superficie);
     border: 1px solid var(--borda);
-    border-radius: 12px;
-    box-shadow: 0 1px 2px rgba(17, 24, 39, 0.04);
+    border-radius: var(--raio-cartao);
     overflow-x: auto;
     margin-bottom: 1.5rem;
 }
@@ -373,65 +627,75 @@ h1:focus {
 .tabela .table,
 table.table {
     width: 100%;
+    min-width: 560px;
     margin: 0;
     border-collapse: separate;
     border-spacing: 0;
-    font-size: 0.88rem;
+    font-size: 14.5px;
     color: var(--texto);
+    --bs-table-bg: var(--superficie);
+    --bs-table-color: var(--texto);
+    --bs-table-border-color: var(--borda);
 }
 
-/* Cabecalho: micro-rotulo em caixa alta, igual ao resto do
-   sistema, com um fio laranja embaixo no lugar da faixa cheia. */
 table.table > thead > tr > th {
-    padding: 0.7rem 1rem;
-    background: var(--morno);
-    border-bottom: 2px solid var(--morno-borda);
-    font-size: 0.7rem;
-    font-weight: 700;
+    padding: 12px 8px;
+    background: var(--superficie);
+    border-bottom: 1px solid var(--borda-2);
+    font-size: 11.5px;
+    font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--morno-texto);
+    letter-spacing: 0.14em;
+    color: var(--texto-3);
     text-align: left;
     white-space: nowrap;
 }
 
+table.table > thead > tr > th:first-child,
+table.table > tbody > tr > td:first-child {
+    padding-left: 20px;
+}
+
+table.table > thead > tr > th:last-child,
+table.table > tbody > tr > td:last-child {
+    padding-right: 20px;
+}
+
 table.table > tbody > tr > td {
-    padding: 0.72rem 1rem;
-    border-bottom: 1px solid var(--superficie-3);
+    padding: 13px 8px;
+    border-bottom: 1px solid var(--borda);
     vertical-align: middle;
+    color: var(--texto);
 }
 
 table.table > tbody > tr:last-child > td {
     border-bottom: none;
 }
 
-/* Zebra e hover passam pelas variaveis do Bootstrap, nao por
-   background: ele pinta a celula com um box-shadow inset, que
-   cobriria qualquer background que eu definisse aqui. */
-table.table.table-striped {
-    --bs-table-striped-color: inherit;
+/* A zebra saiu: com divisoria em cada linha ela virava ruido. */
+table.table.table-striped > tbody > tr:nth-of-type(odd) > * {
+    --bs-table-bg-type: transparent;
 }
 
-table.table.table-striped > tbody > tr:nth-of-type(odd) > * {
-    --bs-table-bg-type: var(--zebra);
+table.table tbody tr.clicavel {
+    cursor: pointer;
 }
 
 table.table > tbody > tr:hover > * {
-    --bs-table-bg-state: var(--morno-2);
+    --bs-table-bg-state: var(--superficie-2);
 }
 
-/* Primeira coluna costuma ser o id/contador: discreta e com
-   digitos de largura fixa para as linhas nao dancarem. */
-table.table > tbody > tr > td:first-child,
-table.table.table-striped > tbody > tr > td:first-child {
-    color: var(--texto-fraco);
-    font-variant-numeric: tabular-nums;
-}
-
-/* Valores em dinheiro e quantidades. */
-.col-num {
+/* Valores em dinheiro: peso maior, digitos de largura fixa e
+   alinhados a direita, para a coluna formar uma pilha legivel. */
+.col-num,
+td.col-num {
     text-align: right;
     font-variant-numeric: tabular-nums;
+    font-weight: 600;
+}
+
+th.col-num {
+    text-align: right;
 }
 
 th.col-acoes,
@@ -441,12 +705,54 @@ td.col-acoes {
     width: 1%;
 }
 
-/* Linha de "nada encontrado". */
+/* Hora e data: discretas, o dado principal da linha e outro. */
+td .hora,
+td .data {
+    color: var(--texto-3);
+    font-variant-numeric: tabular-nums;
+}
+
+td .nome-cliente {
+    font-weight: 600;
+}
+
+td .descritivo {
+    color: var(--texto-2);
+}
+
+/* Linha de grupo por dia. */
+table.table > tbody > tr.grupo-dia > td {
+    background: var(--superficie-2);
+    padding: 11px 20px;
+}
+
+.grupo-dia-titulo {
+    font-family: var(--fonte-titulo);
+    font-size: 18px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--texto);
+}
+
+.grupo-dia-resumo {
+    float: right;
+    font-size: 13.5px;
+    color: var(--texto-3);
+    font-variant-numeric: tabular-nums;
+}
+
+table.table > tbody > tr.cancelada > td {
+    color: var(--texto-fraco);
+}
+
+table.table > tbody > tr.cancelada .col-num {
+    text-decoration: line-through;
+}
+
 table.table .vazio,
 table.table td.text-center.text-muted {
-    padding: 2.2rem 1rem;
-    color: var(--texto-fraco);
-    font-size: 0.88rem;
+    padding: 32px;
+    color: var(--texto-3);
     text-align: center;
 }
 
@@ -456,145 +762,298 @@ table.table > tbody > tr:hover > td.text-center.text-muted {
 }
 
 /* ===========================================================
-   BOTOES DE ACAO
+   SUPERFICIES E INDICADORES
    =========================================================== */
 
-/* Barra acima da tabela: acao principal + relatorio. */
-.barra-acoes {
+.cartao,
+.bloco,
+.painel-caixa {
+    background: var(--superficie);
+    border: 1px solid var(--borda);
+    border-radius: var(--raio-cartao);
+    padding: 20px 22px;
+}
+
+/* Regua: um bloco so, dividido por fios de 1px. Cada indicador
+   com borda propria virava uma colcha de retangulos. */
+.indicadores,
+.resumo {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 1px;
+    background: var(--borda);
+    border: 1px solid var(--borda);
+    border-radius: var(--raio-cartao);
+    overflow: hidden;
+    margin: 0 0 1.5rem;
+}
+
+.indicador,
+.cartao-resumo {
+    background: var(--superficie);
+    border: none;
+    border-left: none;
+    border-radius: 0;
+    padding: 20px 22px;
+}
+
+.indicador .rotulo,
+.cartao-resumo .rotulo {
     display: flex;
     align-items: center;
-    gap: 0.6rem;
-    flex-wrap: wrap;
-    margin: 0 0 1.1rem;
-}
-
-.barra-acoes .espaco {
-    margin-left: auto;
-}
-
-/* Acao principal da tela ("Novo cliente", "Nova compra"...). */
-.btn-novo {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.45rem;
-    padding: 0.5rem 0.95rem;
-    background: var(--marca);
-    border: 1px solid var(--marca);
-    border-radius: 9px;
-    font-size: 0.85rem;
+    gap: 8px;
+    font-size: 11.5px;
     font-weight: 600;
-    color: #fff;
-    text-decoration: none;
-    cursor: pointer;
-    transition: background 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.08s;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--texto-3);
 }
 
-.btn-novo::before {
-    content: "+";
-    font-size: 1.05rem;
-    font-weight: 700;
-    line-height: 1;
-}
-
-.btn-novo:hover {
-    background: var(--marca-escura);
-    border-color: var(--marca-escura);
-    color: #fff;
-    box-shadow: 0 2px 8px rgba(211, 84, 0, 0.28);
-}
-
-.btn-novo:active {
-    transform: translateY(1px);
-}
-
-/* Relatorio em PDF: secundario, nao disputa com a acao principal. */
-.btn-pdf {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.45rem;
-    padding: 0.5rem 0.95rem;
-    background: var(--superficie);
-    border: 1px solid var(--borda-2);
-    border-radius: 9px;
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: var(--texto-2);
-    text-decoration: none;
-    cursor: pointer;
-    transition: background 0.15s, border-color 0.15s, color 0.15s;
-}
-
-/* Folha com a ponta dobrada, desenhada em SVG para nao depender
-   do Font Awesome — que nunca chegou a ser carregado no projeto. */
-.btn-pdf::before {
+/* A cor semantica do indicador virou um ponto ao lado do rotulo,
+   no lugar da borda esquerda colorida. */
+.indicador .rotulo::before,
+.cartao-resumo .rotulo::before {
     content: "";
-    width: 14px;
-    height: 14px;
-    background-color: currentColor;
-    -webkit-mask: var(--icone-doc) center / contain no-repeat;
-    mask: var(--icone-doc) center / contain no-repeat;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: none;
 }
 
-:root {
-    --icone-doc: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath d='M9.5 1H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V5.5zM9 2.5 12.5 6H10a1 1 0 0 1-1-1zM5 8.5h6v1H5zm0 3h4v1H5z'/%3e%3c/svg%3e");
+.indicador.comissao .rotulo::before,
+.cartao-resumo.comissao .rotulo::before {
+    display: block;
+    background: var(--roxo);
 }
 
-.btn-pdf:hover {
-    background: var(--superficie-3);
-    border-color: var(--borda-3);
-    color: var(--texto);
+.indicador.prejuizo .rotulo::before,
+.cartao-resumo.prejuizo .rotulo::before {
+    display: block;
+    background: var(--perigo-escuro);
 }
 
-/* Acoes dentro da linha da tabela. */
-.acoes {
-    display: inline-flex;
-    gap: 0.4rem;
-    justify-content: flex-end;
-}
-
-.btn-acao {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3rem;
-    padding: 0.3rem 0.65rem;
-    background: var(--superficie);
-    border: 1px solid var(--borda-2);
-    border-radius: 7px;
-    font-size: 0.78rem;
+.indicador .valor,
+.cartao-resumo .valor {
+    display: block;
+    font-family: var(--fonte-titulo);
+    font-size: 44px;
     font-weight: 600;
-    color: var(--texto-2);
-    text-decoration: none;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: background 0.15s, border-color 0.15s, color 0.15s;
+    line-height: 1.05;
+    color: var(--texto);
+    font-variant-numeric: tabular-nums;
+    margin-top: 4px;
 }
 
-.btn-acao:hover {
-    background: var(--morno-2);
-    border-color: var(--marca);
-    color: var(--marca-escura);
-}
-
-.btn-acao.perigo:hover {
-    background: var(--perigo-fundo);
-    border-color: var(--perigo);
+.indicador.prejuizo .valor,
+.cartao-resumo.prejuizo .valor {
     color: var(--perigo-escuro);
 }
 
-.btn-acao:disabled,
-.btn-acao[disabled] {
-    opacity: 0.5;
-    cursor: not-allowed;
+/* O "R$" nao precisa do mesmo corpo do numero. */
+.indicador .valor .moeda,
+.cartao-resumo .valor .moeda {
+    font-size: 17px;
+    color: var(--texto-3);
+    margin-right: 2px;
+}
+
+.indicador .variacao,
+.cartao-resumo .variacao {
+    display: block;
+    font-size: 13px;
+    color: var(--texto-3);
+    margin-top: 2px;
+}
+
+.indicador .variacao .sobe {
+    color: var(--ok-texto);
+    font-weight: 600;
+}
+
+.indicador .variacao .desce {
+    color: var(--perigo);
+    font-weight: 600;
+}
+
+/* Resumo em linha, para telas onde a regua pesaria demais. */
+.resumo-linha {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 28px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--borda-2);
+    margin-bottom: 1.5rem;
+}
+
+.resumo-linha .item {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.resumo-linha .numero {
+    font-family: var(--fonte-titulo);
+    font-size: 30px;
+    font-weight: 600;
+    color: var(--texto);
+    font-variant-numeric: tabular-nums;
+}
+
+.resumo-linha .item.aberto .numero {
+    color: var(--alerta);
+}
+
+.resumo-linha .rotulo {
+    font-size: 13.5px;
+    color: var(--texto-3);
+}
+
+/* ===========================================================
+   COMANDA
+   Recorte picotado na base, so onde ha dinheiro em jogo.
+   =========================================================== */
+
+.comanda {
+    border-bottom: 0;
+    border-radius: var(--raio-cartao) var(--raio-cartao) 0 0;
+    padding-bottom: 24px;
+    -webkit-mask: radial-gradient(circle 5px at 8px 100%, transparent 5px, #000 5.5px) 0 0 / 16px 100% repeat-x;
+            mask: radial-gradient(circle 5px at 8px 100%, transparent 5px, #000 5.5px) 0 0 / 16px 100% repeat-x;
+}
+
+.comanda hr,
+.comanda .divisoria {
+    border: 0;
+    border-top: 1px dashed var(--borda-2);
+    margin: 14px 0;
+}
+
+/* ===========================================================
+   STATUS
+   Ponto de cor mais texto, no lugar das pilulas coloridas.
+   A cor nunca carrega a informacao sozinha.
+   =========================================================== */
+
+.status {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14.5px;
+    color: var(--texto);
+}
+
+.status i {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: var(--texto-fraco);
+}
+
+.status.pago i,
+.status.aberto-caixa i {
+    background: var(--ok);
+}
+
+.status.pendente i {
+    background: var(--alerta);
+}
+
+.status.plano i {
+    background: var(--roxo);
+}
+
+.status.cancelada {
+    color: var(--texto-fraco);
+}
+
+.status.cancelada i {
+    background: var(--texto-fraco);
+}
+
+.status.erro i {
+    background: var(--perigo);
+}
+
+/* Halo so no caixa aberto: e o estado que precisa saltar. */
+.status.aberto-caixa i {
+    box-shadow: 0 0 0 4px var(--ok-fundo);
+}
+
+/* ===========================================================
+   SELECT NATIVO (reserva)
+   O que nao virou Seletor fica com a mesma cara do gatilho.
+   =========================================================== */
+
+select.form-control,
+select.form-select {
+    height: var(--altura-controle);
+    padding: 0 36px 0 14px;
+    border: 1px solid var(--borda-2);
+    border-radius: var(--raio);
+    background-color: var(--superficie);
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpath d='M6 9l6 6 6-6'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    font: 500 14.5px var(--fonte);
+    color: var(--texto);
+}
+
+[data-tema="escuro"] select.form-control,
+[data-tema="escuro"] select.form-select {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a0a7b2' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpath d='M6 9l6 6 6-6'/%3e%3c/svg%3e");
+}
+
+select.form-control:hover,
+select.form-select:hover {
+    border-color: var(--borda-3);
+}
+
+select.form-control:focus,
+select.form-select:focus {
+    border-color: var(--marca);
+    box-shadow: var(--anel-foco);
+}
+
+/* ===========================================================
+   MODAIS
+   =========================================================== */
+
+.fundo-modal,
+.modal-overlay {
+    background: rgba(15, 18, 22, 0.55);
+}
+
+.caixa-modal,
+.modal-content {
+    border-radius: var(--raio-cartao);
+    box-shadow: var(--sombra-menu);
+    background: var(--superficie);
+    border: 1px solid var(--borda);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+    }
 }
 
 @media (max-width: 760px) {
     table.table {
-        font-size: 0.82rem;
+        font-size: 13.5px;
     }
 
-    table.table > thead > tr > th,
-    table.table > tbody > tr > td {
-        padding: 0.6rem 0.7rem;
+    .indicador .valor,
+    .cartao-resumo .valor {
+        font-size: 34px;
     }
 }
 

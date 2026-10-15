@@ -82,7 +82,7 @@
 .cartao ::deep input:focus {
     outline: none;
     border-color: var(--marca);
-    box-shadow: 0 0 0 3px rgba(240, 101, 26, 0.25);
+    box-shadow: var(--anel-foco);
 }
 
 .cartao button {

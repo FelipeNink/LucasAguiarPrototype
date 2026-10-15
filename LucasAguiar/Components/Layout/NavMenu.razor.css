@@ -1,209 +1,224 @@
+/* ===========================================================
+   Lateral
+   Fundo carvao chapado. O degrade laranja anterior competia
+   com o conteudo e nao sobrava contraste para o item ativo.
+   =========================================================== */
 .sidebar-header {
+    padding: 22px 16px 0;
+}
+.area-nova-venda {
+    padding: 22px 16px 0;
+}
+/* Acao principal: fica fora do .nav-scrollable para nao sumir
+   quando a lista de itens rolar. */
+/* ::deep porque o <a> vem do NavLink, componente filho: o atributo
+   de escopo desta pagina nao chega nele. */
+.area-nova-venda ::deep .botao-nova-venda {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    height: 46px;
+    padding: 0 12px;
+    background: var(--marca);
+    color: var(--sobre-marca);
+    border-radius: var(--raio);
+    font-size: 15px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: background-color 0.15s;
+}
+.area-nova-venda ::deep .botao-nova-venda:hover {
+    background: var(--marca-escura);
+    color: var(--sobre-marca);
+}
+.area-nova-venda ::deep .botao-nova-venda span {
+    flex: 1;
+}
+.area-nova-venda ::deep .botao-nova-venda svg {
+    width: 18px;
+    height: 18px;
     flex-shrink: 0;
+}
+.area-nova-venda ::deep .botao-nova-venda kbd {
+    padding: 2px 7px;
+    border-radius: 4px;
+    background: rgba(20, 23, 28, 0.16);
+    font-family: var(--fonte);
+    font-size: 12px;
+    color: inherit;
+}
+/* Na propria tela de nova venda: anel em volta, porque o fundo
+   laranja ja esta ocupado e nao da para escurecer mais. */
+.area-nova-venda ::deep .botao-nova-venda.active {
+    box-shadow: 0 0 0 2px var(--lateral-fundo), 0 0 0 4px var(--marca);
+}
+.area-nova-venda ::deep .botao-nova-venda:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+}
+/* ---------- grupos e itens ---------- */
+.nav-scrollable {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 22px 16px;
+}
+.grupo + .grupo {
+    margin-top: 22px;
+}
+.grupo-rotulo {
+    display: block;
+    padding: 0 10px 6px;
+    font-size: 10.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: var(--lateral-fraco);
+}
+.nav-item {
+    padding: 0;
+}
+.nav-item ::deep .nav-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 40px;
+    padding: 0 10px;
+    border-radius: 7px;
+    font-size: 14.5px;
+    font-weight: 500;
+    color: var(--lateral-texto);
+    text-decoration: none;
+    transition: background-color 0.15s, color 0.15s;
+}
+.nav-item ::deep .nav-link .icone {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    color: var(--lateral-fraco);
+    transition: color 0.15s;
+}
+.nav-item ::deep .nav-link:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #fff;
+}
+.nav-item ::deep .nav-link:hover .icone {
+    color: #fff;
+}
+/* Ativo: o icone acompanha o texto em laranja. A barrinha branca
+   que existia antes virou ruido depois que o fundo ficou escuro. */
+.nav-item ::deep .nav-link.active {
+    background: var(--lateral-ativo-fundo);
+    color: var(--lateral-ativo);
+    font-weight: 600;
+}
+.nav-item ::deep .nav-link.active .icone {
+    color: var(--lateral-ativo);
+}
+.nav-item ::deep .nav-link:focus-visible {
+    outline: 2px solid var(--marca);
+    outline-offset: 2px;
+}
+/* ---------- rodape ---------- */
+.rodape-lateral {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px;
+    border-top: 1px solid var(--lateral-linha);
+}
+.avatar-usuario {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 0.9rem 1rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+    width: 34px;
+    height: 34px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.12);
+    font-family: var(--fonte-titulo);
+    font-size: 15px;
+    font-weight: 600;
+    color: #fff;
 }
-
-/* Versao monocromatica branca com fundo transparente: assenta direto sobre
-   o gradiente laranja, sem o painel preto que antes disfarcava o fundo opaco. */
-.logo {
-    display: block;
-    width: 100%;
-    max-width: 150px;
-    height: auto;
-    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.18));
+.usuario-dados {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    flex: 1;
 }
-
+.usuario-nome {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #fff;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.usuario-papel {
+    font-size: 11.5px;
+    color: var(--lateral-fraco);
+}
+.botao-conta {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    padding: 0;
+    background: none;
+    border: none;
+    border-radius: 7px;
+    color: var(--lateral-fraco);
+    cursor: pointer;
+    transition: background-color 0.15s, color 0.15s;
+}
+.botao-conta svg {
+    width: 18px;
+    height: 18px;
+}
+.botao-conta:hover {
+    background: rgba(255, 255, 255, 0.07);
+    color: #fff;
+}
+.botao-conta:focus-visible {
+    outline: 2px solid var(--marca);
+    outline-offset: 2px;
+}
+/* ---------- mobile ---------- */
 .navbar-toggler {
     appearance: none;
     cursor: pointer;
-    width: 3.5rem;
-    height: 2.5rem;
-    color: white;
     position: absolute;
-    top: 0.5rem;
-    right: 1rem;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255, 255, 255, 0.55%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e") no-repeat center/1.75rem rgba(255, 255, 255, 0.1);
-}
-
-.navbar-toggler:checked {
-    background-color: rgba(255, 255, 255, 0.5);
-}
-
-/* Icones SVG inline: herdam currentColor, sem depender de fonte externa */
-.icone {
-    width: 1.05rem;
-    height: 1.05rem;
-    flex-shrink: 0;
-    margin-right: 0.7rem;
-    fill: currentColor;
-}
-
-.nav-item {
-    font-size: 0.875rem;
-    padding-bottom: 0.15rem;
-}
-
-    .nav-item ::deep .nav-link {
-        position: relative;
-        color: rgba(255, 255, 255, 0.88);
-        background: none;
-        border: none;
-        border-radius: 7px;
-        height: 2.45rem;
-        display: flex;
-        align-items: center;
-        padding: 0 0.7rem;
-        width: 100%;
-        transition: background-color 0.15s, color 0.15s;
-    }
-
-/* Barra clara marcando a tela atual, em vez de so mudar o fundo. */
-.nav-item ::deep a.active {
-    background-color: rgba(255, 255, 255, 0.22);
-    color: #fff;
-    font-weight: 600;
-}
-
-.nav-item ::deep a.active::before {
-    content: "";
-    position: absolute;
-    left: -0.75rem;
-    top: 0.45rem;
-    bottom: 0.45rem;
-    width: 3px;
-    border-radius: 0 3px 3px 0;
-    background: var(--superficie);
-}
-
-.nav-item ::deep .nav-link:hover {
-    background-color: rgba(255, 255, 255, 0.13);
-    color: #fff;
-}
-
-.logout-section {
-    margin-top: 0.85rem;
-    padding-top: 0.85rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.22);
-}
-
-/* ---------- troca de tema ---------- */
-
-.tema-section {
-    margin-top: 0.85rem;
-    padding-top: 0.85rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.22);
-}
-
-/* Par de botoes dentro de uma trilha: o fundo claro marca qual esta
-   ativo sem depender de so um deles mudar de cor. */
-.tema-escolha {
-    display: flex;
-    gap: 2px;
-    padding: 3px;
-    background: rgba(0, 0, 0, 0.16);
-    border-radius: 8px;
-}
-
-.tema-opcao {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.3rem;
-    padding: 0.4rem 0.3rem;
-    background: none;
+    top: 18px;
+    right: 16px;
+    width: 34px;
+    height: 34px;
     border: none;
-    border-radius: 6px;
-    font-size: 0.76rem;
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.72);
-    cursor: pointer;
-    transition: background 0.15s, color 0.15s;
-}
-
-.tema-opcao svg {
-    width: 13px;
-    height: 13px;
-    fill: currentColor;
-    flex-shrink: 0;
-}
-
-.tema-opcao:hover {
-    color: #fff;
-}
-
-.tema-opcao.ativa {
-    background: rgba(255, 255, 255, 0.95);
-    color: var(--marca-escura);
-}
-
-.logout-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    background: rgba(0, 0, 0, 0.12);
-    color: #fff;
-    padding: 0.55rem 0.75rem;
-    border: 1px solid rgba(255, 255, 255, 0.35);
     border-radius: 7px;
-    font-weight: 600;
-    font-size: 0.85rem;
-    cursor: pointer;
-    transition: background-color 0.15s, border-color 0.15s;
+    background: rgba(255, 255, 255, 0.1)
+        url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30' fill='none' stroke='rgba%28255,255,255,0.85%29' stroke-width='2' stroke-linecap='round'%3e%3cpath d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e")
+        center / 20px no-repeat;
 }
-
-.logout-btn:hover {
-    background: var(--perigo-escuro);
-    border-color: var(--perigo-escuro);
-}
-
-.nav-scrollable {
-    display: none;
-}
-
-.navbar-toggler:checked ~ .nav-scrollable {
-    display: block;
-}
-
 @media (min-width: 641px) {
     .navbar-toggler {
         display: none;
     }
-
-    /* flex:1 + min-height:0 fazem a navegacao ocupar exatamente o que sobra
-       da sidebar, sem depender de calculo de altura chutado. */
-    .nav-scrollable {
+}
+@media (max-width: 640px) {
+    .nav-scrollable,
+    .rodape-lateral,
+    .area-nova-venda {
+        display: none;
+    }
+    .navbar-toggler:checked ~ .nav-scrollable,
+    .navbar-toggler:checked ~ .rodape-lateral,
+    .navbar-toggler:checked ~ .area-nova-venda {
         display: block;
-        flex: 1;
-        min-height: 0;
-        overflow-y: auto;
-        padding: 0.5rem 0 1rem;
-
-        /* Barra fina em vez da nativa, cinza e grossa, sobre o laranja. */
-        scrollbar-width: thin;
-        scrollbar-color: rgba(255, 255, 255, 0.35) transparent;
     }
-
-    .nav-scrollable::-webkit-scrollbar {
-        width: 6px;
-    }
-
-    .nav-scrollable::-webkit-scrollbar-track {
-        background: transparent;
-    }
-
-    .nav-scrollable::-webkit-scrollbar-thumb {
-        background: rgba(255, 255, 255, 0.3);
-        border-radius: 3px;
-    }
-
-    .nav-scrollable::-webkit-scrollbar-thumb:hover {
-        background: rgba(255, 255, 255, 0.5);
+    .navbar-toggler:checked ~ .rodape-lateral {
+        display: flex;
     }
 }

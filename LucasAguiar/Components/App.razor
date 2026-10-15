@@ -6,12 +6,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <base href="/" />
 
-    @* Inter: desenhada para interface, com numeros de largura fixa — o que
-       importa num sistema cheio de valor em dinheiro alinhado em coluna. *@
+    @* Barlow para o corpo e Barlow Condensed para titulos e numeros
+       grandes: a condensada aperta o traco e da o ar de letreiro de
+       barbearia que a marca ja tem. *@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
+          href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&display=swap" />
 
     @* Antes do CSS: aplica o tema salvo ja na primeira pintura. Se esperasse
        o Blazor iniciar, a tela piscaria branca antes de escurecer. *@
@@ -31,7 +32,9 @@
     <link rel="stylesheet" href="@Assets["app.css"]" />
     <link rel="stylesheet" href="@Assets["LucasAguiar.styles.css"]" />
     <ImportMap />
-    <link rel="icon" type="image/png" href="favicon.png" />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    @* PNG como reserva para navegador que nao le favicon SVG. *@
+    <link rel="alternate icon" type="image/png" href="favicon.png" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
     <script src="js/dashboard.js" defer></script>
     <script src="js/ui.js" defer></script>

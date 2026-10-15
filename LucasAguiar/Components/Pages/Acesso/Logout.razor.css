@@ -7,7 +7,7 @@
     justify-content: center;
     width: 100%;
     height: 100vh;
-    background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
+    background: var(--carvao);
 }
 
 .logout-content {

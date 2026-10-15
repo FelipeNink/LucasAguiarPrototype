@@ -253,7 +253,7 @@
     justify-content: space-between;
     gap: 1rem;
     padding: 0.75rem 1rem;
-    background: linear-gradient(90deg, var(--morno-2) 0%, var(--morno-2) 100%);
+    background: var(--morno-2);
     border: 1px solid var(--morno-borda);
     border-radius: 10px;
 }
@@ -497,8 +497,6 @@
 
 .cartao-plano:hover:enabled {
     border-color: var(--marca);
-    box-shadow: 0 3px 10px rgba(240, 101, 26, 0.14);
-    transform: translateY(-1px);
 }
 
 .cartao-plano:disabled {
@@ -604,12 +602,9 @@
 
 .cartao-item:hover {
     border-color: var(--marca);
-    box-shadow: 0 3px 10px rgba(240, 101, 26, 0.14);
-    transform: translateY(-1px);
 }
 
 .cartao-item:active {
-    transform: translateY(0);
 }
 
 .item-titulo {
@@ -681,7 +676,7 @@
     background: var(--marca);
     border-color: var(--marca);
     border-style: solid;
-    color: #fff;
+    color: var(--sobre-marca);
 }
 
 /* ---------- pagamento ---------- */
@@ -713,7 +708,7 @@
 .forma.ativa {
     background: var(--marca);
     border-color: var(--marca);
-    color: #fff;
+    color: var(--sobre-marca);
 }
 
 .campo-parcelas {
@@ -772,7 +767,7 @@
 
 .contador button:hover:enabled {
     background: var(--marca);
-    color: #fff;
+    color: var(--sobre-marca);
 }
 
 .contador button:disabled {

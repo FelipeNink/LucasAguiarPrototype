@@ -31,7 +31,7 @@
     height: 1.5rem;
     border-radius: 50%;
     background: var(--marca);
-    color: #fff;
+    color: var(--sobre-marca);
     font-size: 0.78rem;
     font-weight: 700;
 }
@@ -84,7 +84,7 @@
 .btn-criar:hover {
     background: var(--marca);
     border-style: solid;
-    color: #fff;
+    color: var(--sobre-marca);
 }
 
 /* ---------- dica de preco ---------- */
@@ -195,7 +195,7 @@
 
 .contador button:hover:enabled {
     background: var(--marca);
-    color: #fff;
+    color: var(--sobre-marca);
 }
 
 .contador button:disabled {

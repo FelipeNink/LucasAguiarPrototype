@@ -11,16 +11,19 @@
 
 <div class="cabecalho-painel">
     <div>
+        @* Data e base de comparacao aparecem uma vez so, aqui. Antes cada
+           indicador repetia "vs. periodo anterior". *@
+        <span class="linha-titulo">@DataPorExtenso · @RotuloPeriodo</span>
         <h1 class="titulo-painel">Painel</h1>
-        <span class="periodo-texto">@RotuloPeriodo</span>
     </div>
 
-    <a href="/venda/nova" class="botao-nova-venda">
-        <svg viewBox="0 0 16 16" aria-hidden="true">
-            <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4" />
-        </svg>
-        NOVA VENDA
-    </a>
+    @* ---------- filtro de periodo ---------- *@
+    <div class="atalhos-periodo">
+        <button type="button" class="@(periodo == 0 ? "ativo" : "")" @onclick="() => TrocarPeriodo(0)">Hoje</button>
+        <button type="button" class="@(periodo == 7 ? "ativo" : "")" @onclick="() => TrocarPeriodo(7)">7 dias</button>
+        <button type="button" class="@(periodo == 30 ? "ativo" : "")" @onclick="() => TrocarPeriodo(30)">30 dias</button>
+        <button type="button" class="@(periodo == -1 ? "ativo" : "")" @onclick="() => TrocarPeriodo(-1)">Este mês</button>
+    </div>
 </div>
 
 @if (!string.IsNullOrEmpty(erro))
@@ -29,7 +32,7 @@
 }
 
 @* ---------- situação do caixa ---------- *@
-<div class="faixa-caixa @(caixaAberto != null ? "aberto" : "fechado")">
+<div class="faixa-caixa comanda @(caixaAberto != null ? "aberto" : "fechado")">
     @if (caixaAberto != null)
     {
         <div>
@@ -52,13 +55,6 @@
     }
 </div>
 
-@* ---------- filtro de período ---------- *@
-<div class="atalhos-periodo">
-    <button type="button" class="@(periodo == 0 ? "ativo" : "")" @onclick="() => TrocarPeriodo(0)">Hoje</button>
-    <button type="button" class="@(periodo == 7 ? "ativo" : "")" @onclick="() => TrocarPeriodo(7)">7 dias</button>
-    <button type="button" class="@(periodo == 30 ? "ativo" : "")" @onclick="() => TrocarPeriodo(30)">30 dias</button>
-    <button type="button" class="@(periodo == -1 ? "ativo" : "")" @onclick="() => TrocarPeriodo(-1)">Este mês</button>
-</div>
 
 @* ---------- indicadores ---------- *@
 <div class="indicadores">
@@ -110,35 +106,6 @@
 @* Os dados vão para o JS por um elemento oculto, lido pelo dashboard.js. *@
 <script id="dados-painel" type="application/json">@((MarkupString)dadosJson)</script>
 
-<h2 class="titulo-secao">Acesso rápido</h2>
-
-<div class="atalhos">
-    <a href="/venda/nova" class="atalho">
-        <span class="atalho-acao">Nova</span>
-        <span class="atalho-nome">Venda</span>
-    </a>
-    <a href="/despesas" class="atalho">
-        <span class="atalho-acao">Nova</span>
-        <span class="atalho-nome">Despesa</span>
-    </a>
-    <a href="/cliente/novo" class="atalho">
-        <span class="atalho-acao">Novo</span>
-        <span class="atalho-nome">Cliente</span>
-    </a>
-    <a href="/servico/novo" class="atalho">
-        <span class="atalho-acao">Novo</span>
-        <span class="atalho-nome">Serviço</span>
-    </a>
-    <a href="/produto/novo" class="atalho">
-        <span class="atalho-acao">Novo</span>
-        <span class="atalho-nome">Produto</span>
-    </a>
-    <a href="/plano/novo" class="atalho">
-        <span class="atalho-acao">Novo</span>
-        <span class="atalho-nome">Plano</span>
-    </a>
-</div>
-
 @code {
     private PainelDAO.ResumoPainel resumo = new();
     private Caixa? caixaAberto;
@@ -168,6 +135,23 @@
         -1 => "Este mês",
         _ => $"Últimos {periodo} dias"
     };
+
+    /// <summary>
+    /// "Quinta-feira, 15 de outubro". Fica na linha acima do titulo, que
+    /// e o unico lugar onde data e periodo aparecem.
+    /// </summary>
+    private static string DataPorExtenso
+    {
+        get
+        {
+            var cultura = new System.Globalization.CultureInfo("pt-BR");
+            var hoje = DateTime.Today;
+            var dia = cultura.DateTimeFormat.GetDayName(hoje.DayOfWeek);
+
+            return char.ToUpper(dia[0], cultura) + dia[1..]
+                 + hoje.ToString(", d 'de' MMMM", cultura);
+        }
+    }
 
     protected override void OnInitialized() => Carregar();
 

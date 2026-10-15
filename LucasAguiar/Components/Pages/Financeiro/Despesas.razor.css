@@ -8,7 +8,6 @@
 
 .lancamento {
     margin-bottom: 1.5rem;
-    border-left: 4px solid var(--perigo-escuro);
 }
 
 .cartao h2 {
@@ -117,7 +116,7 @@
 .atalhos-periodo button:hover {
     background: var(--marca);
     border-color: var(--marca);
-    color: #fff;
+    color: var(--sobre-marca);
 }
 
 /* ---------- resumo ---------- */
@@ -137,7 +136,6 @@
     padding: 0.85rem 1rem;
     background: var(--superficie);
     border: 1px solid var(--borda-suave);
-    border-left: 4px solid var(--texto-fraco);
     border-radius: 8px;
     box-shadow: 0 1px 3px rgba(16, 24, 40, 0.06);
 }
