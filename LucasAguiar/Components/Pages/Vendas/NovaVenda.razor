@@ -47,7 +47,7 @@
         @* ================= 1. CLIENTE ================= *@
         <section class="bloco">
             <h2 class="bloco-titulo">
-                <span class="passo @(ClientePronto ? "ok" : "")">@(ClientePronto ? "✓" : "1")</span>
+                <span class="passo @(ClientePronto ? "ok" : "")">@(ClientePronto ? "✓" : "01")</span>
                 Cliente
             </h2>
 
@@ -239,7 +239,7 @@
         @* ================= 2. CATÁLOGO ================= *@
         <section class="bloco">
             <h2 class="bloco-titulo">
-                <span class="passo @(itens.Count > 0 ? "ok" : "")">@(itens.Count > 0 ? "✓" : "2")</span>
+                <span class="passo @(itens.Count > 0 ? "ok" : "")">@(itens.Count > 0 ? "✓" : "02")</span>
                 Serviços e produtos
             </h2>
 
@@ -325,7 +325,7 @@
         @* ================= 3. PAGAMENTO ================= *@
         <section class="bloco">
             <h2 class="bloco-titulo">
-                <span class="passo @(PagamentoPronto ? "ok" : "")">@(PagamentoPronto ? "✓" : "3")</span>
+                <span class="passo @(PagamentoPronto ? "ok" : "")">@(PagamentoPronto ? "✓" : "03")</span>
                 Pagamento
             </h2>
 
@@ -399,9 +399,9 @@
     </div>
 
     @* ================= NOTA ================= *@
-    <aside class="nota">
+    <aside class="nota comanda">
         <div class="nota-topo">
-            <span class="nota-marca">Barbearia Lucas Aguiar</span>
+            <span class="nota-marca">Comanda</span>
             <span class="nota-data">@DateTime.Now.ToString("dd/MM/yyyy HH:mm")</span>
         </div>
 
@@ -472,8 +472,8 @@
                 @if (EconomiaPlano > 0)
                 {
                     <div class="economia">
-                        <span>Coberto pelo plano</span>
-                        <span>@EconomiaPlano.ToString("C")</span>
+                        <span>Crédito do plano</span>
+                        <span>− @EconomiaPlano.ToString("C")</span>
                     </div>
                 }
                 <div><span>Subtotal</span><span>@Subtotal.ToString("C")</span></div>
@@ -502,14 +502,15 @@
             </ul>
         }
 
-        <button type="button" class="btn-confirmar" disabled="@(!PodeConfirmar)" @onclick="Confirmar">
+        <button type="button" class="btn-confirmar btn-cta" disabled="@(!PodeConfirmar)" @onclick="Confirmar">
             @if (PodeConfirmar)
             {
-                <text>Confirmar venda — @Total.ToString("C")</text>
+                <text>Finalizar venda — @Total.ToString("C")</text>
+                <kbd>Ctrl ↵</kbd>
             }
             else
             {
-                <text>Confirmar venda</text>
+                <text>Finalizar venda</text>
             }
         </button>
     </aside>
