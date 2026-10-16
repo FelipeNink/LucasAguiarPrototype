@@ -90,6 +90,8 @@ builder.Services.AddAuthorization(opcoes =>
 });
 
 builder.Services.AddScoped<PermissaoDAO>();
+builder.Services.AddScoped<EquipeDAO>();
+builder.Services.AddScoped<FuncaoDAO>();
 builder.Services.AddScoped<Autorizacao>();
 builder.Services.AddScoped<IAuthorizationHandler, ManipuladorDeTela>();
 builder.Services.AddSingleton<IAuthorizationPolicyProvider, ProvedorDePoliticas>();
