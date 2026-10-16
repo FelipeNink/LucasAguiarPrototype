@@ -743,7 +743,10 @@ td.col-num {
     font-weight: 600;
 }
 
-th.col-num {
+/* Com a especificidade do cabecalho geral (table.table > thead > tr > th),
+   senao ele vence e o titulo "Valor" fica a esquerda dos valores. */
+th.col-num,
+table.table > thead > tr > th.col-num {
     text-align: right;
 }
 
@@ -1643,8 +1646,9 @@ form .form-check-label {
 }
 
 /* Acao auxiliar (cadastrar plano, fornecedor...) ao lado do campo:
-   link discreto, nunca botao na cor primaria. */
-.form-pagina .acao-campo {
+   link discreto, nunca botao na cor primaria. Global: as telas de venda
+   e agendamento, que nao sao .form-pagina, usam tambem. */
+.acao-campo {
     align-self: flex-start;
     margin-top: 6px;
     padding: 0;
@@ -1656,7 +1660,7 @@ form .form-check-label {
     cursor: pointer;
 }
 
-.form-pagina .acao-campo:hover {
+.acao-campo:hover {
     color: var(--marca);
     text-decoration: underline;
 }

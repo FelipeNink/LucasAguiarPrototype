@@ -17,26 +17,6 @@ namespace LucasAguiar.Data
         /// Grava a venda e seus itens numa única transação: ou entra tudo,
         /// ou nada. Devolve o id gerado.
         /// </summary>
-        /// <summary>
-        /// Troca quem atendeu, e com isso quem recebe a comissão. Valores,
-        /// itens e pagamento ficam intactos: o caixa não é afetado.
-        /// </summary>
-        public void TrocarProfissional(int idVenda, int idFuncionario)
-        {
-            if (idFuncionario <= 0) throw new Exception("Selecione o profissional.");
-
-            using var conexao = _conexao.GetConnection();
-            using var comando = new MySqlCommand(@"
-                UPDATE venda SET id_fun_fk = @idFuncionario
-                WHERE id_vend = @id AND status_vend <> 'CANCELADA'", conexao);
-            comando.Parameters.AddWithValue("@idFuncionario", idFuncionario);
-            comando.Parameters.AddWithValue("@id", idVenda);
-
-            // 0 linhas tambem acontece com o mesmo profissional; so e erro
-            // se a venda deixou de existir ou foi cancelada nesse meio tempo.
-            comando.ExecuteNonQuery();
-        }
-
         public int Inserir(Venda venda)
         {
             if (venda.Itens == null || venda.Itens.Count == 0)
@@ -91,47 +71,7 @@ namespace LucasAguiar.Data
                     idVenda = Convert.ToInt32(comando.ExecuteScalar());
                 }
 
-                foreach (var item in venda.Itens)
-                {
-                    using (var comando = new MySqlCommand(@"
-                        INSERT INTO venda_item
-                            (id_vend_fk, tipo_item, id_ref, descricao, quantidade,
-                             valor_unit, valor_total, comissao, coberto_plano, id_saldo_fk)
-                        VALUES
-                            (@idVenda, @tipo, @idRef, @descricao, @qtd,
-                             @unit, @total, @comissao, @coberto, @idSaldo)", conexao, transacao))
-                    {
-                        comando.Parameters.AddWithValue("@idVenda", idVenda);
-                        comando.Parameters.AddWithValue("@tipo", item.TipoItem);
-                        comando.Parameters.AddWithValue("@idRef", item.IdReferencia ?? (object)DBNull.Value);
-                        comando.Parameters.AddWithValue("@descricao", item.Descricao);
-                        comando.Parameters.AddWithValue("@qtd", item.Quantidade);
-                        comando.Parameters.AddWithValue("@unit", item.ValorUnitario);
-                        comando.Parameters.AddWithValue("@total", item.ValorTotal);
-                        comando.Parameters.AddWithValue("@comissao", item.ComissaoUnitaria);
-                        comando.Parameters.AddWithValue("@coberto", item.CobertoPlano ? 1 : 0);
-                        comando.Parameters.AddWithValue("@idSaldo", item.IdSaldo ?? (object)DBNull.Value);
-                        comando.ExecuteNonQuery();
-                    }
-
-                    // Abate o credito na mesma transacao: se a venda falhar,
-                    // o saldo do cliente volta ao que era.
-                    if (item.CobertoPlano && item.IdSaldo.HasValue)
-                        AssinaturaDAO.ConsumirNaTransacao(conexao, transacao, item.IdSaldo.Value, item.Quantidade);
-
-                    // Produto vendido sai do estoque. Servico nao tem estoque.
-                    if (item.TipoItem == TipoItem.Produto && item.IdReferencia.HasValue)
-                    {
-                        using var baixa = new MySqlCommand(@"
-                            UPDATE produto
-                            SET quantidade_prod = GREATEST(0, COALESCE(quantidade_prod, 0) - @qtd)
-                            WHERE id_prod = @idProduto", conexao, transacao);
-
-                        baixa.Parameters.AddWithValue("@qtd", item.Quantidade);
-                        baixa.Parameters.AddWithValue("@idProduto", item.IdReferencia.Value);
-                        baixa.ExecuteNonQuery();
-                    }
-                }
+                GravarItens(conexao, transacao, idVenda, venda.Itens);
 
                 // Venda de plano gera a assinatura com os creditos.
                 if (venda.PlanoVendido != null && venda.IdCliente.HasValue)
@@ -187,27 +127,7 @@ namespace LucasAguiar.Data
                         throw new Exception("Esta venda já está cancelada.");
                 }
 
-                // Devolve os créditos de plano consumidos nesta venda.
-                using (var comando = new MySqlCommand(@"
-                    UPDATE assinatura_saldo s
-                    JOIN venda_item vi ON vi.id_saldo_fk = s.id_saldo
-                    SET s.quantidade_usada = GREATEST(0, s.quantidade_usada - vi.quantidade)
-                    WHERE vi.id_vend_fk = @id AND vi.coberto_plano = 1", conexao, transacao))
-                {
-                    comando.Parameters.AddWithValue("@id", idVenda);
-                    comando.ExecuteNonQuery();
-                }
-
-                // Devolve ao estoque os produtos que a venda tinha baixado.
-                using (var comando = new MySqlCommand(@"
-                    UPDATE produto p
-                    JOIN venda_item vi ON vi.id_ref = p.id_prod
-                    SET p.quantidade_prod = COALESCE(p.quantidade_prod, 0) + vi.quantidade
-                    WHERE vi.id_vend_fk = @id AND vi.tipo_item = 'PRODUTO'", conexao, transacao))
-                {
-                    comando.Parameters.AddWithValue("@id", idVenda);
-                    comando.ExecuteNonQuery();
-                }
+                DevolverConsumo(conexao, transacao, idVenda);
 
                 // Venda que criou uma assinatura: encerra a assinatura junto.
                 using (var comando = new MySqlCommand(@"
@@ -224,6 +144,267 @@ namespace LucasAguiar.Data
             {
                 transacao.Rollback();
                 throw new Exception("Erro ao cancelar a venda: " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Grava os itens da venda e o que eles movimentam: abate o credito de
+        /// plano e baixa o estoque do produto. Usado ao registrar e ao editar.
+        /// </summary>
+        private static void GravarItens(
+            MySqlConnection conexao, MySqlTransaction transacao, int idVenda, IEnumerable<VendaItem> itens)
+        {
+            foreach (var item in itens)
+            {
+                using (var comando = new MySqlCommand(@"
+                    INSERT INTO venda_item
+                        (id_vend_fk, tipo_item, id_ref, descricao, quantidade,
+                         valor_unit, valor_total, comissao, coberto_plano, id_saldo_fk)
+                    VALUES
+                        (@idVenda, @tipo, @idRef, @descricao, @qtd,
+                         @unit, @total, @comissao, @coberto, @idSaldo)", conexao, transacao))
+                {
+                    comando.Parameters.AddWithValue("@idVenda", idVenda);
+                    comando.Parameters.AddWithValue("@tipo", item.TipoItem);
+                    comando.Parameters.AddWithValue("@idRef", item.IdReferencia ?? (object)DBNull.Value);
+                    comando.Parameters.AddWithValue("@descricao", item.Descricao);
+                    comando.Parameters.AddWithValue("@qtd", item.Quantidade);
+                    comando.Parameters.AddWithValue("@unit", item.ValorUnitario);
+                    comando.Parameters.AddWithValue("@total", item.ValorTotal);
+                    comando.Parameters.AddWithValue("@comissao", item.ComissaoUnitaria);
+                    comando.Parameters.AddWithValue("@coberto", item.CobertoPlano ? 1 : 0);
+                    comando.Parameters.AddWithValue("@idSaldo", item.IdSaldo ?? (object)DBNull.Value);
+                    comando.ExecuteNonQuery();
+                }
+
+                // Abate o credito na mesma transacao: se a venda falhar,
+                // o saldo do cliente volta ao que era.
+                if (item.CobertoPlano && item.IdSaldo.HasValue)
+                    AssinaturaDAO.ConsumirNaTransacao(conexao, transacao, item.IdSaldo.Value, item.Quantidade);
+
+                // Produto vendido sai do estoque. Servico nao tem estoque.
+                if (item.TipoItem == TipoItem.Produto && item.IdReferencia.HasValue)
+                {
+                    using var baixa = new MySqlCommand(@"
+                        UPDATE produto
+                        SET quantidade_prod = GREATEST(0, COALESCE(quantidade_prod, 0) - @qtd)
+                        WHERE id_prod = @idProduto", conexao, transacao);
+
+                    baixa.Parameters.AddWithValue("@qtd", item.Quantidade);
+                    baixa.Parameters.AddWithValue("@idProduto", item.IdReferencia.Value);
+                    baixa.ExecuteNonQuery();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Devolve o que os itens gravados da venda consumiram: credito de
+        /// plano volta para a assinatura e produto volta para o estoque.
+        /// Usado ao cancelar e ao editar (antes de regravar os itens).
+        /// </summary>
+        private static void DevolverConsumo(MySqlConnection conexao, MySqlTransaction transacao, int idVenda)
+        {
+            // Somado por credito e por produto: UPDATE com JOIN altera cada
+            // linha uma vez so, e duas linhas do mesmo produto na venda
+            // devolviam so uma ao estoque.
+
+            // Devolve os créditos de plano consumidos nesta venda.
+            using (var comando = new MySqlCommand(@"
+                UPDATE assinatura_saldo s
+                JOIN (SELECT id_saldo_fk, SUM(quantidade) AS qtd
+                        FROM venda_item
+                       WHERE id_vend_fk = @id AND coberto_plano = 1 AND id_saldo_fk IS NOT NULL
+                       GROUP BY id_saldo_fk) u ON u.id_saldo_fk = s.id_saldo
+                SET s.quantidade_usada = GREATEST(0, s.quantidade_usada - u.qtd)", conexao, transacao))
+            {
+                comando.Parameters.AddWithValue("@id", idVenda);
+                comando.ExecuteNonQuery();
+            }
+
+            // Devolve ao estoque os produtos que a venda tinha baixado.
+            using (var comando = new MySqlCommand(@"
+                UPDATE produto p
+                JOIN (SELECT id_ref, SUM(quantidade) AS qtd
+                        FROM venda_item
+                       WHERE id_vend_fk = @id AND tipo_item = 'PRODUTO' AND id_ref IS NOT NULL
+                       GROUP BY id_ref) b ON b.id_ref = p.id_prod
+                SET p.quantidade_prod = COALESCE(p.quantidade_prod, 0) + b.qtd", conexao, transacao))
+            {
+                comando.Parameters.AddWithValue("@id", idVenda);
+                comando.ExecuteNonQuery();
+            }
+        }
+
+        // ---------- edicao ----------
+
+        public enum ModoEdicao { Completa, Restrita, Bloqueada }
+
+        /// <summary>
+        /// O quanto uma venda ainda pode mudar, e por que.
+        /// Completa: itens, valores, pagamento, cliente e profissional.
+        /// Restrita: so cliente e, quando a comissao nao foi paga, profissional.
+        /// </summary>
+        public record SituacaoEdicao(ModoEdicao Modo, string? Motivo, bool PodeTrocarProfissional);
+
+        public SituacaoEdicao SituacaoParaEditar(int idVenda)
+        {
+            using var conexao = _conexao.GetConnection();
+            return SituacaoParaEditar(conexao, null, idVenda);
+        }
+
+        private static SituacaoEdicao SituacaoParaEditar(
+            MySqlConnection conexao, MySqlTransaction? transacao, int idVenda)
+        {
+            using var comando = new MySqlCommand(@"
+                SELECT v.status_vend, v.id_caixa_fk, c.status AS status_caixa,
+                       DATE_FORMAT(v.data_vend, '%m/%Y') AS mes,
+                       EXISTS (SELECT 1 FROM folha_pagamento fp
+                                WHERE fp.id_fun_fk = v.id_fun_fk
+                                  AND fp.competencia = DATE_FORMAT(v.data_vend, '%Y-%m')) AS folha_paga,
+                       EXISTS (SELECT 1 FROM venda_item vi
+                                WHERE vi.id_vend_fk = v.id_vend AND vi.tipo_item = 'PLANO') AS tem_plano
+                FROM venda v
+                LEFT JOIN caixa c ON c.id_caixa = v.id_caixa_fk
+                WHERE v.id_vend = @id" + (transacao != null ? " FOR UPDATE" : ""), conexao, transacao);
+            comando.Parameters.AddWithValue("@id", idVenda);
+
+            using var leitor = comando.ExecuteReader();
+            if (!leitor.Read())
+                return new(ModoEdicao.Bloqueada, "Venda não encontrada.", false);
+
+            if (DAOHelper.GetString(leitor, "status_vend") == StatusVenda.Cancelada)
+                return new(ModoEdicao.Bloqueada, "Venda cancelada não pode ser editada.", false);
+
+            var mes = DAOHelper.GetString(leitor, "mes");
+            var folhaPaga = Convert.ToInt32(leitor.GetValue(leitor.GetOrdinal("folha_paga"))) == 1;
+            var temPlano = Convert.ToInt32(leitor.GetValue(leitor.GetOrdinal("tem_plano"))) == 1;
+            var caixaFechado = DAOHelper.GetString(leitor, "status_caixa") == StatusCaixa.Fechado;
+
+            if (folhaPaga)
+                return new(ModoEdicao.Restrita,
+                    $"A comissão desta venda já foi paga na folha de {mes}: só o cliente pode mudar. "
+                    + "Para corrigir valores, cancele a venda e lance outra.", false);
+
+            if (caixaFechado)
+                return new(ModoEdicao.Restrita,
+                    "O caixa desta venda já foi fechado e conferido: dá para trocar cliente e profissional. "
+                    + "Para corrigir itens, valores ou pagamento, cancele a venda e lance outra.", true);
+
+            if (temPlano)
+                return new(ModoEdicao.Restrita,
+                    "Esta venda gerou uma assinatura de plano: dá para trocar cliente e profissional. "
+                    + "Para mudar o resto, cancele a venda (a assinatura é encerrada junto) e lance outra.", true);
+
+            return new(ModoEdicao.Completa, null, true);
+        }
+
+        /// <summary>
+        /// Regrava a venda inteira: itens, valores, pagamento, cliente e
+        /// profissional. Numa transacao, devolve o que a versao anterior
+        /// consumiu (estoque e credito de plano) e consome de novo pelos itens
+        /// novos. Data e caixa da venda nao mudam; os totais do caixa sao
+        /// apurados das vendas, entao acompanham sozinhos.
+        /// </summary>
+        public void Atualizar(Venda venda)
+        {
+            if (venda.Itens == null || venda.Itens.Count == 0)
+                throw new Exception("A venda precisa de pelo menos um item.");
+
+            if (string.IsNullOrWhiteSpace(venda.FormaPagamentoVenda))
+                throw new Exception("Selecione a forma de pagamento.");
+
+            if (!venda.IdFuncionario.HasValue || venda.IdFuncionario.Value <= 0)
+                throw new Exception("Selecione o profissional que realizou o atendimento.");
+
+            if (venda.Itens.Any(i => i.TipoItem == TipoItem.Plano))
+                throw new Exception("Venda de plano não pode ser editada por aqui.");
+
+            using var conexao = _conexao.GetConnection();
+            using var transacao = conexao.BeginTransaction();
+            try
+            {
+                // Confere de novo dentro da transacao, com a linha travada: o
+                // caixa pode ter fechado enquanto a tela estava aberta.
+                var situacao = SituacaoParaEditar(conexao, transacao, venda.IdVenda);
+                if (situacao.Modo != ModoEdicao.Completa)
+                    throw new Exception(situacao.Motivo ?? "Esta venda não pode mais ser editada.");
+
+                DevolverConsumo(conexao, transacao, venda.IdVenda);
+
+                using (var limpar = new MySqlCommand(
+                    "DELETE FROM venda_item WHERE id_vend_fk = @id", conexao, transacao))
+                {
+                    limpar.Parameters.AddWithValue("@id", venda.IdVenda);
+                    limpar.ExecuteNonQuery();
+                }
+
+                using (var comando = new MySqlCommand(@"
+                    UPDATE venda SET
+                        valor_vend = @valor, quantidade_prod_vend = @qtdProd, quantidade_serv_vend = @qtdServ,
+                        forma_pagamento_vend = @forma, desconto_vend = @desconto, quant_parcela_vend = @parcelas,
+                        descricao_vend = @descricao, id_fun_fk = @idFuncionario, id_cli_fk = @idCliente
+                    WHERE id_vend = @id", conexao, transacao))
+                {
+                    comando.Parameters.AddWithValue("@valor", venda.Total);
+                    comando.Parameters.AddWithValue("@qtdProd",
+                        venda.Itens.Where(i => i.TipoItem == TipoItem.Produto).Sum(i => i.Quantidade));
+                    comando.Parameters.AddWithValue("@qtdServ",
+                        venda.Itens.Where(i => i.TipoItem != TipoItem.Produto).Sum(i => i.Quantidade));
+                    comando.Parameters.AddWithValue("@forma", venda.FormaPagamentoVenda);
+                    comando.Parameters.AddWithValue("@desconto", venda.Desconto);
+                    comando.Parameters.AddWithValue("@parcelas", venda.QuantidadeParcelas ?? (object)DBNull.Value);
+                    comando.Parameters.AddWithValue("@descricao", MontarDescricao(venda));
+                    comando.Parameters.AddWithValue("@idFuncionario", venda.IdFuncionario.Value);
+                    comando.Parameters.AddWithValue("@idCliente",
+                        venda.IdCliente.HasValue && venda.IdCliente > 0
+                            ? venda.IdCliente.Value : (object)DBNull.Value);
+                    comando.Parameters.AddWithValue("@id", venda.IdVenda);
+                    comando.ExecuteNonQuery();
+                }
+
+                GravarItens(conexao, transacao, venda.IdVenda, venda.Itens);
+
+                transacao.Commit();
+            }
+            catch (Exception ex)
+            {
+                transacao.Rollback();
+                throw new Exception("Erro ao salvar a venda: " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Edicao restrita: so cliente e profissional. Valores, itens e
+        /// pagamento ficam intactos, entao o caixa nao e afetado.
+        /// </summary>
+        public void AtualizarClienteEProfissional(int idVenda, int? idCliente, int idFuncionario)
+        {
+            if (idFuncionario <= 0) throw new Exception("Selecione o profissional.");
+
+            using var conexao = _conexao.GetConnection();
+            using var transacao = conexao.BeginTransaction();
+            try
+            {
+                var situacao = SituacaoParaEditar(conexao, transacao, idVenda);
+                if (situacao.Modo == ModoEdicao.Bloqueada)
+                    throw new Exception(situacao.Motivo);
+
+                using var comando = new MySqlCommand(@"
+                    UPDATE venda SET id_cli_fk = @idCliente"
+                    + (situacao.PodeTrocarProfissional ? ", id_fun_fk = @idFuncionario" : "") + @"
+                    WHERE id_vend = @id", conexao, transacao);
+                comando.Parameters.AddWithValue("@idCliente",
+                    idCliente is > 0 ? idCliente.Value : (object)DBNull.Value);
+                comando.Parameters.AddWithValue("@idFuncionario", idFuncionario);
+                comando.Parameters.AddWithValue("@id", idVenda);
+                comando.ExecuteNonQuery();
+
+                transacao.Commit();
+            }
+            catch (Exception ex)
+            {
+                transacao.Rollback();
+                throw new Exception("Erro ao salvar a venda: " + ex.Message);
             }
         }
 
@@ -412,6 +593,7 @@ namespace LucasAguiar.Data
                 Status = Texto("status_vend") ?? StatusVenda.Confirmada,
                 IdCliente = Inteiro("id_cli_fk"),
                 IdFuncionario = Inteiro("id_fun_fk"),
+                IdCaixa = Inteiro("id_caixa_fk"),
                 NomeCliente = Texto("nome_cli"),
                 NomeFuncionario = Texto("nome_fun")
             };

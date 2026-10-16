@@ -84,7 +84,7 @@ namespace LucasAguiar.Configs
             // Editar venda, hoje, e trocar o profissional do atendimento.
             new("vendas", "Vendas", Operacao,
                 Acao.Ver | Acao.Criar | Acao.Editar | Acao.Estornar | Acao.Exportar,
-                new[] { "/vendas", "/venda/nova" },
+                new[] { "/vendas", "/venda/nova", "/venda" },
                 new[] { "/relatorio/vendas", "/excel/vendas" }),
 
             new("agendamentos", "Agendamentos", Operacao,
