@@ -1,0 +1,95 @@
+@* Formulario de servico, o mesmo para criar e editar. *@
+
+@using LucasAguiar.Models
+@inject ServicoDAO servicoDAO
+@inject NavigationManager Navigation
+
+<div class="form-pagina">
+    <TopoForm Titulo="@(Novo ? "Novo serviço" : "Editar serviço")" Voltar="/servico" RotuloVoltar="Serviços" />
+
+    @if (erro != null)
+    {
+        <div class="alert alert-danger" role="alert">@erro</div>
+    }
+
+    <form @onsubmit="Salvar" novalidate>
+        <section class="cartao secao-form">
+            <h2>Serviço</h2>
+            <div class="grade-12">
+                <Campo Rotulo="Nome" Para="srv-nome" Colunas="8" Obrigatorio="true"
+                       Erro="@(tentouSalvar && string.IsNullOrWhiteSpace(Modelo.NomeServico) ? "Informe o nome." : null)">
+                    <input id="srv-nome" class="form-control" maxlength="100" placeholder="Ex.: Corte degradê"
+                           @bind="Modelo.NomeServico" />
+                </Campo>
+                <Campo Rotulo="Duração (min)" Para="srv-duracao" Colunas="2"
+                       Erro="@(Modelo.DuracaoServico < 0 ? "A duração não pode ser negativa." : null)">
+                    <input id="srv-duracao" type="number" min="0" step="5" class="form-control"
+                           @bind="Modelo.DuracaoServico" />
+                </Campo>
+            </div>
+        </section>
+
+        <section class="cartao secao-form">
+            <h2>Valores</h2>
+            <div class="grade-12">
+                <Campo Rotulo="Preço" Para="srv-preco" Colunas="3">
+                    <InputMoeda Id="srv-preco" Valor="(decimal)Modelo.PrecoServico"
+                                ValorChanged="v => Modelo.PrecoServico = (float)v" />
+                </Campo>
+                <Campo Rotulo="Comissão do profissional" Para="srv-comissao" Colunas="3"
+                       Dica="@DicaComissao">
+                    <InputMoeda Id="srv-comissao" Valor="(decimal)Modelo.ComissaoServico"
+                                ValorChanged="v => Modelo.ComissaoServico = (float)v" />
+                </Campo>
+            </div>
+        </section>
+
+        <RodapeForm Cancelar="/servico" Salvando="salvando" />
+    </form>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public Servico Modelo { get; set; } = new();
+    [Parameter] public bool Novo { get; set; }
+
+    private string? erro;
+    private bool tentouSalvar;
+    private bool salvando;
+
+    /// <summary>A comissao e gravada em R$; o % ajuda a conferir.</summary>
+    private string? DicaComissao =>
+        Modelo.PrecoServico > 0 && Modelo.ComissaoServico > 0
+            ? $"{Modelo.ComissaoServico / Modelo.PrecoServico:P1} do preço, por atendimento."
+            : "Valor em R$ pago por atendimento.";
+
+    private void Salvar()
+    {
+        tentouSalvar = true;
+        erro = null;
+
+        if (string.IsNullOrWhiteSpace(Modelo.NomeServico) || Modelo.DuracaoServico < 0)
+        {
+            erro = "Confira os campos destacados.";
+            return;
+        }
+
+        try
+        {
+            salvando = true;
+            Modelo.NomeServico = Modelo.NomeServico.Trim();
+
+            if (Novo) servicoDAO.Inserir(Modelo);
+            else servicoDAO.Atualizar(Modelo);
+
+            Navigation.NavigateTo("/servico");
+        }
+        catch (Exception ex)
+        {
+            erro = ex.Message;
+        }
+        finally
+        {
+            salvando = false;
+        }
+    }
+}

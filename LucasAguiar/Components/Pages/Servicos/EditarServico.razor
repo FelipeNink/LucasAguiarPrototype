@@ -1,0 +1,37 @@
+@page "/servico/{Id:int}"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = Politicas.EditarServico)]
+
+@using LucasAguiar.Models
+@inject ServicoDAO servicoDAO
+
+<PageTitle>Editar serviço</PageTitle>
+
+@if (erro != null)
+{
+    <div class="alert alert-danger" role="alert">@erro</div>
+}
+else if (servico != null)
+{
+    <FormServico Modelo="servico" Novo="false" />
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private Servico? servico;
+    private string? erro;
+
+    protected override void OnParametersSet()
+    {
+        try
+        {
+            servico = servicoDAO.BuscarPorId(Id);
+            if (servico == null) erro = $"Serviço #{Id} não encontrado.";
+        }
+        catch (Exception ex)
+        {
+            erro = "Erro ao carregar o serviço: " + ex.Message;
+        }
+    }
+}

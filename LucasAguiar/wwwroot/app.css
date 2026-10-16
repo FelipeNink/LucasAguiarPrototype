@@ -1680,3 +1680,9 @@ form .form-check-label {
         grid-column: span 12;
     }
 }
+
+/* Dinheiro alinhado a direita tambem no campo, como na tabela. */
+.form-pagina .al-dir-campo {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}

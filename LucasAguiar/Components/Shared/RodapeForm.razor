@@ -1,0 +1,13 @@
+@* Cancelar (secundario) e Salvar (primario), a direita, presos ao fim da
+   pagina. Deve ficar dentro do <form>: o Salvar e o submit dele. *@
+
+<div class="rodape-form">
+    <a href="@Cancelar" class="btn btn-outline-secondary">Cancelar</a>
+    <button type="submit" class="btn btn-primary" disabled="@Salvando">@TextoSalvar</button>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string Cancelar { get; set; } = "/";
+    [Parameter] public bool Salvando { get; set; }
+    [Parameter] public string TextoSalvar { get; set; } = "Salvar";
+}

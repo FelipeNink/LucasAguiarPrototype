@@ -1,0 +1,37 @@
+@page "/produto/{Id:int}"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = Politicas.EditarProduto)]
+
+@using LucasAguiar.Models
+@inject ProdutoDAO produtoDAO
+
+<PageTitle>Editar produto</PageTitle>
+
+@if (erro != null)
+{
+    <div class="alert alert-danger" role="alert">@erro</div>
+}
+else if (produto != null)
+{
+    <FormProduto Modelo="produto" Novo="false" />
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private Produto? produto;
+    private string? erro;
+
+    protected override void OnParametersSet()
+    {
+        try
+        {
+            produto = produtoDAO.BuscarPorId(Id);
+            if (produto == null) erro = $"Produto #{Id} não encontrado.";
+        }
+        catch (Exception ex)
+        {
+            erro = "Erro ao carregar o produto: " + ex.Message;
+        }
+    }
+}

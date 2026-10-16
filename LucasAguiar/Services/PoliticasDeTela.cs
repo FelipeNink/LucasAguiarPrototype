@@ -60,6 +60,11 @@ namespace LucasAguiar.Services
 
     /// <summary>Paginas de edicao dos cadastros, que sairam dos modais da listagem.</summary>
     public const string EditarCliente = "tela:clientes:Editar";
+    public const string EditarServico = "tela:servicos:Editar";
+    public const string EditarProduto = "tela:produtos:Editar";
+    public const string EditarFuncionario = "tela:funcionarios:Editar";
+    public const string EditarFornecedor = "tela:fornecedores:Editar";
+    public const string EditarCompra = "tela:compras:Editar";
     }
 
     /// <summary>Exige uma acao numa tela nomeada.</summary>

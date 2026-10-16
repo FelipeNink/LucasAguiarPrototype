@@ -202,6 +202,10 @@ document.addEventListener('submit', function (evento) {
                     .replace(/\.(\d{3})(\d)/, '.$1/$2')
                     .replace(/(\d{4})(\d)/, '$1-$2');
         },
+        // Ate 11 digitos e CPF; passou disso, CNPJ.
+        cpfcnpj: function (v) {
+            return v.replace(/\D/g, '').length <= 11 ? mascaras.cpf(v) : mascaras.cnpj(v);
+        },
         cep: function (v) {
             const d = digitos(v, 8);
             return d.length > 5 ? d.slice(0, 5) + '-' + d.slice(5) : d;

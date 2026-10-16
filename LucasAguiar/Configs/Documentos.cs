@@ -100,6 +100,14 @@ namespace LucasAguiar.Configs
                 : (valor ?? "").Trim();
         }
 
+        // ---------- CPF ou CNPJ (fornecedor pode ser pessoa fisica) ----------
+
+        public static bool CpfCnpjValido(string? valor) =>
+            SoDigitos(valor).Length <= 11 ? CpfValido(valor) : CnpjValido(valor);
+
+        public static string FormatarCpfCnpj(string? valor) =>
+            SoDigitos(valor).Length <= 11 ? FormatarCpf(valor) : FormatarCnpj(valor);
+
         // ---------- CEP ----------
 
         public static bool CepValido(string? valor) => SoDigitos(valor).Length == 8;
@@ -146,6 +154,9 @@ namespace LucasAguiar.Configs
 
         public static string? ErroCnpj(string? v) =>
             string.IsNullOrWhiteSpace(v) || CnpjValido(v) ? null : "CNPJ incorreto.";
+
+        public static string? ErroCpfCnpj(string? v) =>
+            string.IsNullOrWhiteSpace(v) || CpfCnpjValido(v) ? null : "CPF ou CNPJ incorreto.";
 
         public static string? ErroCep(string? v) =>
             string.IsNullOrWhiteSpace(v) || CepValido(v) ? null : "CEP incorreto. São 8 números.";

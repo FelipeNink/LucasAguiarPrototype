@@ -5,20 +5,10 @@
 @using LucasAguiar.Models
 @inject ClienteDAO clienteDAO
 @inject PlanoDAO planoDAO
-@inject BuscaCep buscaCep
 @inject NavigationManager Navigation
 
 <div class="form-pagina">
-    <div class="topo-form">
-        <a href="/cliente" class="voltar">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
-                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="m15 18-6-6 6-6" />
-            </svg>
-            Clientes
-        </a>
-        <h1>@(Novo ? "Novo cliente" : "Editar cliente")</h1>
-    </div>
+    <TopoForm Titulo="@(Novo ? "Novo cliente" : "Editar cliente")" Voltar="/cliente" RotuloVoltar="Clientes" />
 
     @if (erro != null)
     {
@@ -52,33 +42,7 @@
             </div>
         </section>
 
-        <section class="cartao secao-form">
-            <h2>Endereço</h2>
-            <div class="grade-12">
-                <Campo Rotulo="CEP" Para="cli-cep" Colunas="3" Erro="@ErroCep" Dica="@dicaCep">
-                    <input id="cli-cep" class="form-control" inputmode="numeric" data-mascara="cep"
-                           placeholder="00000-000" @bind="Modelo.Cep" @bind:after="AoMudarCep" />
-                </Campo>
-                <Campo Rotulo="Rua" Para="cli-rua" Colunas="7">
-                    <input id="cli-rua" class="form-control" maxlength="200" @bind="Modelo.Rua" />
-                </Campo>
-                <Campo Rotulo="Número" Para="cli-num" Colunas="2">
-                    <input id="cli-num" class="form-control" maxlength="20" @bind="Modelo.Numero" />
-                </Campo>
-
-                <Campo Rotulo="Bairro" Para="cli-bairro" Colunas="5">
-                    <input id="cli-bairro" class="form-control" maxlength="200" @bind="Modelo.Bairro" />
-                </Campo>
-                <Campo Rotulo="Cidade" Para="cli-cidade" Colunas="5">
-                    <input id="cli-cidade" class="form-control" maxlength="200" @bind="Modelo.Cidade" />
-                </Campo>
-                <Campo Rotulo="UF" Colunas="2">
-                    <Seletor TItem="Opcao" TValor="string" Itens="OpcoesUf"
-                             @bind-Valor="Modelo.Estado" TextoDe="o => o.Rotulo" ValorDe="o => o.Valor"
-                             Placeholder="—" />
-                </Campo>
-            </div>
-        </section>
+        <CamposEndereco Modelo="Modelo" Prefixo="cli" />
 
         <section class="cartao secao-form">
             <h2>Plano</h2>
@@ -100,10 +64,7 @@
             </div>
         </section>
 
-        <div class="rodape-form">
-            <a href="/cliente" class="btn btn-outline-secondary">Cancelar</a>
-            <button type="submit" class="btn btn-primary" disabled="@salvando">Salvar</button>
-        </div>
+        <RodapeForm Cancelar="/cliente" Salvando="salvando" />
     </form>
 </div>
 
@@ -118,12 +79,9 @@
 
     private List<Plano> planos = new();
     private string? erro;
-    private string? dicaCep;
     private bool tentouSalvar;
     private bool salvando;
     private bool modalPlano;
-
-    private string? ErroCep => Documentos.ErroCep(Modelo.Cep);
 
     /// <summary>Sem plano e uma escolha valida, entao entra como item zero.</summary>
     private List<OpcaoId> OpcoesPlano =>
@@ -131,20 +89,6 @@
             .Concat(planos.Select(p => new OpcaoId(p.IdPlano, p.NomePlano ?? "Sem nome")))
             .ToList();
 
-    /// <summary>
-    /// As 27 UFs. Cadastro antigo com o estado por extenso ("Rondônia")
-    /// entra como opcao extra, para nao sumir ao abrir a edicao.
-    /// </summary>
-    private List<Opcao> OpcoesUf
-    {
-        get
-        {
-            var lista = Documentos.Ufs.Select(u => new Opcao(u, u)).ToList();
-            if (!string.IsNullOrWhiteSpace(Modelo.Estado) && !Documentos.Ufs.Contains(Modelo.Estado))
-                lista.Insert(0, new Opcao(Modelo.Estado, Modelo.Estado));
-            return lista;
-        }
-    }
 
     protected override void OnInitialized()
     {
@@ -158,29 +102,6 @@
         }
     }
 
-    /// <summary>CEP completo e valido: busca e preenche rua, bairro, cidade e UF.</summary>
-    private async Task AoMudarCep()
-    {
-        dicaCep = null;
-        if (!Documentos.CepValido(Modelo.Cep)) return;
-
-        dicaCep = "Buscando endereço…";
-        StateHasChanged();
-
-        var endereco = await buscaCep.BuscarAsync(Modelo.Cep);
-        if (endereco == null)
-        {
-            dicaCep = "CEP não encontrado. Preencha o endereço.";
-            return;
-        }
-
-        Modelo.Cep = Documentos.FormatarCep(Modelo.Cep);
-        if (!string.IsNullOrWhiteSpace(endereco.Rua)) Modelo.Rua = endereco.Rua;
-        if (!string.IsNullOrWhiteSpace(endereco.Bairro)) Modelo.Bairro = endereco.Bairro;
-        Modelo.Cidade = endereco.Cidade;
-        Modelo.Estado = endereco.Uf;
-        dicaCep = null;
-    }
 
     private void AoCriarPlano(int id)
     {
@@ -209,7 +130,7 @@
             string.IsNullOrWhiteSpace(Modelo.NomeCliente)
             || Documentos.ErroTelefone(Modelo.Telefone) != null
             || Documentos.ErroCpf(Modelo.CPF) != null
-            || ErroCep != null;
+            || Documentos.ErroCep(Modelo.Cep) != null;
 
         if (temErro)
         {

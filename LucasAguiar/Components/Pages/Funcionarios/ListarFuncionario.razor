@@ -5,6 +5,7 @@
 @using LucasAguiar.Models
 @using LucasAguiar.Configs
 @inject FuncionarioDAO funcionarioDAO
+@inject NavigationManager Navigation
 
 
 <h1>Lista de Funcionários</h1>
@@ -94,73 +95,6 @@
     </Rodape>
 </Janela>
 
-<Janela Visivel="@(editando != null)" Titulo="Editar funcionário" Largura="640" Erro="@erroModal"
-        OnFechar="Fechar">
-    <ChildContent>
-        @if (editando != null)
-        {
-            <div class="grade-campos">
-                <div class="largo">
-                    <label class="form-label">Nome</label>
-                    <input class="form-control" @bind="editando.NomeFuncionario" />
-                </div>
-                <div>
-                    <label class="form-label">Telefone</label>
-                    <input class="form-control" @bind="editando.Telefone" />
-                </div>
-                <div>
-                    <label class="form-label">Email</label>
-                    <input class="form-control" @bind="editando.Email" />
-                </div>
-                <div>
-                    <label class="form-label">CPF</label>
-                    <input class="form-control" @bind="editando.CPF" />
-                </div>
-                <div>
-                    <label class="form-label">RG</label>
-                    <input class="form-control" @bind="editando.RG" />
-                </div>
-                <div>
-                    <label class="form-label">CTPS</label>
-                    <input class="form-control" @bind="editando.CTPS" />
-                </div>
-                <div>
-                    <label class="form-label">Nascimento</label>
-                    <input type="date" class="form-control" @bind="editando.DataNascimento" />
-                </div>
-                <div>
-                    <label class="form-label">Estado</label>
-                    <input class="form-control" @bind="editando.Estado" />
-                </div>
-                <div>
-                    <label class="form-label">Cidade</label>
-                    <input class="form-control" @bind="editando.Cidade" />
-                </div>
-                <div>
-                    <label class="form-label">Bairro</label>
-                    <input class="form-control" @bind="editando.Bairro" />
-                </div>
-                <div>
-                    <label class="form-label">Rua</label>
-                    <input class="form-control" @bind="editando.Rua" />
-                </div>
-                <div>
-                    <label class="form-label">Número</label>
-                    <input class="form-control" @bind="editando.Numero" />
-                </div>
-                <div>
-                    <label class="form-label">Salário fixo mensal</label>
-                    <input type="number" step="0.01" min="0" class="form-control" @bind="editando.SalarioFixo" />
-                </div>
-            </div>
-        }
-    </ChildContent>
-    <Rodape>
-        <button type="button" class="btn btn-outline-secondary" @onclick="Fechar">Cancelar</button>
-        <button type="button" class="btn btn-primary" @onclick="Salvar">Salvar</button>
-    </Rodape>
-</Janela>
-
 @code {
     private Funcionario? excluindo;
     private string? erroExclusao;
@@ -191,8 +125,6 @@
     private List<Funcionario> listaFuncionarios = new();
 
     private Funcionario? visualizando;
-    private Funcionario? editando;
-    private string? erroModal;
 
     private string busca = "";
 
@@ -220,56 +152,9 @@
     private static string Valor(string? texto) =>
         string.IsNullOrWhiteSpace(texto) ? "—" : texto;
 
-    /// <summary>Edita uma copia: cancelar o modal nao pode alterar a linha da tabela.</summary>
-    private void Editar(Funcionario f)
-    {
-        visualizando = null;
-        erroModal = null;
-        editando = new Funcionario
-        {
-            IdFuncionario = f.IdFuncionario,
-            NomeFuncionario = f.NomeFuncionario,
-            Telefone = f.Telefone,
-            CPF = f.CPF,
-            DataNascimento = f.DataNascimento,
-            CTPS = f.CTPS,
-            RG = f.RG,
-            Email = f.Email,
-            Estado = f.Estado,
-            Cidade = f.Cidade,
-            Bairro = f.Bairro,
-            Rua = f.Rua,
-            Numero = f.Numero,
-            SalarioFixo = f.SalarioFixo
-        };
-    }
+    /// <summary>A edicao e uma pagina propria, com o mesmo formulario do cadastro.</summary>
+    private void Editar(Funcionario f) => Navigation.NavigateTo($"/funcionario/{f.IdFuncionario}");
 
-    private void Fechar()
-    {
-        visualizando = null;
-        editando = null;
-        erroModal = null;
-    }
+    private void Fechar() => visualizando = null;
 
-    private void Salvar()
-    {
-        if (editando == null) return;
-
-        try
-        {
-            if (string.IsNullOrWhiteSpace(editando.NomeFuncionario))
-                throw new Exception("O nome é obrigatório.");
-
-            if (editando.SalarioFixo < 0)
-                throw new Exception("O salário não pode ser negativo.");
-
-            funcionarioDAO.Atualizar(editando);
-            Fechar();
-            listaFuncionarios = funcionarioDAO.ListarTodos();
-        }
-        catch (Exception ex)
-        {
-            erroModal = ex.Message;
-        }
-    }
 }

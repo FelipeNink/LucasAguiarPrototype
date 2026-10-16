@@ -344,6 +344,12 @@ namespace LucasAguiar.Data
             // "(69) 99999-9999" tem 15 caracteres e a coluna era de 14: o
             // celular com mascara nao cabia.
             GarantirTamanho(conexao, "cliente", "telefone_cli", 20, "varchar(20) DEFAULT NULL");
+
+            GarantirColuna(conexao, "fornecedor", "documento_forn", "varchar(18) DEFAULT NULL AFTER `nome_forn`");
+            GarantirTamanho(conexao, "fornecedor", "telefone_forn", 20, "varchar(20) DEFAULT NULL");
+
+            GarantirColuna(conexao, "funcionario", "cep_fun", "varchar(9) DEFAULT NULL AFTER `email_fun`");
+            GarantirTamanho(conexao, "funcionario", "telefone_fun", 20, "varchar(20) DEFAULT NULL");
         }
 
         // ---------- apoio das migracoes ----------

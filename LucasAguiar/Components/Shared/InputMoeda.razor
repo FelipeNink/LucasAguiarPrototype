@@ -1,0 +1,28 @@
+@* Valor em reais com mascara "1.234,56". O ui.js formata enquanto a
+   pessoa digita; aqui o texto vira decimal ao sair do campo. *@
+
+@using System.Globalization
+
+<input id="@Id" class="form-control al-dir-campo" inputmode="numeric" data-mascara="moeda"
+       placeholder="0,00" value="@Texto" @onchange="AoMudar" />
+
+@code {
+    private static readonly CultureInfo Br = new("pt-BR");
+
+    [Parameter] public string? Id { get; set; }
+    [Parameter] public decimal Valor { get; set; }
+    [Parameter] public EventCallback<decimal> ValorChanged { get; set; }
+
+    private string Texto => Valor == 0 ? "" : Valor.ToString("N2", Br);
+
+    private async Task AoMudar(ChangeEventArgs e)
+    {
+        var texto = (e.Value?.ToString() ?? "").Replace("R$", "").Trim();
+
+        // Vazio volta a zero; texto que nao e numero mantem o valor anterior.
+        if (texto.Length == 0)
+            await ValorChanged.InvokeAsync(0m);
+        else if (decimal.TryParse(texto, NumberStyles.Number, Br, out var valor))
+            await ValorChanged.InvokeAsync(Math.Round(valor, 2));
+    }
+}

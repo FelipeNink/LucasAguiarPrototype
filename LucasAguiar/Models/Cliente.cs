@@ -2,7 +2,7 @@
 namespace LucasAguiar.Models
 
 {
-    public class Cliente
+    public class Cliente : IEndereco
     {
         public int IdCliente{ get; set; }
         public string? NomeCliente { get; set; }

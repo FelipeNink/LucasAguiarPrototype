@@ -1,6 +1,6 @@
 namespace LucasAguiar.Models
 {
-    public class Funcionario
+    public class Funcionario : IEndereco
     {
         public int IdFuncionario { get; set; }
         public string? NomeFuncionario { get; set; }
@@ -9,6 +9,7 @@ namespace LucasAguiar.Models
         public DateTime? DataNascimento { get; set; }
         public string? CTPS { get; set; }
         public string? RG { get; set; }
+        public string? Cep { get; set; }
         public string? Email { get; set; }
         public string? Estado { get; set; }
         public string? Cidade { get; set; }
