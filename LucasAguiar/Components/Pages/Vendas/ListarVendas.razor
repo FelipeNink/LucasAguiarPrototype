@@ -412,8 +412,11 @@
         }
     }
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
+        // O nome de quem esta logado fica gravado no cancelamento da venda.
+        await auth.PrepararAsync();
+
         var query = QueryHelpers.ParseQuery(new Uri(Navigation.Uri).Query);
         if (query.TryGetValue("nova", out var valor) && int.TryParse(valor, out var id))
             idNova = id;

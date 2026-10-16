@@ -102,60 +102,6 @@
     box-shadow: var(--anel-foco);
 }
 
-/* ---------- senha ---------- */
-
-.campo-senha {
-    position: relative;
-    display: block;
-}
-
-.campo-senha ::deep input {
-    padding-right: 52px;
-}
-
-.campo-senha .ver-senha {
-    position: absolute;
-    right: 4px;
-    top: 4px;
-    width: 44px;
-    height: 44px;
-    border: 0;
-    border-radius: 6px;
-    background: none;
-    color: var(--login-rotulo);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-}
-
-.campo-senha .ver-senha:hover {
-    color: var(--texto);
-}
-
-.campo-senha .ver-senha:focus-visible {
-    outline: 2px solid var(--marca);
-    outline-offset: 1px;
-}
-
-.campo-senha .ver-senha svg {
-    width: 19px;
-    height: 19px;
-}
-
-/* Olho aberto com a senha escondida ("clique para ver"); olho cortado
-   com ela visivel ("clique para esconder"). */
-.campo-senha .ver-senha .olho-fechado {
-    display: none;
-}
-
-.campo-senha .ver-senha.revelado .olho-aberto {
-    display: none;
-}
-
-.campo-senha .ver-senha.revelado .olho-fechado {
-    display: block;
-}
 
 /* ---------- entrar ---------- */
 

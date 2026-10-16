@@ -625,8 +625,11 @@
 
     private bool PodeConfirmar => Pendencias.Count == 0;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
+        // O nome de quem esta logado fica gravado na abertura do caixa.
+        await auth.PrepararAsync();
+
         try
         {
             servicos = servicoDAO.ListarTodos() ?? new();

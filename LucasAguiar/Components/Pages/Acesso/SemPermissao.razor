@@ -1,0 +1,20 @@
+@page "/sem-permissao"
+
+@* Destino do 403 quando a recusa acontece na requisicao HTTP -- acesso
+   direto por URL ou download de relatorio sem permissao de exportar.
+   A recusa dentro do circuito usa o SemPermissaoAviso, com o mesmo texto. *@
+
+<PageTitle>Sem permissão</PageTitle>
+
+<SemPermissaoAviso />
+
+@if (!string.IsNullOrWhiteSpace(De))
+{
+    <p class="aviso-acesso-origem">Endereço recusado: <code>@De</code></p>
+}
+
+@code {
+    /// <summary>O que foi pedido, para a pessoa saber do que se trata.</summary>
+    [SupplyParameterFromQuery(Name = "de")]
+    private string? De { get; set; }
+}

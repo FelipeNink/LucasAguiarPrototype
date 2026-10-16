@@ -1,0 +1,51 @@
+@* Mostrado pelo AuthorizeRouteView quando a navegacao dentro do circuito
+   cai numa tela que a pessoa nao pode abrir.
+
+   Sao dois casos bem diferentes no mesmo lugar: a sessao morreu (expirou,
+   foi encerrada de outro dispositivo, ou o acesso foi desativado), e ai o
+   certo e voltar ao login; ou a pessoa esta logada e aquela tela nao e
+   dela, e ai o certo e explicar.
+
+   O estado vem do parametro cascateado em vez do Context do template:
+   assim o componente decide sozinho e o Routes.razor fica legivel. *@
+
+@inject NavigationManager Navigation
+
+@if (autenticado)
+{
+    <SemPermissaoAviso />
+}
+else
+{
+    <div class="aviso-acesso">
+        <p>Sua sessão expirou. Redirecionando para a entrada…</p>
+    </div>
+}
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState>? Estado { get; set; }
+
+    private bool autenticado = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Estado != null)
+        {
+            var estado = await Estado;
+            autenticado = estado.User.Identity?.IsAuthenticated == true;
+        }
+
+        if (autenticado) return;
+
+        // forceLoad de proposito: a sessao morreu, e so uma requisicao HTTP
+        // de verdade limpa o circuito e o cookie.
+        var atual = Navigation.ToBaseRelativePath(Navigation.Uri);
+
+        Navigation.NavigateTo(
+            string.IsNullOrWhiteSpace(atual)
+                ? "/login"
+                : "/login?voltar=" + Uri.EscapeDataString("/" + atual),
+            forceLoad: true);
+    }
+}

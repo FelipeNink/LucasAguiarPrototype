@@ -1,0 +1,8 @@
+@* Exigir login vale para toda pagina desta pasta e das subpastas.
+   O contrario -- lista de rotas publicas no Program.cs, como era antes --
+   deixava uma tela nova nascer aberta por esquecimento.
+
+   Quem precisa ficar publico escreve [AllowAnonymous] na propria pagina:
+   hoje so Login, Logout e Error. *@
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]

@@ -1290,3 +1290,122 @@ form .form-check-label {
     --bs-btn-bg: transparent;
     --bs-btn-hover-color: #fff;
 }
+
+
+/* ===========================================================
+   CAMPO DE SENHA COM OLHINHO
+   Estava no CSS escopado da tela de login. Com a troca de senha
+   usando o mesmo controle, virou regra global: duas copias
+   escopadas sairiam do lugar uma da outra na primeira mudanca.
+
+   O botao e centrado pelo meio do campo, em vez de preso ao
+   topo, para servir tanto ao campo de 52px do login quanto ao
+   de 44px do resto do sistema.
+   =========================================================== */
+
+.campo-senha {
+    position: relative;
+    display: block;
+}
+
+.campo-senha input {
+    padding-right: 52px;
+}
+
+.campo-senha .ver-senha {
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 40px;
+    height: 40px;
+    border: 0;
+    border-radius: 6px;
+    background: none;
+    color: var(--texto-3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.campo-senha .ver-senha:hover {
+    color: var(--texto);
+}
+
+.campo-senha .ver-senha:focus-visible {
+    outline: 2px solid var(--marca);
+    outline-offset: 1px;
+}
+
+.campo-senha .ver-senha svg {
+    width: 19px;
+    height: 19px;
+}
+
+/* Olho aberto com a senha escondida ("clique para ver"); olho cortado
+   com ela visivel ("clique para esconder"). */
+.campo-senha .ver-senha .olho-fechado {
+    display: none;
+}
+
+.campo-senha .ver-senha.revelado .olho-aberto {
+    display: none;
+}
+
+.campo-senha .ver-senha.revelado .olho-fechado {
+    display: block;
+}
+
+
+/* ===========================================================
+   AVISO DE ACESSO
+   Sessao expirada e falta de permissao. Centrado na area de
+   conteudo, sem cartao: nao e um formulario, e um recado.
+   =========================================================== */
+
+.aviso-acesso {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 14px;
+    max-width: 440px;
+    margin: 12vh auto 0;
+    padding: 0 16px;
+}
+
+.aviso-acesso svg {
+    width: 44px;
+    height: 44px;
+    color: var(--texto-fraco);
+}
+
+.aviso-acesso h1 {
+    margin: 0;
+    font-size: 26px;
+    line-height: 1.15;
+}
+
+.aviso-acesso p {
+    margin: 0;
+    font-size: 15px;
+    color: var(--texto-3);
+}
+
+.aviso-acesso .btn-novo {
+    margin-top: 6px;
+}
+
+.aviso-acesso-origem {
+    margin: 18px auto 0;
+    max-width: 440px;
+    padding: 0 16px;
+    text-align: center;
+    font-size: 13px;
+    color: var(--texto-fraco);
+}
+
+.aviso-acesso-origem code {
+    color: var(--texto-3);
+}

@@ -246,7 +246,13 @@
     private static DateTime InicioMesAtual =>
         new(DateTime.Today.Year, DateTime.Today.Month, 1);
 
-    protected override void OnInitialized() => Carregar();
+    protected override async Task OnInitializedAsync()
+    {
+        // Quem esta logado precisa ser carregado antes de Carregar(): o nome
+        // dele vai gravado nos movimentos de caixa.
+        await auth.PrepararAsync();
+        Carregar();
+    }
 
     private void TrocarMes(int delta)
     {

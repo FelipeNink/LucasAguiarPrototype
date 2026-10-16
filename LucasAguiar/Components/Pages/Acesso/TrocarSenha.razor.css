@@ -1,0 +1,110 @@
+/* Tela sem moldura, como o login: quem chega aqui na primeira entrada
+   ainda nao tem para onde navegar, e quem chega por escolha nao se
+   distrai com o resto do sistema. */
+
+.troca-senha {
+    min-height: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 16px;
+    background: var(--fundo);
+}
+
+.troca-cartao {
+    width: 100%;
+    max-width: 420px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 32px;
+    border: 1px solid var(--borda);
+    border-radius: var(--raio-cartao);
+    background: var(--superficie);
+    box-shadow: var(--sombra-media);
+}
+
+.troca-cartao h1 {
+    margin: 4px 0 0;
+    font-size: 27px;
+    line-height: 1.1;
+}
+
+.troca-explica {
+    margin: 0;
+    font-size: 14.5px;
+    line-height: 1.5;
+    color: var(--texto-3);
+}
+
+.troca-campos {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.troca-campos label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--texto-2);
+}
+
+.troca-campos label .form-control {
+    margin-top: 6px;
+}
+
+/* O texto da politica nao e rotulo: volta ao corpo, em caixa normal. */
+.troca-dica {
+    display: block;
+    margin-top: 6px;
+    font-family: var(--fonte);
+    font-size: 12.5px;
+    font-weight: 400;
+    text-transform: none;
+    letter-spacing: 0;
+    color: var(--texto-fraco);
+}
+
+.troca-botoes {
+    display: flex;
+    gap: 10px;
+    margin-top: 4px;
+}
+
+/* Mesma altura e mesma divisao de espaco nos dois botoes: nenhum deles
+   e mais importante que o outro ate a pessoa decidir. */
+.troca-botoes .btn,
+.troca-botoes .btn-novo {
+    flex: 1;
+    height: var(--altura-controle);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.troca-ok {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border: 1px solid var(--ok-borda);
+    border-radius: var(--raio);
+    background: var(--ok-fundo);
+    color: var(--ok-texto);
+    font-weight: 600;
+}
+
+.troca-ok svg {
+    width: 18px;
+    height: 18px;
+    flex: none;
+}
+
+@media (max-width: 520px) {
+    .troca-cartao {
+        padding: 24px 20px;
+    }
+}

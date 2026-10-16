@@ -196,7 +196,10 @@
 
     <div class="usuario-dados">
         <span class="usuario-nome">@NomeUsuario</span>
-        <span class="usuario-papel">Administrador</span>
+        @* Era "Administrador" escrito no HTML, para qualquer um que
+           entrasse. Agora vem do acesso: a funcao da pessoa, se ela tiver
+           uma, e senao o perfil. *@
+        <span class="usuario-papel">@Papel</span>
     </div>
 
     <button type="button" class="botao-conta"
@@ -237,18 +240,19 @@
     private string NomeUsuario => auth.GetUsuarioNome() ?? "Usuário";
 
     /// <summary>Ate duas iniciais do nome, para o avatar do rodape.</summary>
-    private string Iniciais
+    private string Iniciais => auth.Iniciais;
+
+    /// <summary>A funcao da pessoa, ou o perfil quando ela nao tem funcao.</summary>
+    private string Papel => auth.GetFuncao() ?? Perfil.Rotulo(auth.GetPerfil());
+
+    /// <summary>
+    /// Carrega quem esta logado. Precisa acontecer aqui, e nao numa
+    /// propriedade: ler o estado de autenticacao e assincrono, e dentro do
+    /// circuito nao existe HttpContext de onde tirar isso na hora.
+    /// </summary>
+    protected override async Task OnInitializedAsync()
     {
-        get
-        {
-            var partes = NomeUsuario
-                .Split(' ', StringSplitOptions.RemoveEmptyEntries);
-
-            if (partes.Length == 0) return "?";
-            if (partes.Length == 1) return partes[0][..1].ToUpperInvariant();
-
-            return (partes[0][..1] + partes[^1][..1]).ToUpperInvariant();
-        }
+        await auth.PrepararAsync();
     }
 
     /// <summary>

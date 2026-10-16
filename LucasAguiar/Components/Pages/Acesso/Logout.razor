@@ -1,6 +1,11 @@
 @page "/logout"
-@inject AuthenticationService AuthService
+@attribute [AllowAnonymous]
+
+@using LucasAguiar.Services
+@inject SessaoDAO sessaoDAO
+@inject LogDAO logs
 @inject NavigationManager Navigation
+@inject IHttpContextAccessor HttpContextAccessor
 
 
 <div class="logout-container">
@@ -12,9 +17,45 @@
 
 
 @code {
+    /// <summary>
+    /// Sair encerra a sessao no banco, nao so no navegador: apagar o cookie
+    /// sozinho deixaria o token valido para quem o tivesse copiado.
+    ///
+    /// [AllowAnonymous] de proposito -- quem chega aqui com a sessao ja
+    /// invalida precisa ser levado ao login, e nao barrado.
+    /// </summary>
     protected override void OnInitialized()
     {
-        AuthService.Logout();
+        var httpContext = HttpContextAccessor?.HttpContext;
+
+        if (httpContext != null)
+        {
+            var token = AutenticacaoPorSessao.TokenDoCookie(httpContext);
+
+            if (!string.IsNullOrWhiteSpace(token))
+            {
+                try
+                {
+                    var acesso = sessaoDAO.Validar(token);
+
+                    sessaoDAO.Encerrar(token);
+
+                    if (acesso != null)
+                    {
+                        logs.Logout(acesso.IdUsuario, acesso.Nome,
+                            httpContext.Connection.RemoteIpAddress?.ToString());
+                    }
+                }
+                catch
+                {
+                    // Sair nunca pode falhar por causa do banco: o cookie
+                    // sai de qualquer forma e a pessoa volta ao login.
+                }
+            }
+
+            AutenticacaoPorSessao.ApagarCookie(httpContext);
+        }
+
         Navigation.NavigateTo("/login", forceLoad: true);
     }
 }

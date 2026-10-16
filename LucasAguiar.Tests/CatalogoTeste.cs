@@ -15,8 +15,16 @@ namespace LucasAguiar.Tests
     /// </summary>
     public class CatalogoTeste
     {
-        /// <summary>Rotas que existem de proposito fora do controle de acesso.</summary>
-        private static readonly string[] Publicas = { "/login", "/logout", "/error" };
+        /// <summary>
+        /// Rotas que de proposito nao sao telas do catalogo: as tres de
+        /// entrada e saida, que sao publicas, e as duas da propria conta,
+        /// que exigem login mas nunca permissao -- barrar alguem de trocar
+        /// a senha ou de ler o aviso de recusa nao faria sentido.
+        /// </summary>
+        private static readonly string[] ForaDoCatalogo =
+        {
+            "/login", "/logout", "/error", "/sem-permissao", "/trocar-senha"
+        };
 
         [Fact]
         public void Toda_tela_exige_pelo_menos_acessar()
@@ -70,7 +78,7 @@ namespace LucasAguiar.Tests
 
             foreach (var rota in RotasDoSistema())
             {
-                if (Publicas.Contains(rota, StringComparer.OrdinalIgnoreCase)) continue;
+                if (ForaDoCatalogo.Contains(rota, StringComparer.OrdinalIgnoreCase)) continue;
 
                 if (Catalogo.PorRota(rota) == null)
                     faltando.Add(rota);

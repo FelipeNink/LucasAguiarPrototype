@@ -1,7 +1,12 @@
 @page "/login"
+@attribute [AllowAnonymous]
 
 @using LucasAguiar.Models
+@using LucasAguiar.Services
 @inject UsuarioDAO usuarioDAO
+@inject SessaoDAO sessaoDAO
+@inject TentativaLoginDAO tentativas
+@inject LogDAO logs
 @inject NavigationManager Navigation
 @inject IHttpContextAccessor HttpContextAccessor
 
@@ -67,34 +72,25 @@
     [SupplyParameterFromForm(FormName = "formLogin")]
     private LoginModel login { get; set; } = new();
 
+    /// <summary>
+    /// Endereco que a pessoa tentou abrir sem estar logada, para voltar a
+    /// ele depois de entrar em vez de cair sempre no painel.
+    /// </summary>
+    [SupplyParameterFromQuery(Name = AutenticacaoPorSessao.ParametroVolta)]
+    private string? Voltar { get; set; }
+
     private string? erro;
+
+    /// <summary>
+    /// A mesma frase para usuario inexistente e para senha errada. O motivo
+    /// de verdade vai para o log: dizer "usuario nao existe" na tela entrega
+    /// quais logins existem a quem esta tentando adivinhar.
+    /// </summary>
+    private const string Generico = "Usuário ou senha inválidos.";
 
     private void Logar()
     {
         erro = null;
-
-        if (string.IsNullOrWhiteSpace(login.NomeUsuario) || string.IsNullOrWhiteSpace(login.Senha))
-        {
-            erro = "Informe usuário e senha.";
-            return;
-        }
-
-        Usuario? usuario;
-        try
-        {
-            usuario = usuarioDAO.ValidarLogin(login.NomeUsuario, login.Senha);
-        }
-        catch (Exception ex)
-        {
-            erro = "Erro ao entrar: " + ex.Message;
-            return;
-        }
-
-        if (usuario == null)
-        {
-            erro = "Usuário ou senha inválidos.";
-            return;
-        }
 
         var httpContext = HttpContextAccessor?.HttpContext;
         if (httpContext == null)
@@ -103,12 +99,101 @@
             return;
         }
 
-        httpContext.Session.SetString("UsuarioId", usuario.IdUsr.ToString());
-        httpContext.Session.SetString("UsuarioNome", usuario.NomeUsr ?? "");
+        var ip = httpContext.Connection.RemoteIpAddress?.ToString();
+        var nomeTentado = (login.NomeUsuario ?? "").Trim();
+
+        if (string.IsNullOrWhiteSpace(nomeTentado) || string.IsNullOrWhiteSpace(login.Senha))
+        {
+            erro = "Informe usuário e senha.";
+            return;
+        }
+
+        var chaveUsuario = TentativaLoginDAO.ChaveDeUsuario(nomeTentado);
+        var chaveIp = TentativaLoginDAO.ChaveDeIp(ip);
+
+        UsuarioDAO.Tentativa tentativa;
+        try
+        {
+            // Bloqueio por tentativas vem antes de tocar na senha: quem
+            // esta barrado nao gasta nem a conferencia.
+            var barrado = tentativas.BloqueadoAte(chaveUsuario, chaveIp);
+            if (barrado.HasValue)
+            {
+                var minutos = TentativaLoginDAO.MinutosRestantes(barrado.Value);
+                erro = $"Muitas tentativas. Tente novamente em {minutos} minuto"
+                     + (minutos == 1 ? "." : "s.");
+                return;
+            }
+
+            tentativa = usuarioDAO.ValidarLogin(nomeTentado, login.Senha);
+        }
+        catch (Exception ex)
+        {
+            erro = "Erro ao entrar: " + ex.Message;
+            return;
+        }
+
+        if (!tentativa.Entrou)
+        {
+            var bloqueio = tentativas.RegistrarFalha(chaveUsuario, chaveIp);
+
+            logs.LoginFalhou(nomeTentado, tentativa.Motivo, ip, tentativa.Usuario?.IdUsr);
+
+            if (bloqueio.HasValue)
+            {
+                var minutos = TentativaLoginDAO.MinutosRestantes(bloqueio.Value);
+                logs.LoginBloqueado(nomeTentado, ip, minutos);
+
+                erro = $"Muitas tentativas. Tente novamente em {minutos} minuto"
+                     + (minutos == 1 ? "." : "s.");
+                return;
+            }
+
+            // Conta desativada tem recado proprio -- mas so depois de a
+            // senha estar certa, senao seria uma forma de descobrir quem
+            // existe no sistema.
+            erro = tentativa.Desfecho == UsuarioDAO.Resultado.Desativado
+                ? "Este acesso está desativado. Procure o administrador."
+                : Generico;
+
+            return;
+        }
+
+        var usuario = tentativa.Usuario!;
+
+        tentativas.Zerar(chaveUsuario, chaveIp);
+
+        var token = sessaoDAO.Criar(
+            usuario.IdUsr, ip, httpContext.Request.Headers.UserAgent.ToString());
+
+        AutenticacaoPorSessao.GravarCookie(
+            httpContext, token, DateTime.Now.Add(SessaoDAO.Duracao));
+
+        logs.Login(usuario, ip);
 
         // Fora do try: NavigateTo lanca NavigationException internamente para
         // sinalizar o redirecionamento no render estatico do servidor.
-        Navigation.NavigateTo("/", forceLoad: true);
+        Navigation.NavigateTo(Destino(usuario), forceLoad: true);
+    }
+
+    /// <summary>
+    /// Senha provisoria manda direto para a troca. Senao, volta ao endereco
+    /// pedido -- validado como caminho interno, para o parametro da URL nao
+    /// virar redirecionamento para fora do sistema.
+    /// </summary>
+    private string Destino(Usuario usuario)
+    {
+        if (usuario.TrocarSenhaUsr) return "/trocar-senha";
+
+        if (string.IsNullOrWhiteSpace(Voltar)) return "/";
+
+        var destino = Voltar.Trim();
+
+        var interno = destino.StartsWith('/')
+            && !destino.StartsWith("//")
+            && !destino.StartsWith("/login", StringComparison.OrdinalIgnoreCase);
+
+        return interno ? destino : "/";
     }
 
     public class LoginModel

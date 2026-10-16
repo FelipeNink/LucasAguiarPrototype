@@ -9,12 +9,16 @@
 </div>
 
 <style>
+    /* A fonte saiu daqui: este bloco vem depois do app.css no documento e
+       estava desfazendo o "html, body { font-family: var(--fonte) }" dele
+       em toda tela sem moldura -- login, troca de senha e saida ficavam na
+       fonte do sistema operacional, nao na Barlow. O resto continua: a
+       altura cheia e o box-sizing sao do template e ainda fazem falta. */
     html, body {
         width: 100%;
         height: 100%;
         margin: 0;
         padding: 0;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
 
     * {

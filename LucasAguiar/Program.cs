@@ -3,6 +3,8 @@ using LucasAguiar.Configs;
 using LucasAguiar.Models;
 using LucasAguiar.Data;
 using LucasAguiar.Services;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.HttpOverrides;
 
 
@@ -57,16 +59,34 @@ builder.Services.AddScoped<PainelDAO>();
 builder.Services.AddScoped<ComissaoDAO>();
 builder.Services.AddScoped<FolhaDAO>();
 builder.Services.AddScoped<UsuarioDAO>();
+builder.Services.AddScoped<SessaoDAO>();
+builder.Services.AddScoped<TentativaLoginDAO>();
+builder.Services.AddScoped<LogDAO>();
 builder.Services.AddScoped<BancoInicializador>();
-builder.Services.AddScoped<AuthenticationService>();
+builder.Services.AddScoped<LucasAguiar.Services.AuthenticationService>();
 builder.Services.AddScoped<RelatorioPdf>();
-builder.Services.AddDistributedMemoryCache();
-builder.Services.AddSession(options =>
+
+// Autenticacao por token de sessao guardado no banco. Substitui a sessao
+// em memoria do ASP.NET Core, que sumia a cada deploy e nao permitia
+// derrubar o acesso de ninguem.
+builder.Services
+    .AddAuthentication(AutenticacaoPorSessao.Esquema)
+    .AddScheme<AuthenticationSchemeOptions, AutenticacaoPorSessao>(
+        AutenticacaoPorSessao.Esquema, null);
+
+// Exigir login e o padrao: uma tela nova nasce protegida, e so sai da
+// regra quem tiver [AllowAnonymous] escrito. O caminho oposto -- lista de
+// rotas publicas, como era antes -- deixa a porta aberta por esquecimento.
+builder.Services.AddAuthorization(opcoes =>
 {
-    options.IdleTimeout = TimeSpan.FromMinutes(30);
-    options.Cookie.HttpOnly = true;
-    options.Cookie.IsEssential = true;
+    opcoes.FallbackPolicy = new AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .Build();
 });
+
+// Entrega o estado de autenticacao aos componentes, inclusive dentro do
+// circuito, onde nao existe HttpContext.
+builder.Services.AddCascadingAuthenticationState();
 
 
 
@@ -78,6 +98,20 @@ var app = builder.Build();
 using (var escopo = app.Services.CreateScope())
 {
     escopo.ServiceProvider.GetRequiredService<BancoInicializador>().Preparar();
+
+    // Faxina do que so cresce: sessoes vencidas, contadores de tentativa de
+    // login ja sem efeito e log fora da retencao. Falhar aqui nao impede a
+    // aplicacao de subir -- e limpeza, nao requisito.
+    try
+    {
+        escopo.ServiceProvider.GetRequiredService<SessaoDAO>().LimparVencidas();
+        escopo.ServiceProvider.GetRequiredService<TentativaLoginDAO>().Limpar();
+        escopo.ServiceProvider.GetRequiredService<LogDAO>().AplicarRetencao();
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogWarning(ex, "A limpeza de sessões e logs não pôde ser feita.");
+    }
 }
 
 // Precisa vir antes de tudo que olha para o esquema ou o IP do pedido.
@@ -93,37 +127,14 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.UseSession();
-
-// Bloqueia qualquer pagina do sistema para quem nao esta autenticado.
-// Somente /login, /logout e /Error sao publicos.
-app.Use(async (context, next) =>
-{
-    var caminho = context.Request.Path.Value ?? "/";
-
-    var ehPublico = caminho.StartsWith("/login", StringComparison.OrdinalIgnoreCase)
-        || caminho.Equals("/health", StringComparison.OrdinalIgnoreCase)
-        || caminho.StartsWith("/logout", StringComparison.OrdinalIgnoreCase)
-        || caminho.StartsWith("/Error", StringComparison.OrdinalIgnoreCase)
-        || caminho.StartsWith("/_framework", StringComparison.OrdinalIgnoreCase)
-        || caminho.StartsWith("/_blazor", StringComparison.OrdinalIgnoreCase)
-        || caminho.StartsWith("/_content", StringComparison.OrdinalIgnoreCase)
-        || Path.HasExtension(caminho);
-
-    var autenticado = !string.IsNullOrEmpty(context.Session.GetString("UsuarioId"));
-
-    if (!ehPublico && !autenticado)
-    {
-        context.Response.Redirect("/login");
-        return;
-    }
-
-    await next();
-});
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.UseAntiforgery();
 
-app.MapStaticAssets();
+// CSS, fontes e scripts ficam fora da exigencia de login: a propria tela
+// de entrada precisa deles, e sem isto ela apareceria sem estilo nenhum.
+app.MapStaticAssets().AllowAnonymous();
 
 // Sonda de saude da hospedagem. O Railway so manda trafego para a versao
 // nova depois que isto responde 200, e reinicia o container se parar de
@@ -132,7 +143,7 @@ app.MapStaticAssets();
 // De proposito nao toca no banco: se o MySQL cair por um instante, o
 // certo e a aplicacao continuar de pe mostrando o erro, e nao o host
 // derrubar o container e tirar todo mundo do ar.
-app.MapGet("/health", () => Results.Ok("ok"));
+app.MapGet("/health", () => Results.Ok("ok")).AllowAnonymous();
 
 app.MapearRelatorios();
 app.MapearExcel();
