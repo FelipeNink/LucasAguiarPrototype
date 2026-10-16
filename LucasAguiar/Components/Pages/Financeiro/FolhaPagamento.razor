@@ -28,6 +28,12 @@
             disabled="@(mesReferencia >= InicioMesAtual)" title="Próximo mês">›</button>
 
     <a href="/comissoes" class="link-lateral">Ver detalhe das comissões</a>
+    @if (historico.Count > 0)
+    {
+        <button type="button" class="btn btn-outline-secondary btn-historico" @onclick="() => verHistorico = true">
+            Pagamentos anteriores
+        </button>
+    }
 </div>
 
 <div class="resumo">
@@ -135,33 +141,64 @@
     despesa na categoria Salários — <a href="/despesas">ver em Despesas</a>.
 </p>
 
-@if (historico.Count > 0)
-{
-    <h2 class="titulo-secao">Pagamentos anteriores</h2>
-<div class="tabela">
-    <table class="table table-striped tabela-historico">
-        <thead>
-            <tr>
-                <th>Pago em</th>
-                <th>Profissional</th>
-                <th>Competência</th>
-                <th class="dir">Valor</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var h in historico)
-            {
-                <tr>
-                    <td>@h.Data.ToString("dd/MM/yyyy HH:mm")</td>
-                    <td>@h.Profissional</td>
-                    <td>@h.Competencia</td>
-                    <td class="dir">@h.Total.ToString("C")</td>
-                </tr>
-            }
-        </tbody>
-    </table>
-</div>
-}
+@* ---------- pagamentos anteriores ---------- *@
+@* Num modal largo, agrupados por competencia: na pagina, a tabela ficava
+   estreita num cartao largo e a lista crescia sem fim abaixo da folha. *@
+<Janela Visivel="verHistorico" Titulo="Pagamentos anteriores" Largura="960" OnFechar="() => verHistorico = false">
+    <ChildContent>
+        <div class="historico-topo">
+            <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesProfissionalHistorico"
+                     @bind-Valor="idProfissionalHistorico" TextoDe="o => o.Rotulo" ValorDe="o => o.Id"
+                     ComAvatar="true" Rotulo="Profissional:" />
+            <span class="suave">
+                @HistoricoFiltrado.Count pagamento(s) · @HistoricoFiltrado.Sum(h => h.Total).ToString("C")
+            </span>
+        </div>
+
+        <div class="tabela">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Profissional</th>
+                        <th>Pago em</th>
+                        <th>Forma</th>
+                        <th class="col-num">Salário fixo</th>
+                        <th class="col-num">Comissões</th>
+                        <th class="col-num">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var mes in HistoricoFiltrado.GroupBy(h => h.Competencia))
+                    {
+                        <tr class="grupo-dia">
+                            <td colspan="6">
+                                <span class="grupo-dia-titulo">@RotuloCompetencia(mes.Key)</span>
+                                <span class="grupo-dia-resumo">
+                                    @mes.Count() pagamento(s) · @mes.Sum(h => h.Total).ToString("C")
+                                </span>
+                            </td>
+                        </tr>
+
+                        @foreach (var h in mes)
+                        {
+                            <tr title="@h.Observacao">
+                                <td><span class="nome-cliente">@h.Profissional</span></td>
+                                <td><span class="data">@h.Data.ToString("dd/MM/yyyy HH:mm")</span></td>
+                                <td><span class="descritivo">@(h.FormaPagamento == null ? "—" : FormaPagamento.Rotulo(h.FormaPagamento))</span></td>
+                                <td class="col-num">@h.SalarioFixo.ToString("C")</td>
+                                <td class="col-num">@h.Comissoes.ToString("C")</td>
+                                <td class="col-num">@h.Total.ToString("C")</td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </ChildContent>
+    <Rodape>
+        <button type="button" class="btn btn-outline-secondary" @onclick="() => verHistorico = false">Fechar</button>
+    </Rodape>
+</Janela>
 
 @* ---------- pagamento ---------- *@
 @if (pagando != null)
@@ -233,7 +270,27 @@
     private static readonly System.Globalization.CultureInfo Cultura = new("pt-BR");
 
     private List<FolhaDAO.LinhaFolha> linhas = new();
-    private List<(DateTime Data, string Profissional, string Competencia, decimal Total)> historico = new();
+    private List<FolhaDAO.PagamentoFolha> historico = new();
+    private bool verHistorico;
+    private int idProfissionalHistorico;
+
+    private List<FolhaDAO.PagamentoFolha> HistoricoFiltrado =>
+        historico.Where(h => idProfissionalHistorico == 0 || h.IdFuncionario == idProfissionalHistorico).ToList();
+
+    private List<OpcaoId> OpcoesProfissionalHistorico =>
+        new List<OpcaoId> { new(0, "Todos") }
+            .Concat(historico
+                .GroupBy(h => (h.IdFuncionario, h.Profissional))
+                .OrderBy(g => g.Key.Profissional)
+                .Select(g => new OpcaoId(g.Key.IdFuncionario, g.Key.Profissional, null, g.Count().ToString())))
+            .ToList();
+
+    /// <summary>"2026-10" vira "OUTUBRO DE 2026".</summary>
+    private static string RotuloCompetencia(string competencia) =>
+        DateTime.TryParseExact(competencia + "-01", "yyyy-MM-dd", Cultura,
+            System.Globalization.DateTimeStyles.None, out var mes)
+            ? mes.ToString("MMMM 'de' yyyy", Cultura).ToUpper(Cultura)
+            : competencia;
     private FolhaDAO.LinhaFolha? pagando;
     private Caixa? caixaAberto;
 

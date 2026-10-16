@@ -227,30 +227,49 @@ namespace LucasAguiar.Data
             }
         }
 
-        public List<(DateTime Data, string Profissional, string Competencia, decimal Total)> Historico(int limite = 60)
+        /// <summary>Um pagamento de folha ja registrado.</summary>
+        public record PagamentoFolha(
+            DateTime Data, int IdFuncionario, string Profissional, string Competencia,
+            decimal SalarioFixo, decimal Comissoes, decimal Total,
+            string? FormaPagamento, string? Observacao, string? Usuario);
+
+        /// <summary>Pagamentos mais recentes primeiro, com a forma vinda da despesa gerada.</summary>
+        public List<PagamentoFolha> Historico(int limite = 240)
         {
-            var lista = new List<(DateTime, string, string, decimal)>();
+            var lista = new List<PagamentoFolha>();
 
             using var conexao = _conexao.GetConnection();
             using var comando = new MySqlCommand(@"
-                SELECT p.data_pgto, f.nome_fun, p.competencia, p.total
+                SELECT p.data_pgto, p.id_fun_fk, f.nome_fun, p.competencia,
+                       p.salario_fixo, p.comissoes, p.total, p.observacao, p.usuario,
+                       d.forma_pagamento
                 FROM folha_pagamento p
                 JOIN funcionario f ON f.id_fun = p.id_fun_fk
-                ORDER BY p.data_pgto DESC
+                LEFT JOIN despesa d ON d.id_desp = p.id_desp_fk
+                ORDER BY p.competencia DESC, p.data_pgto DESC
                 LIMIT @limite", conexao);
 
             comando.Parameters.AddWithValue("@limite", limite);
 
             using var leitor = comando.ExecuteReader();
             var iNome = leitor.GetOrdinal("nome_fun");
+            var iForma = leitor.GetOrdinal("forma_pagamento");
+            var iObs = leitor.GetOrdinal("observacao");
+            var iUsuario = leitor.GetOrdinal("usuario");
 
             while (leitor.Read())
             {
-                lista.Add((
+                lista.Add(new PagamentoFolha(
                     leitor.GetDateTime("data_pgto"),
+                    leitor.GetInt32("id_fun_fk"),
                     leitor.IsDBNull(iNome) ? "(sem nome)" : leitor.GetString(iNome),
                     leitor.GetString("competencia"),
-                    leitor.GetDecimal("total")));
+                    leitor.GetDecimal("salario_fixo"),
+                    leitor.GetDecimal("comissoes"),
+                    leitor.GetDecimal("total"),
+                    leitor.IsDBNull(iForma) ? null : leitor.GetString(iForma),
+                    leitor.IsDBNull(iObs) ? null : leitor.GetString(iObs),
+                    leitor.IsDBNull(iUsuario) ? null : leitor.GetString(iUsuario)));
             }
 
             return lista;

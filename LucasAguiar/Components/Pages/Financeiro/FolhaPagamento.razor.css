@@ -154,15 +154,26 @@ tr.pago {
     color: var(--texto-fraco);
 }
 
-.titulo-secao {
-    margin: 2rem 0 1rem;
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--texto);
+/* ---------- pagamentos anteriores (modal) ---------- */
+
+.btn-historico {
+    height: 40px;
+    padding: 0 16px;
+    display: inline-flex;
+    align-items: center;
 }
 
-.tabela-historico {
-    max-width: 760px;
+.historico-topo {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+}
+
+.historico-topo ::deep .seletor {
+    min-width: 260px;
 }
 
 /* ---------- modal ---------- */
