@@ -1,5 +1,6 @@
 @page "/produto/novo"
 @rendermode InteractiveServer
+@attribute [Authorize(Policy = Politicas.CriarProduto)]
 
 @using LucasAguiar.Models
 @using LucasAguiar.Configs

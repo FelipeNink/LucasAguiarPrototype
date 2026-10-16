@@ -1,5 +1,6 @@
 @page "/funcionario/novo"
 @rendermode InteractiveServer
+@attribute [Authorize(Policy = Politicas.CriarFuncionario)]
 
 @using LucasAguiar.Models
 @using LucasAguiar.Configs

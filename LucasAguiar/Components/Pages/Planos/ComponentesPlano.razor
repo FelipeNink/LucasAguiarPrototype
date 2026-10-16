@@ -1,5 +1,6 @@
 @page "/plano/{Id:int}/componentes"
 @rendermode InteractiveServer
+@attribute [Authorize(Policy = Politicas.EditarPlano)]
 
 @using LucasAguiar.Models
 @inject PlanoDAO planoDAO

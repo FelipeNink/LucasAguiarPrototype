@@ -1,5 +1,6 @@
 @page "/despesas"
 @rendermode InteractiveServer
+@attribute [Authorize(Policy = Politicas.Despesas)]
 
 @using LucasAguiar.Models
 @using Microsoft.AspNetCore.WebUtilities

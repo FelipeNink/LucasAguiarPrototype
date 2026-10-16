@@ -1,5 +1,6 @@
 @page "/caixa"
 @rendermode InteractiveServer
+@attribute [Authorize(Policy = Politicas.Caixa)]
 
 @using LucasAguiar.Models
 @using LucasAguiar.Services

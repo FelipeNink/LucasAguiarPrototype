@@ -1,5 +1,6 @@
 @page "/agendamento/novo"
 @rendermode InteractiveServer
+@attribute [Authorize(Policy = Politicas.CriarAgendamento)]
 
 @inject AgendamentoDAO agendamentoDAO
 @inject ClienteDAO clienteDAO

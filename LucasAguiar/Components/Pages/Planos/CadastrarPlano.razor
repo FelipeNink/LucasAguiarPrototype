@@ -1,5 +1,6 @@
 @page "/plano/novo"
 @rendermode InteractiveServer
+@attribute [Authorize(Policy = Politicas.CriarPlano)]
 
 @using LucasAguiar.Models
 @inject NavigationManager Navigation

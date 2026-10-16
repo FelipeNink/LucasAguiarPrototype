@@ -1,5 +1,6 @@
 @page "/agendamentos"
 @rendermode InteractiveServer
+@attribute [Authorize(Policy = Politicas.Agendamentos)]
 
 @inject AgendamentoDAO agendamentoDAO
 @inject NavigationManager Navigation

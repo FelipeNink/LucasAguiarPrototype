@@ -1,5 +1,6 @@
 @page "/venda/nova"
 @rendermode InteractiveServer
+@attribute [Authorize(Policy = Politicas.CriarVenda)]
 
 @using LucasAguiar.Models
 @inject ClienteDAO clienteDAO

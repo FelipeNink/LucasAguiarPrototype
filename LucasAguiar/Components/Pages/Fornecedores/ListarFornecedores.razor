@@ -1,5 +1,6 @@
 ﻿@page "/fornecedores"
 @rendermode InteractiveServer
+@attribute [Authorize(Policy = Politicas.Fornecedores)]
 
 @using LucasAguiar.Configs
 @using LucasAguiar.Models

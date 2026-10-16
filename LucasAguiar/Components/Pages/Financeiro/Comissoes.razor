@@ -1,5 +1,6 @@
 @page "/comissoes"
 @rendermode InteractiveServer
+@attribute [Authorize(Policy = Politicas.Comissoes)]
 
 @using LucasAguiar.Models
 @using LucasAguiar.Services

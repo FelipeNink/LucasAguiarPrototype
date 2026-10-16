@@ -1,5 +1,6 @@
 ﻿@page "/cliente"
 @rendermode InteractiveServer
+@attribute [Authorize(Policy = Politicas.Clientes)]
 
 @using LucasAguiar.Configs
 @using LucasAguiar.Models

@@ -74,9 +74,19 @@ namespace LucasAguiar.Services
 
             if (acesso == null)
             {
-                // Sessao expirada, encerrada, ou de conta desativada: o
-                // cookie nao serve mais para nada.
-                ApagarCookie(Context);
+                // Sessao expirada, encerrada, ou de conta desativada.
+                //
+                // O cookie NAO e apagado aqui, embora fosse a reacao
+                // obvia: o Delete remove pelo nome, sem olhar o valor, e
+                // um pedido atrasado carregando um token velho -- uma aba
+                // antiga, ou uma requisicao em voo durante a troca de
+                // usuario -- derrubaria o cookie novo que outro pedido
+                // acabou de gravar. A pessoa era deslogada no meio do uso,
+                // sem motivo aparente.
+                //
+                // Nao apagar nao deixa nada aberto: o token invalido
+                // continua invalido, e quem apaga o cookie de verdade e a
+                // saida, que sabe qual token esta encerrando.
                 return Task.FromResult(AuthenticateResult.NoResult());
             }
 

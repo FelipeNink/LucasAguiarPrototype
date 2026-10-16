@@ -74,15 +74,25 @@ builder.Services
     .AddScheme<AuthenticationSchemeOptions, AutenticacaoPorSessao>(
         AutenticacaoPorSessao.Esquema, null);
 
-// Exigir login e o padrao: uma tela nova nasce protegida, e so sai da
-// regra quem tiver [AllowAnonymous] escrito. O caminho oposto -- lista de
-// rotas publicas, como era antes -- deixa a porta aberta por esquecimento.
+// Exigir login e permissao e o padrao: uma tela nova nasce protegida, e
+// so sai da regra quem tiver [AllowAnonymous] escrito. O caminho oposto
+// -- lista de rotas publicas, como era antes -- deixa a porta aberta por
+// esquecimento.
+//
+// A exigencia da rota cobre todo endpoint que nao declarou politica
+// propria, inclusive os dezenove downloads de /relatorio e /excel.
 builder.Services.AddAuthorization(opcoes =>
 {
     opcoes.FallbackPolicy = new AuthorizationPolicyBuilder()
         .RequireAuthenticatedUser()
+        .AddRequirements(new ExigePermissaoDaRota())
         .Build();
 });
+
+builder.Services.AddScoped<PermissaoDAO>();
+builder.Services.AddScoped<Autorizacao>();
+builder.Services.AddScoped<IAuthorizationHandler, ManipuladorDeTela>();
+builder.Services.AddSingleton<IAuthorizationPolicyProvider, ProvedorDePoliticas>();
 
 // Entrega o estado de autenticacao aos componentes, inclusive dentro do
 // circuito, onde nao existe HttpContext.

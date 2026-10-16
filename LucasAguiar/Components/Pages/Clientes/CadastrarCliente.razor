@@ -1,6 +1,7 @@
 
     @page "/cliente/novo"
 @rendermode InteractiveServer
+@attribute [Authorize(Policy = Politicas.CriarCliente)]
 
 @using LucasAguiar.Models
 @using LucasAguiar.Configs

@@ -1,5 +1,6 @@
 @page "/folha"
 @rendermode InteractiveServer
+@attribute [Authorize(Policy = Politicas.Folha)]
 
 @using LucasAguiar.Models
 @using LucasAguiar.Services

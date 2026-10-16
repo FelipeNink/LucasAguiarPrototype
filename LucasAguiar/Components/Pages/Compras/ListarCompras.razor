@@ -1,5 +1,6 @@
 ﻿@page "/compra"
 @rendermode InteractiveServer
+@attribute [Authorize(Policy = Politicas.Compras)]
 
 @using LucasAguiar.Configs
 @using LucasAguiar.Models

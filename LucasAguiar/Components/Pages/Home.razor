@@ -1,5 +1,6 @@
 @page "/"
 @rendermode InteractiveServer
+@attribute [Authorize(Policy = Politicas.Painel)]
 @implements IDisposable
 
 @using LucasAguiar.Models

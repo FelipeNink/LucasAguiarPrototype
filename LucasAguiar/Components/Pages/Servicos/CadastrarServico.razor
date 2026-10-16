@@ -1,5 +1,6 @@
 @page "/servico/novo"
 @rendermode InteractiveServer
+@attribute [Authorize(Policy = Politicas.CriarServico)]
 
 @using LucasAguiar.Configs
 @using LucasAguiar.Models

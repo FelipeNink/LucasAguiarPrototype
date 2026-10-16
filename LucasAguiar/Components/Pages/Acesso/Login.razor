@@ -1,10 +1,12 @@
 @page "/login"
 @attribute [AllowAnonymous]
 
+@using LucasAguiar.Configs
 @using LucasAguiar.Models
 @using LucasAguiar.Services
 @inject UsuarioDAO usuarioDAO
 @inject SessaoDAO sessaoDAO
+@inject PermissaoDAO permissaoDAO
 @inject TentativaLoginDAO tentativas
 @inject LogDAO logs
 @inject NavigationManager Navigation
@@ -177,23 +179,52 @@
     }
 
     /// <summary>
+    /// Para onde a pessoa vai depois de entrar.
+    ///
     /// Senha provisoria manda direto para a troca. Senao, volta ao endereco
-    /// pedido -- validado como caminho interno, para o parametro da URL nao
-    /// virar redirecionamento para fora do sistema.
+    /// que ela tentou abrir -- validado como caminho interno, para o
+    /// parametro da URL nao virar redirecionamento para fora do sistema, e
+    /// conferido contra as permissoes dela.
+    ///
+    /// Sem endereco guardado, vai para o painel; e quem nao tem o painel
+    /// liberado cai na primeira tela que puder abrir, em vez de entrar
+    /// direto num aviso de falta de permissao.
     /// </summary>
     private string Destino(Usuario usuario)
     {
         if (usuario.TrocarSenhaUsr) return "/trocar-senha";
 
-        if (string.IsNullOrWhiteSpace(Voltar)) return "/";
+        var permissoes = permissaoDAO.Carregar(usuario.IdUsr, usuario.EhAdmin);
 
-        var destino = Voltar.Trim();
+        if (!string.IsNullOrWhiteSpace(Voltar))
+        {
+            var pedido = Voltar.Trim();
 
-        var interno = destino.StartsWith('/')
-            && !destino.StartsWith("//")
-            && !destino.StartsWith("/login", StringComparison.OrdinalIgnoreCase);
+            var interno = pedido.StartsWith('/')
+                && !pedido.StartsWith("//")
+                && !pedido.StartsWith("/login", StringComparison.OrdinalIgnoreCase);
 
-        return interno ? destino : "/";
+            if (interno && PodeAbrir(permissoes, pedido)) return pedido;
+        }
+
+        if (permissoes.PodeVer("painel")) return "/";
+
+        var primeira = permissoes.TelasVisiveis().FirstOrDefault();
+
+        return primeira?.Rotas.FirstOrDefault() ?? "/";
+    }
+
+    /// <summary>
+    /// A tela desse caminho esta liberada? Caminho que nao pertence a tela
+    /// nenhuma -- a troca de senha, por exemplo -- passa: quem decide
+    /// aquilo nao e a matriz.
+    /// </summary>
+    private static bool PodeAbrir(Permissoes permissoes, string caminho)
+    {
+        var tela = Catalogo.PorRota(caminho);
+
+        return tela == null
+            || permissoes.Pode(tela.Chave, Catalogo.AcaoDaRota(caminho));
     }
 
     public class LoginModel

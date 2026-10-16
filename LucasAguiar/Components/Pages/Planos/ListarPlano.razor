@@ -1,5 +1,6 @@
 ﻿@page "/plano"
 @rendermode InteractiveServer
+@attribute [Authorize(Policy = Politicas.Planos)]
 
 @using LucasAguiar.Models
 @using LucasAguiar.Configs
