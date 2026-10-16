@@ -36,6 +36,7 @@ namespace LucasAguiar.Services
         public const string Servicos = "tela:servicos:Ver";
         public const string Produtos = "tela:produtos:Ver";
         public const string Planos = "tela:planos:Ver";
+        public const string Assinaturas = "tela:assinaturas:Ver";
         public const string Funcionarios = "tela:funcionarios:Ver";
         public const string Fornecedores = "tela:fornecedores:Ver";
         public const string Equipe = "tela:equipe:Ver";

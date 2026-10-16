@@ -14,45 +14,48 @@
     <a href="/relatorio/funcionarios" class="btn-pdf" data-enhance-nav="false">Relatório PDF</a>
 </div>
 
+@* ---------- filtros ---------- *@
+<section class="filtros">
+    <div class="campo campo-largo">
+        <label>Nome ou CPF</label>
+        <input class="form-control" placeholder="Buscar funcionário" @bind="busca" @bind:event="oninput" />
+    </div>
+    <div class="campo-acoes">
+        <button type="button" class="btn btn-outline-secondary" @onclick="() => busca = string.Empty">Limpar</button>
+    </div>
+</section>
+
 <div class="tabela fixa">
     <table class="table table-striped">
     <thead>
         <tr>
-            <th class="col-id">#</th>
             <th>Nome</th>
             <th>Telefone</th>
-            <th class="opcional">CPF</th>
-            <th class="opcional">Email</th>
-            <th class="opcional">Cidade</th>
+            <th class="al-dir">Salário fixo</th>
             <th class="col-acoes">Ações</th>
         </tr>
     </thead>
     <tbody>
-        @if (listaFuncionarios != null && listaFuncionarios.Any())
+        @if (Filtrados.Any())
         {
-            int contador = 1;
-            foreach (var funcionario in listaFuncionarios)
+            foreach (var funcionario in Filtrados)
             {
                 <tr>
-                    <td>@contador</td>
                     <td>@funcionario.NomeFuncionario</td>
-                    <td>@funcionario.Telefone</td>
-                    <td class="opcional">@funcionario.CPF</td>
-                    <td class="opcional">@funcionario.Email</td>
-                    <td class="opcional">@funcionario.Cidade</td>
+                    <td>@Valor(funcionario.Telefone)</td>
+                    <td class="al-dir">@funcionario.SalarioFixo.ToString("C")</td>
                     <td class="col-acoes">
                         <AcoesLinha OnVisualizar="() => visualizando = funcionario"
                                     OnEditar="() => Editar(funcionario)"
                                     OnExcluir="() => excluindo = funcionario" />
                     </td>
                 </tr>
-                contador++;
             }
         }
         else
         {
             <tr>
-                <td colspan="7" class="text-center text-muted">Nenhum funcionário encontrado.</td>
+                <td colspan="4" class="text-center text-muted">Nenhum funcionário encontrado.</td>
             </tr>
         }
     </tbody>
@@ -190,6 +193,24 @@
     private Funcionario? visualizando;
     private Funcionario? editando;
     private string? erroModal;
+
+    private string busca = "";
+
+    private List<Funcionario> Filtrados
+    {
+        get
+        {
+            var termo = busca.Trim();
+            var digitos = new string(termo.Where(char.IsDigit).ToArray());
+
+            return listaFuncionarios
+                .Where(f => termo == ""
+                            || (f.NomeFuncionario ?? "").Contains(termo, StringComparison.OrdinalIgnoreCase)
+                            || (digitos.Length >= 3
+                                && new string((f.CPF ?? "").Where(char.IsDigit).ToArray()).Contains(digitos)))
+                .ToList();
+        }
+    }
 
     protected override void OnInitialized()
     {

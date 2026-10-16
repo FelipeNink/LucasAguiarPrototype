@@ -181,7 +181,7 @@
             </div>
         }
 
-        @if (AlgumaDe("clientes", "servicos", "produtos", "planos", "funcionarios", "fornecedores"))
+        @if (AlgumaDe("clientes", "servicos", "produtos", "planos", "assinaturas", "funcionarios", "fornecedores"))
         {
             <div class="grupo">
                 <span class="grupo-rotulo">Cadastros</span>
@@ -234,6 +234,19 @@
                                 <path d="M12 3l9 5-9 5-9-5zM3 13l9 5 9-5" />
                             </svg>
                             Planos
+                        </NavLink>
+                    </div>
+                }
+
+                @if (Pode("assinaturas"))
+                {
+                    <div class="nav-item">
+                        <NavLink class="nav-link" href="/assinaturas">
+                            <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M4 5h16v14H4zM4 10h16M8 15h3" />
+                            </svg>
+                            Assinaturas
                         </NavLink>
                     </div>
                 }

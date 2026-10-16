@@ -18,60 +18,128 @@
     <a href="/excel/compras" class="btn-pdf" data-enhance-nav="false">Excel</a>
 </div>
 
-<div class="tabela fixa">
-    <table class="table table-striped">
+@* ---------- filtros ---------- *@
+<section class="filtros">
+    <div class="campo">
+        <label>De</label>
+        <input type="date" class="form-control" @bind="de" />
+    </div>
+    <div class="campo">
+        <label>Até</label>
+        <input type="date" class="form-control" @bind="ate" />
+    </div>
+    <div class="campo">
+        <label>Fornecedor</label>
+        <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesFiltroFornecedor"
+                 @bind-Valor="filtroFornecedor" TextoDe="o => o.Rotulo" ValorDe="o => o.Id" />
+    </div>
+    <div class="campo">
+        <label>Produto</label>
+        <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesFiltroProduto"
+                 @bind-Valor="filtroProduto" TextoDe="o => o.Rotulo" ValorDe="o => o.Id" />
+    </div>
+    <div class="campo">
+        <label>Pagamento</label>
+        <Seletor TItem="Opcao" TValor="string" Itens="OpcoesSituacao"
+                 @bind-Valor="filtroSituacao" TextoDe="o => o.Rotulo" ValorDe="o => o.Valor"
+                 PontoDe="o => o.Cor" />
+    </div>
+    <div class="campo-acoes">
+        <button type="button" class="btn btn-primary" @onclick="CarregarCompras">Filtrar</button>
+        <button type="button" class="btn btn-outline-secondary" @onclick="Limpar">Limpar</button>
+    </div>
+</section>
+
+<div class="atalhos-periodo mb-3">
+    <button type="button" @onclick="() => Periodo(0)">Hoje</button>
+    <button type="button" @onclick="() => Periodo(7)">Últimos 7 dias</button>
+    <button type="button" @onclick="() => Periodo(30)">Últimos 30 dias</button>
+    <button type="button" @onclick="PeriodoMes">Este mês</button>
+</div>
+
+@* ---------- resumo ---------- *@
+<div class="resumo">
+    <div class="cartao-resumo">
+        <span class="rotulo">Compras</span>
+        <strong class="valor">@Filtradas.Count</strong>
+    </div>
+    <div class="cartao-resumo">
+        <span class="rotulo">Total comprado</span>
+        <strong class="valor">@Filtradas.Sum(c => c.ValorCompra).ToString("C")</strong>
+    </div>
+</div>
+
+<div class="tabela">
+    <table class="table">
     <thead>
         <tr>
-            <th class="col-id">#</th>
-            <th>Data</th>
-            <th class="al-dir">Valor</th>
+            <th>Fornecedor</th>
             <th>Item</th>
-            <th class="al-dir opcional">Quantidade</th>
-            <th class="opcional">Produto</th>
-            <th class="opcional">Fornecedor</th>
-            <th class="opcional">Funcionário</th>
-            <th class="opcional">Despesa</th>
+            <th>Pagamento</th>
+            <th class="col-num">Total</th>
+            <th>Situação</th>
             <th class="col-acoes">Ações</th>
         </tr>
     </thead>
     <tbody>
-        @if (listaCompras != null && listaCompras.Any())
+        @if (Filtradas.Any())
         {
-            int contador = 1;
-            foreach (var compra in listaCompras)
+            @* Agrupado por dia, como em Vendas. *@
+            @foreach (var dia in Filtradas.GroupBy(c => c.DataCompra.Date).OrderByDescending(g => g.Key))
             {
-                <tr>
-                    <td>@contador</td>
-                    <td>@compra.DataCompra.ToShortDateString()</td>
-                    <td class="al-dir">@compra.ValorCompra.ToString("C")</td>
-                    <td>@compra.ItemCompra</td>
-                    <td class="al-dir opcional">@compra.Quantidade</td>
-                    <td class="opcional">@compra.NomeProduto</td>
-                    <td class="opcional">@compra.NomeFornecedor</td>
-                    <td class="opcional">@compra.NomeFuncionario</td>
-                    <td class="opcional">
-                        @if (compra.IdDespesa.HasValue)
-                        {
-                            <a href="/despesas">lançada</a>
-                        }
-                        else
-                        {
-                            <span class="text-muted">—</span>
-                        }
-                    </td>
-                    <td class="col-acoes">
-                        <AcoesLinha OnVisualizar="() => visualizando = compra"
-                                    OnEditar="() => Editar(compra)"
-                                    OnExcluir="() => excluindo = compra" />
+                <tr class="grupo-dia">
+                    <td colspan="6">
+                        <span class="grupo-dia-titulo">@RotuloDoDia(dia.Key)</span>
+                        <span class="grupo-dia-resumo">
+                            @dia.Count() compra(s) · @dia.Sum(c => c.ValorCompra).ToString("C")
+                        </span>
                     </td>
                 </tr>
-                contador++;
+
+                @foreach (var compra in dia)
+                {
+                    <tr>
+                        <td><span class="nome-cliente">@Valor(compra.NomeFornecedor)</span></td>
+                        <td>
+                            <span class="descritivo">
+                                @Valor(compra.ItemCompra ?? compra.NomeProduto)
+                                @if (compra.Quantidade > 1)
+                                {
+                                    <text> × @compra.Quantidade</text>
+                                }
+                            </span>
+                        </td>
+                        <td>
+                            <span class="descritivo">
+                                @(compra.FormaPagamentoDespesa == null ? "—" : FormaPagamento.Rotulo(compra.FormaPagamentoDespesa))
+                            </span>
+                        </td>
+                        <td class="col-num">@compra.ValorCompra.ToString("C")</td>
+                        <td>
+                            @if (compra.Pago.HasValue)
+                            {
+                                <span class="status @(compra.Pago.Value ? "pago" : "pendente")">
+                                    <i></i>@(compra.Pago.Value ? "Paga" : "Em aberto")
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">—</span>
+                            }
+                        </td>
+                        <td class="col-acoes">
+                            <AcoesLinha OnVisualizar="() => visualizando = compra"
+                                        OnEditar="() => Editar(compra)"
+                                        OnExcluir="() => excluindo = compra" />
+                        </td>
+                    </tr>
+                }
             }
         }
         else
         {
             <tr>
-                <td colspan="10" class="text-center text-muted">Nenhuma compra encontrada.</td>
+                <td colspan="6" class="vazio">Nenhuma compra encontrada.</td>
             </tr>
         }
     </tbody>
@@ -208,16 +276,91 @@
     private List<OpcaoId> OpcoesFuncionario =>
         funcionarios.Select(u => new OpcaoId(u.IdFuncionario, u.NomeFuncionario ?? "Sem nome")).ToList();
 
+    // Filtros. Periodo vai ao banco; o resto filtra em memoria.
+    private DateTime? de;
+    private DateTime? ate;
+    private int filtroFornecedor;
+    private int filtroProduto;
+    private string filtroSituacao = "";
+
+    private List<Compra> Filtradas =>
+        listaCompras
+            .Where(c => filtroFornecedor == 0 || c.IdFornecedor == filtroFornecedor)
+            .Where(c => filtroProduto == 0 || c.IdProduto == filtroProduto)
+            .Where(c => filtroSituacao == ""
+                        || (filtroSituacao == "PAGA" ? c.Pago == true : c.Pago == false))
+            .ToList();
+
+    private List<OpcaoId> OpcoesFiltroFornecedor =>
+        new List<OpcaoId> { new(0, "Todos") }.Concat(OpcoesFornecedor).ToList();
+
+    private List<OpcaoId> OpcoesFiltroProduto =>
+        new List<OpcaoId> { new(0, "Todos") }.Concat(OpcoesProduto).ToList();
+
+    private static readonly List<Opcao> OpcoesSituacao = new()
+    {
+        new("", "Todos"),
+        new("PAGA", "Paga", "var(--ok)"),
+        new("ABERTA", "Em aberto", "var(--alerta)")
+    };
+
     protected override void OnInitialized()
     {
+        try
+        {
+            produtos = produtoDAO.ListarTodos();
+            fornecedores = fornecedorDAO.ListarTodos();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Erro ao carregar os filtros de compras: " + ex.Message);
+        }
+
         CarregarCompras();
+    }
+
+    private void Limpar()
+    {
+        de = ate = null;
+        filtroFornecedor = 0;
+        filtroProduto = 0;
+        filtroSituacao = "";
+        CarregarCompras();
+    }
+
+    private void Periodo(int dias)
+    {
+        ate = DateTime.Today;
+        de = DateTime.Today.AddDays(-dias);
+        CarregarCompras();
+    }
+
+    private void PeriodoMes()
+    {
+        var hoje = DateTime.Today;
+        de = new DateTime(hoje.Year, hoje.Month, 1);
+        ate = hoje;
+        CarregarCompras();
+    }
+
+    /// <summary>"HOJE · QUINTA, 15/10" -- o mesmo rotulo de Vendas.</summary>
+    private static string RotuloDoDia(DateTime dia)
+    {
+        var cultura = new System.Globalization.CultureInfo("pt-BR");
+        var semana = cultura.DateTimeFormat.GetDayName(dia.DayOfWeek);
+        var corpo = $"{semana}, {dia:dd/MM}".ToUpper(cultura);
+
+        if (dia == DateTime.Today) return $"HOJE · {corpo}";
+        if (dia == DateTime.Today.AddDays(-1)) return $"ONTEM · {corpo}";
+        return corpo;
     }
 
     private void CarregarCompras()
     {
         try
         {
-            listaCompras = compraDAO.ListarTodos();
+            // 'ate' e exclusivo no SQL: soma um dia para incluir o dia escolhido.
+            listaCompras = compraDAO.ListarTodos(de, ate?.AddDays(1));
         }
         catch (Exception ex)
         {

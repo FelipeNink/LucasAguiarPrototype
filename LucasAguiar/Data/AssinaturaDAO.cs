@@ -72,6 +72,32 @@ namespace LucasAguiar.Data
             return lista;
         }
 
+        /// <summary>Todas as assinaturas, de todos os clientes, sem os saldos.</summary>
+        public List<Assinatura> ListarTodas()
+        {
+            var lista = new List<Assinatura>();
+
+            using var conexao = _conexao.GetConnection();
+            using var comando = new MySqlCommand(@"
+                SELECT a.*, p.nome_plan, c.nome_cli
+                FROM assinatura a
+                JOIN plano p ON p.id_plan = a.id_plan_fk
+                JOIN cliente c ON c.id_cli = a.id_cli_fk
+                ORDER BY a.data_fim IS NULL, a.data_fim, c.nome_cli", conexao);
+
+            using var leitor = comando.ExecuteReader();
+            var iCliente = leitor.GetOrdinal("nome_cli");
+
+            while (leitor.Read())
+            {
+                var assinatura = Ler(leitor);
+                assinatura.NomeCliente = leitor.IsDBNull(iCliente) ? null : leitor.GetString(iCliente);
+                lista.Add(assinatura);
+            }
+
+            return lista;
+        }
+
         private static List<AssinaturaSaldo> ListarSaldos(
             MySqlConnection conexao, MySqlTransaction? transacao, int idAssinatura)
         {

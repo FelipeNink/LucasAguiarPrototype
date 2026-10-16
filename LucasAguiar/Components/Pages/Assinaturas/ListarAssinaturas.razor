@@ -1,0 +1,178 @@
+@page "/assinaturas"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = Politicas.Assinaturas)]
+
+@using LucasAguiar.Models
+@inject AssinaturaDAO assinaturaDAO
+@inject PlanoDAO planoDAO
+
+
+<h1>Assinaturas</h1>
+
+@if (!string.IsNullOrEmpty(erro))
+{
+    <div class="alert alert-danger">@erro</div>
+}
+
+@* ---------- filtros ---------- *@
+<section class="filtros">
+    <div class="campo">
+        <label>Vencimento de</label>
+        <input type="date" class="form-control" @bind="de" />
+    </div>
+    <div class="campo">
+        <label>Até</label>
+        <input type="date" class="form-control" @bind="ate" />
+    </div>
+    <div class="campo campo-largo">
+        <label>Cliente</label>
+        <input class="form-control" placeholder="Nome do cliente" @bind="cliente" @bind:event="oninput" />
+    </div>
+    <div class="campo">
+        <label>Plano</label>
+        <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesPlano"
+                 @bind-Valor="idPlano" TextoDe="o => o.Rotulo" ValorDe="o => o.Id" />
+    </div>
+    <div class="campo">
+        <label>Situação</label>
+        <Seletor TItem="Opcao" TValor="string" Itens="OpcoesSituacao"
+                 @bind-Valor="situacao" TextoDe="o => o.Rotulo" ValorDe="o => o.Valor"
+                 PontoDe="o => o.Cor" />
+    </div>
+    <div class="campo-acoes">
+        <button type="button" class="btn btn-outline-secondary" @onclick="Limpar">Limpar</button>
+    </div>
+</section>
+
+@* ---------- resumo ---------- *@
+<div class="resumo">
+    <div class="cartao-resumo">
+        <span class="rotulo">Ativas</span>
+        <strong class="valor">@Filtradas.Count(a => Situacao(a) == SituacaoAtiva)</strong>
+    </div>
+    <div class="cartao-resumo prejuizo">
+        <span class="rotulo">Vencidas</span>
+        <strong class="valor">@Filtradas.Count(a => Situacao(a) == SituacaoVencida)</strong>
+    </div>
+</div>
+
+<div class="tabela">
+<table class="table">
+    <thead>
+        <tr>
+            <th>Cliente</th>
+            <th>Plano</th>
+            <th>Início</th>
+            <th>Vencimento</th>
+            <th class="col-num">Valor</th>
+            <th>Situação</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (Filtradas.Any())
+        {
+            @foreach (var a in Filtradas)
+            {
+                var sit = Situacao(a);
+                <tr class="@(sit == SituacaoEncerrada ? "cancelada" : "")">
+                    <td><span class="nome-cliente">@(a.NomeCliente ?? "—")</span></td>
+                    <td><span class="descritivo">@a.NomePlano</span></td>
+                    <td><span class="data">@a.DataInicio.ToString("dd/MM/yyyy")</span></td>
+                    <td><span class="data">@(a.DataFim?.ToString("dd/MM/yyyy") ?? "sem prazo")</span></td>
+                    <td class="col-num">@a.ValorPago.ToString("C")</td>
+                    <td>
+                        <span class="status @ClasseDaSituacao(sit)"><i></i>@RotuloDaSituacao(sit)</span>
+                    </td>
+                </tr>
+            }
+        }
+        else
+        {
+            <tr>
+                <td colspan="6" class="vazio">Nenhuma assinatura encontrada.</td>
+            </tr>
+        }
+    </tbody>
+</table>
+</div>
+
+@code {
+    // A tabela so grava ATIVA e ENCERRADA; "vencida" e uma ativa cujo
+    // prazo ja passou, como em Assinatura.Vencida.
+    private const string SituacaoAtiva = "ATIVA";
+    private const string SituacaoVencida = "VENCIDA";
+    private const string SituacaoEncerrada = "ENCERRADA";
+
+    private List<Assinatura> assinaturas = new();
+    private List<Plano> planos = new();
+    private string? erro;
+
+    private DateTime? de;
+    private DateTime? ate;
+    private string cliente = "";
+    private int idPlano;
+    private string situacao = "";
+
+    private static string Situacao(Assinatura a) =>
+        a.Status != StatusAssinatura.Ativa ? SituacaoEncerrada
+        : a.Vencida ? SituacaoVencida
+        : SituacaoAtiva;
+
+    private static string RotuloDaSituacao(string s) => s switch
+    {
+        SituacaoAtiva => "Ativa",
+        SituacaoVencida => "Vencida",
+        _ => "Encerrada"
+    };
+
+    private static string ClasseDaSituacao(string s) => s switch
+    {
+        SituacaoAtiva => "pago",
+        SituacaoVencida => "erro",
+        _ => "cancelada"
+    };
+
+    private List<Assinatura> Filtradas =>
+        assinaturas
+            .Where(a => !de.HasValue || (a.DataFim.HasValue && a.DataFim.Value.Date >= de.Value.Date))
+            .Where(a => !ate.HasValue || (a.DataFim.HasValue && a.DataFim.Value.Date <= ate.Value.Date))
+            .Where(a => string.IsNullOrWhiteSpace(cliente)
+                        || (a.NomeCliente ?? "").Contains(cliente.Trim(), StringComparison.OrdinalIgnoreCase))
+            .Where(a => idPlano == 0 || a.IdPlano == idPlano)
+            .Where(a => situacao == "" || Situacao(a) == situacao)
+            .ToList();
+
+    private List<OpcaoId> OpcoesPlano =>
+        new List<OpcaoId> { new(0, "Todos") }
+            .Concat(planos.Select(p => new OpcaoId(p.IdPlano, p.NomePlano ?? "Sem nome")))
+            .ToList();
+
+    private static readonly List<Opcao> OpcoesSituacao = new()
+    {
+        new("", "Todas"),
+        new(SituacaoAtiva, "Ativa", "var(--ok)"),
+        new(SituacaoVencida, "Vencida", "var(--perigo)"),
+        new(SituacaoEncerrada, "Encerrada", "var(--texto-fraco)")
+    };
+
+    protected override void OnInitialized()
+    {
+        try
+        {
+            assinaturas = assinaturaDAO.ListarTodas();
+            planos = planoDAO.ListarTodos();
+        }
+        catch (Exception ex)
+        {
+            erro = "Erro ao carregar as assinaturas: " + ex.Message;
+        }
+    }
+
+    private void Limpar()
+    {
+        de = ate = null;
+        cliente = "";
+        idPlano = 0;
+        situacao = "";
+    }
+}

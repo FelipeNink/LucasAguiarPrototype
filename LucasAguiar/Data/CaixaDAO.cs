@@ -56,15 +56,27 @@ namespace LucasAguiar.Data
             return caixa;
         }
 
-        public List<Caixa> Listar(int limite = 60)
+        /// <summary>
+        /// Sessoes pela data de abertura. Com periodo, traz todas as do
+        /// periodo ('ate' exclusivo); sem periodo, as ultimas 'limite'.
+        /// </summary>
+        public List<Caixa> Listar(int limite = 60, DateTime? de = null, DateTime? ate = null)
         {
             var lista = new List<Caixa>();
+            var comPeriodo = de.HasValue || ate.HasValue;
+
+            var condicoes = "";
+            if (de.HasValue) condicoes += " AND data_abertura >= @de";
+            if (ate.HasValue) condicoes += " AND data_abertura < @ate";
 
             using var conexao = _conexao.GetConnection();
             using (var comando = new MySqlCommand(
-                "SELECT * FROM caixa ORDER BY data_abertura DESC LIMIT @limite", conexao))
+                $"SELECT * FROM caixa WHERE 1 = 1 {condicoes} ORDER BY data_abertura DESC"
+                + (comPeriodo ? "" : " LIMIT @limite"), conexao))
             {
-                comando.Parameters.AddWithValue("@limite", limite);
+                if (de.HasValue) comando.Parameters.AddWithValue("@de", de.Value);
+                if (ate.HasValue) comando.Parameters.AddWithValue("@ate", ate.Value);
+                if (!comPeriodo) comando.Parameters.AddWithValue("@limite", limite);
                 using var leitor = comando.ExecuteReader();
                 while (leitor.Read()) lista.Add(Ler(leitor));
             }

@@ -11,5 +11,8 @@
             public string? Telefone { get; set; }
 
             public string? TipoProd { get; set; }
+
+            /// <summary>Data da compra mais recente. Preenchido so na listagem.</summary>
+            public DateTime? UltimaCompra { get; set; }
         }
 }

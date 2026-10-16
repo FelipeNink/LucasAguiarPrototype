@@ -14,39 +14,47 @@
     <a href="/relatorio/planos" class="btn-pdf" data-enhance-nav="false">Relatório PDF</a>
 </div>
 
+@* ---------- filtros ---------- *@
+<section class="filtros">
+    <div class="campo campo-largo">
+        <label>Nome</label>
+        <input class="form-control" placeholder="Buscar plano" @bind="busca" @bind:event="oninput" />
+    </div>
+    <div class="campo-acoes">
+        <button type="button" class="btn btn-outline-secondary" @onclick="() => busca = string.Empty">Limpar</button>
+    </div>
+</section>
+
 <div class="tabela fixa">
     <table class="table table-striped">
     <thead>
         <tr>
-            <th class="col-id">#</th>
             <th>Nome</th>
-            <th class="opcional">Descrição</th>
-            <th class="opcional">Inclui</th>
             <th class="al-dir">Valor</th>
+            <th class="opcional">Serviços incluídos</th>
+            <th class="al-dir opcional">Assinantes ativos</th>
             <th class="col-acoes quatro">Ações</th>
         </tr>
     </thead>
     <tbody>
-        @if (listaPlano != null && listaPlano.Any())
+        @if (Filtrados.Any())
         {
-            int contador = 1;
-            foreach (var plano in listaPlano)
+            foreach (var plano in Filtrados)
             {
                 <tr>
-                    <td>@contador</td>
                     <td>@plano.NomePlano</td>
-                    <td class="opcional">@plano.Descricao</td>
+                    <td class="al-dir">@((plano.Valor ?? 0).ToString("C"))</td>
                     <td class="opcional">
-                        @if (plano.TotalItens > 0)
+                        @if (plano.TotalServicos > 0)
                         {
-                            <span>@plano.TotalItens item(ns)</span>
+                            <span>@plano.TotalServicos serviço(s)</span>
                         }
                         else
                         {
-                            <span class="text-muted">sem itens</span>
+                            <span class="text-muted">nenhum</span>
                         }
                     </td>
-                    <td class="al-dir">@((plano.Valor ?? 0).ToString("C"))</td>
+                    <td class="al-dir opcional">@plano.AssinantesAtivos</td>
                     <td class="col-acoes">
                         <AcoesLinha OnVisualizar="() => Visualizar(plano)"
                                     OnEditar="() => Editar(plano)"
@@ -61,13 +69,12 @@
                         </AcoesLinha>
                     </td>
                 </tr>
-                contador++;
             }
         }
         else
         {
             <tr>
-                <td colspan="6" class="text-center text-muted">Nenhum plano encontrado.</td>
+                <td colspan="5" class="text-center text-muted">Nenhum plano encontrado.</td>
             </tr>
         }
     </tbody>
@@ -180,6 +187,14 @@
     private List<PlanoItem> itensVisualizados = new();
     private Plano? editando;
     private string? erroModal;
+
+    private string busca = "";
+
+    private List<Plano> Filtrados =>
+        listaPlano
+            .Where(p => string.IsNullOrWhiteSpace(busca)
+                        || (p.NomePlano ?? "").Contains(busca.Trim(), StringComparison.OrdinalIgnoreCase))
+            .ToList();
 
     protected override void OnInitialized()
     {

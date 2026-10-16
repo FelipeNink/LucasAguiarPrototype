@@ -144,6 +144,11 @@ namespace LucasAguiar.Configs
                 new[] { "/plano", "/plano/novo" },
                 new[] { "/relatorio/planos" }),
 
+            // So consulta: a assinatura nasce na venda do plano.
+            new("assinaturas", "Assinaturas", Cadastros,
+                Acao.Ver,
+                new[] { "/assinaturas" }),
+
             new("funcionarios", "Funcionários", Cadastros, Cadastro,
                 new[] { "/funcionario", "/funcionario/novo" },
                 new[] { "/relatorio/funcionarios" }),

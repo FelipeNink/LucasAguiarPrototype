@@ -3,6 +3,8 @@
 @attribute [Authorize(Policy = Politicas.Agendamentos)]
 
 @inject AgendamentoDAO agendamentoDAO
+@inject FuncionarioDAO funcionarioDAO
+@inject ServicoDAO servicoDAO
 @inject NavigationManager Navigation
 
 <h1>Agendamentos</h1>
@@ -21,32 +23,65 @@
     <div class="alert alert-danger">@erro</div>
 }
 
+@* ---------- filtros ---------- *@
+<section class="filtros">
+    <div class="campo">
+        <label>De</label>
+        <input type="date" class="form-control" @bind="de" />
+    </div>
+    <div class="campo">
+        <label>Até</label>
+        <input type="date" class="form-control" @bind="ate" />
+    </div>
+    <div class="campo campo-largo">
+        <label>Cliente</label>
+        <input class="form-control" placeholder="Nome do cliente" @bind="cliente" />
+    </div>
+    <div class="campo">
+        <label>Profissional</label>
+        <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesFuncionario"
+                 @bind-Valor="idFuncionario" TextoDe="o => o.Rotulo" ValorDe="o => o.Id"
+                 ComAvatar="true" />
+    </div>
+    <div class="campo">
+        <label>Serviço</label>
+        <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesServico"
+                 @bind-Valor="idServico" TextoDe="o => o.Rotulo" ValorDe="o => o.Id" />
+    </div>
+    <div class="campo">
+        <label>Status</label>
+        <Seletor TItem="Opcao" TValor="string" Itens="OpcoesFiltroStatus"
+                 @bind-Valor="filtroStatus" TextoDe="o => o.Rotulo" ValorDe="o => o.Valor"
+                 PontoDe="o => o.Cor" />
+    </div>
+    <div class="campo-acoes">
+        <button type="button" class="btn btn-primary" @onclick="Aplicar">Filtrar</button>
+        <button type="button" class="btn btn-outline-secondary" @onclick="Limpar">Limpar</button>
+    </div>
+</section>
+
 <div class="filtros-agenda">
     <div class="atalhos-periodo">
         <button type="button" class="@(periodo == Periodo.Hoje ? "ativo" : "")" @onclick="() => Filtrar(Periodo.Hoje)">Hoje</button>
         <button type="button" class="@(periodo == Periodo.Amanha ? "ativo" : "")" @onclick="() => Filtrar(Periodo.Amanha)">Amanhã</button>
-        <button type="button" class="@(periodo == Periodo.Semana ? "ativo" : "")" @onclick="() => Filtrar(Periodo.Semana)">Próximos 7 dias</button>
-        <button type="button" class="@(periodo == Periodo.Todos ? "ativo" : "")" @onclick="() => Filtrar(Periodo.Todos)">Todos</button>
+        <button type="button" class="@(periodo == Periodo.Semana ? "ativo" : "")" @onclick="() => Filtrar(Periodo.Semana)">Esta semana</button>
+        <button type="button" class="@(periodo == Periodo.Mes ? "ativo" : "")" @onclick="() => Filtrar(Periodo.Mes)">Este mês</button>
     </div>
-
-    <Seletor TItem="Opcao" TValor="string" Itens="OpcoesFiltroStatus"
-             Valor="filtroStatus" ValorChanged="FiltrarStatus"
-             Rotulo="Status:" TextoDe="o => o.Rotulo" ValorDe="o => o.Valor"
-             PontoDe="o => o.Cor" Class="filtro-status" />
 </div>
 
-<div class="resumo-linha">
-    <div class="item aberto">
-        <span class="numero">@agendamentos.Count(a => a.Status == StatusAgendamento.Agendado)</span>
-        <span class="rotulo">agendado(s)</span>
+@* ---------- resumo ---------- *@
+<div class="resumo">
+    <div class="cartao-resumo">
+        <span class="rotulo">Agendados</span>
+        <strong class="valor">@agendamentos.Count(a => a.Status == StatusAgendamento.Agendado)</strong>
     </div>
-    <div class="item">
-        <span class="numero">@agendamentos.Count(a => a.Status == StatusAgendamento.Concluido)</span>
-        <span class="rotulo">concluído(s)</span>
+    <div class="cartao-resumo">
+        <span class="rotulo">Concluídos</span>
+        <strong class="valor">@agendamentos.Count(a => a.Status == StatusAgendamento.Concluido)</strong>
     </div>
-    <div class="item">
-        <span class="numero">@agendamentos.Count(a => a.Status == StatusAgendamento.Cancelado)</span>
-        <span class="rotulo">cancelado(s)</span>
+    <div class="cartao-resumo">
+        <span class="rotulo">Cancelados</span>
+        <strong class="valor">@agendamentos.Count(a => a.Status == StatusAgendamento.Cancelado)</strong>
     </div>
 </div>
 
@@ -54,10 +89,12 @@
     <table class="table">
         <thead>
             <tr>
-                <th class="col-horario">Horário</th>
+                <th class="col-horario">Hora</th>
                 <th>Cliente</th>
                 <th class="opcional">Serviço</th>
                 <th class="opcional">Profissional</th>
+                <th class="al-dir opcional">Duração</th>
+                <th class="al-dir">Valor</th>
                 <th class="col-status">Status</th>
                 <th class="col-acoes quatro">Ações</th>
             </tr>
@@ -68,21 +105,25 @@
                 @foreach (var dia in agendamentos.GroupBy(a => a.DataHora.Date))
                 {
                     <tr class="grupo-dia">
-                        <td colspan="6">
+                        <td colspan="8">
                             <span class="grupo-dia-titulo">@RotuloDoDia(dia.Key)</span>
-                            <span class="grupo-dia-resumo">@dia.Count() horário(s)</span>
+                            <span class="grupo-dia-resumo">
+                                @dia.Count() horário(s) · @dia.Where(a => a.Status != StatusAgendamento.Cancelado).Sum(a => a.PrecoServico).ToString("C")
+                            </span>
                         </td>
                     </tr>
 
                     @foreach (var a in dia)
                     {
                         <tr class="@(a.Status == StatusAgendamento.Cancelado ? "cancelada" : "")">
-                            <td><span class="hora">@a.DataHora.ToString("HH:mm")–@a.Fim.ToString("HH:mm")</span></td>
+                            <td><span class="hora">@a.DataHora.ToString("HH:mm")</span></td>
                             <td>
                                 <span class="nome-cliente">@(a.NomeCliente ?? "—")</span>
                             </td>
                             <td class="opcional"><span class="descritivo">@(a.NomeServico ?? "—")</span></td>
                             <td class="opcional"><span class="descritivo">@(a.NomeFuncionario ?? "—")</span></td>
+                            <td class="al-dir opcional"><span class="descritivo">@a.DuracaoMin min</span></td>
+                            <td class="col-num">@a.PrecoServico.ToString("C")</td>
                             <td>
                                 <span class="status @ClasseStatus(a.Status)">
                                     <i></i>@StatusAgendamento.Rotulo(a.Status)
@@ -109,7 +150,7 @@
             else
             {
                 <tr>
-                    <td colspan="6" class="vazio">Nenhum agendamento neste período.</td>
+                    <td colspan="8" class="vazio">Nenhum agendamento neste período.</td>
                 </tr>
             }
         </tbody>
@@ -230,15 +271,25 @@
         erroExclusao = null;
     }
 
-    private enum Periodo { Hoje, Amanha, Semana, Todos }
+    private enum Periodo { Hoje, Amanha, Semana, Mes }
 
     [SupplyParameterFromQuery(Name = "novo")]
     private int? Novo { get; set; }
 
     private List<Agendamento> agendamentos = new();
-    private Periodo periodo = Periodo.Hoje;
+
+    /// <summary>Atalho em uso; nulo quando as datas foram digitadas.</summary>
+    private Periodo? periodo = Periodo.Hoje;
+    private DateTime? de = DateTime.Today;
+    private DateTime? ate = DateTime.Today;
+    private string cliente = "";
+    private int idFuncionario;
+    private int idServico;
     private string filtroStatus = "";
     private string? erro;
+
+    private List<OpcaoId> OpcoesFuncionario = new() { new(0, "Todos") };
+    private List<OpcaoId> OpcoesServico = new() { new(0, "Todos") };
     private string? erroModal;
 
     private Agendamento? visualizando;
@@ -252,18 +303,56 @@
         new(StatusAgendamento.Cancelado, "Cancelado", "var(--texto-fraco)")
     };
 
-    protected override void OnInitialized() => Carregar();
+    protected override void OnInitialized()
+    {
+        try
+        {
+            OpcoesFuncionario.AddRange(funcionarioDAO.ListarTodos()
+                .Select(f => new OpcaoId(f.IdFuncionario, f.NomeFuncionario ?? "Sem nome")));
+            OpcoesServico.AddRange(servicoDAO.ListarTodos()
+                .OrderBy(s => s.NomeServico)
+                .Select(s => new OpcaoId(s.IdServico, s.NomeServico ?? "Sem nome")));
+        }
+        catch (Exception ex)
+        {
+            erro = "Erro ao carregar os filtros: " + ex.Message;
+        }
+
+        Carregar();
+    }
 
     private void Filtrar(Periodo novo)
     {
+        var hoje = DateTime.Today;
+        // Semana de segunda a domingo.
+        var segunda = hoje.AddDays(-(((int)hoje.DayOfWeek + 6) % 7));
+        var primeiroDoMes = new DateTime(hoje.Year, hoje.Month, 1);
+
+        switch (novo)
+        {
+            case Periodo.Hoje: de = hoje; ate = hoje; break;
+            case Periodo.Amanha: de = hoje.AddDays(1); ate = hoje.AddDays(1); break;
+            case Periodo.Semana: de = segunda; ate = segunda.AddDays(6); break;
+            default: de = primeiroDoMes; ate = primeiroDoMes.AddMonths(1).AddDays(-1); break;
+        }
+
         periodo = novo;
         Carregar();
     }
 
-    private void FiltrarStatus(string? status)
+    private void Aplicar()
     {
-        filtroStatus = status ?? "";
+        periodo = null;
         Carregar();
+    }
+
+    private void Limpar()
+    {
+        cliente = "";
+        idFuncionario = 0;
+        idServico = 0;
+        filtroStatus = "";
+        Filtrar(Periodo.Hoje);
     }
 
     private void Carregar()
@@ -272,16 +361,15 @@
         {
             erro = null;
 
-            var hoje = DateTime.Today;
-            (DateTime? de, DateTime? ate) = periodo switch
-            {
-                Periodo.Hoje => (hoje, hoje.AddDays(1)),
-                Periodo.Amanha => (hoje.AddDays(1), hoje.AddDays(2)),
-                Periodo.Semana => (hoje, hoje.AddDays(7)),
-                _ => ((DateTime?)null, (DateTime?)null)
-            };
+            // 'ate' e exclusivo no SQL: soma um dia para incluir o dia escolhido.
+            var lista = agendamentoDAO.Listar(de, ate?.AddDays(1), filtroStatus);
 
-            agendamentos = agendamentoDAO.Listar(de, ate, filtroStatus);
+            agendamentos = lista
+                .Where(a => string.IsNullOrWhiteSpace(cliente)
+                            || (a.NomeCliente ?? "").Contains(cliente.Trim(), StringComparison.OrdinalIgnoreCase))
+                .Where(a => idFuncionario == 0 || a.IdFuncionario == idFuncionario)
+                .Where(a => idServico == 0 || a.IdServico == idServico)
+                .ToList();
         }
         catch (Exception ex)
         {

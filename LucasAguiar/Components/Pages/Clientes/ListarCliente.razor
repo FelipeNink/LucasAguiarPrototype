@@ -16,43 +16,60 @@
     <a href="/excel/clientes" class="btn-pdf" data-enhance-nav="false">Excel</a>
 </div>
 
+@* ---------- filtros ---------- *@
+<section class="filtros">
+    <div class="campo campo-largo">
+        <label>Nome, telefone ou CPF</label>
+        <input class="form-control" placeholder="Buscar cliente" @bind="busca" @bind:event="oninput" />
+    </div>
+    <div class="campo">
+        <label>Profissional preferido</label>
+        <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesProfissional"
+                 @bind-Valor="idProfissional" TextoDe="o => o.Rotulo" ValorDe="o => o.Id"
+                 ContagemDe="o => o.Contagem" ComAvatar="true" />
+    </div>
+    <div class="campo-acoes">
+        <button type="button" class="btn btn-outline-secondary" @onclick="Limpar">Limpar</button>
+    </div>
+</section>
+
 <div class="tabela fixa">
     <table class="table table-striped">
     <thead>
         <tr>
-            <th class="col-id">#</th>
             <th>Nome</th>
             <th>Telefone</th>
-            <th class="opcional">CPF</th>
-            <th class="opcional">Cidade</th>
+            <th class="opcional">Profissional preferido</th>
+            <th class="opcional">Última visita</th>
+            <th class="al-dir opcional">Visitas</th>
+            <th class="al-dir">Total gasto</th>
             <th class="col-acoes">Ações</th>
         </tr>
     </thead>
     <tbody>
-        @if (listaCliente != null && listaCliente.Any())
+        @if (Filtrados.Any())
         {
-            int contador = 1;
-            foreach (var cliente in listaCliente)
+            foreach (var cliente in Filtrados)
             {
                 <tr>
-                    <td>@contador</td>
                     <td>@cliente.NomeCliente</td>
-                    <td>@cliente.Telefone</td>
-                    <td class="opcional">@cliente.CPF</td>
-                    <td class="opcional">@cliente.Cidade</td>
+                    <td>@Valor(cliente.Telefone)</td>
+                    <td class="opcional">@Valor(cliente.NomeProfissionalPreferido)</td>
+                    <td class="opcional"><span class="data">@Valor(cliente.UltimaVisita?.ToString("dd/MM/yyyy"))</span></td>
+                    <td class="al-dir opcional">@cliente.Visitas</td>
+                    <td class="al-dir">@cliente.TotalGasto.ToString("C")</td>
                     <td class="col-acoes">
                         <AcoesLinha OnVisualizar="() => visualizando = cliente"
                                     OnEditar="() => Editar(cliente)"
                                     OnExcluir="() => excluindo = cliente" />
                     </td>
                 </tr>
-                contador++;
             }
         }
         else
         {
             <tr>
-                <td colspan="6" class="text-center text-muted">Nenhum cliente encontrado.</td>
+                <td colspan="7" class="text-center text-muted">Nenhum cliente encontrado.</td>
             </tr>
         }
     </tbody>
@@ -190,6 +207,46 @@
             .Concat(planos.Select(p => new OpcaoId(p.IdPlano, p.NomePlano ?? "Sem nome")))
             .ToList();
 
+    private string busca = "";
+    private int idProfissional;
+
+    private List<Cliente> Filtrados
+    {
+        get
+        {
+            var termo = busca.Trim();
+            var digitos = new string(termo.Where(char.IsDigit).ToArray());
+
+            return listaCliente
+                .Where(c => termo == ""
+                            || (c.NomeCliente ?? "").Contains(termo, StringComparison.OrdinalIgnoreCase)
+                            || (c.Telefone ?? "").Contains(termo)
+                            || (c.CPF ?? "").Contains(termo)
+                            // Telefone e CPF podem estar gravados com ou sem mascara.
+                            || (digitos.Length >= 3
+                                && (new string((c.Telefone ?? "").Where(char.IsDigit).ToArray()).Contains(digitos)
+                                    || new string((c.CPF ?? "").Where(char.IsDigit).ToArray()).Contains(digitos))))
+                .Where(c => idProfissional == 0 || c.IdProfissionalPreferido == idProfissional)
+                .ToList();
+        }
+    }
+
+    /// <summary>Só aparecem profissionais que são o preferido de alguém.</summary>
+    private List<OpcaoId> OpcoesProfissional =>
+        new List<OpcaoId> { new(0, "Todos") }
+            .Concat(listaCliente
+                .Where(c => c.IdProfissionalPreferido.HasValue)
+                .GroupBy(c => (Id: c.IdProfissionalPreferido!.Value, Nome: c.NomeProfissionalPreferido ?? "Sem nome"))
+                .OrderBy(g => g.Key.Nome)
+                .Select(g => new OpcaoId(g.Key.Id, g.Key.Nome, null, g.Count().ToString())))
+            .ToList();
+
+    private void Limpar()
+    {
+        busca = "";
+        idProfissional = 0;
+    }
+
     protected override void OnInitialized()
     {
         CarregarClientes();
@@ -199,7 +256,7 @@
     {
         try
         {
-            listaCliente = clienteDAO.ListarTodos();
+            listaCliente = clienteDAO.ListarComHistorico();
         }
         catch (Exception ex)
         {

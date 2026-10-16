@@ -120,5 +120,36 @@ namespace LucasAguiar.Data
 
             return lista;
         }
+
+        /// <summary>Listagem com a data da compra mais recente de cada fornecedor.</summary>
+        public List<Fornecedor> ListarComUltimaCompra()
+        {
+            var lista = new List<Fornecedor>();
+
+            using var conexao = _conexao.GetConnection();
+            using var comando = new MySqlCommand(@"
+                SELECT f.*,
+                       (SELECT MAX(c.data_comp) FROM compras c WHERE c.id_forn_fk = f.id_forn) AS ultima_compra
+                FROM fornecedor f
+                ORDER BY f.nome_forn", conexao);
+
+            using var leitor = comando.ExecuteReader();
+            while (leitor.Read())
+            {
+                var iUltima = leitor.GetOrdinal("ultima_compra");
+
+                lista.Add(new Fornecedor
+                {
+                    IdFornecedor = leitor.GetInt32("id_forn"),
+                    NomeFornecedor = DAOHelper.GetString(leitor, "nome_forn"),
+                    Email = DAOHelper.GetString(leitor, "email_forn"),
+                    Telefone = DAOHelper.GetString(leitor, "telefone_forn"),
+                    TipoProd = DAOHelper.GetString(leitor, "tipo_prod_forn"),
+                    UltimaCompra = leitor.IsDBNull(iUltima) ? null : leitor.GetDateTime(iUltima)
+                });
+            }
+
+            return lista;
+        }
     }
 }

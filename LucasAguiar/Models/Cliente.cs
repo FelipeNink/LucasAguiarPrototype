@@ -22,6 +22,15 @@ namespace LucasAguiar.Models
         public string? NomePlano { get; set; }
         public decimal ValorPlano { get; set; }
 
+        // Historico de vendas, preenchido so por ClienteDAO.ListarComHistorico
+        public DateTime? UltimaVisita { get; set; }
+        public int Visitas { get; set; }
+        public decimal TotalGasto { get; set; }
+
+        /// <summary>Quem mais atendeu o cliente, ate existir o campo no cadastro.</summary>
+        public int? IdProfissionalPreferido { get; set; }
+        public string? NomeProfissionalPreferido { get; set; }
+
         public bool TemPlano => IdPlano.HasValue && IdPlano.Value > 0;
 
         /// <summary>Nome com um complemento para diferenciar homônimos na busca.</summary>

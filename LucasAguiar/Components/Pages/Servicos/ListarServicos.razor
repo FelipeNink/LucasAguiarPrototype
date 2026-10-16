@@ -14,37 +14,46 @@
     <a href="/relatorio/servicos" class="btn-pdf" data-enhance-nav="false">Relatório PDF</a>
 </div>
 
+@* ---------- filtros ---------- *@
+<section class="filtros">
+    <div class="campo campo-largo">
+        <label>Nome</label>
+        <input class="form-control" placeholder="Buscar serviço" @bind="busca" @bind:event="oninput" />
+    </div>
+    <div class="campo-acoes">
+        <button type="button" class="btn btn-outline-secondary" @onclick="() => busca = string.Empty">Limpar</button>
+    </div>
+</section>
+
 <div class="tabela fixa">
     <table class="table table-striped">
     <thead>
         <tr>
-            <th class="col-id">#</th>
             <th>Nome</th>
-            <th class="al-dir">Preço</th>
             <th class="al-dir opcional">Duração</th>
-            <th class="al-dir opcional">Valor Comissão</th>
+            <th class="al-dir">Preço</th>
+            <th class="al-dir opcional">Comissão</th>
+            <th class="al-dir opcional">Comissão %</th>
             <th class="col-acoes">Ações</th>
         </tr>
     </thead>
     <tbody>
-        @if (listaServico != null && listaServico.Any())
+        @if (Filtrados.Any())
         {
-            int contador = 1;
-            foreach (var servico in listaServico)
+            foreach (var servico in Filtrados)
             {
                 <tr>
-                    <td>@contador</td>
                     <td>@servico.NomeServico</td>
-                    <td class="al-dir">@servico.PrecoServico.ToString("C")</td>  @* mostra como moeda *@
                     <td class="al-dir opcional">@servico.DuracaoServico min</td>
+                    <td class="al-dir">@servico.PrecoServico.ToString("C")</td>  @* mostra como moeda *@
                     <td class="al-dir opcional">@servico.ComissaoServico.ToString("C")</td>
+                    <td class="al-dir opcional">@PercentualComissao(servico)</td>
                     <td class="col-acoes">
                         <AcoesLinha OnVisualizar="() => visualizando = servico"
                                     OnEditar="() => Editar(servico)"
                                     OnExcluir="() => excluindo = servico" />
                     </td>
                 </tr>
-                contador++;
             }
         }
         else
@@ -143,6 +152,19 @@
     private Servico? visualizando;
     private Servico? editando;
     private string? erroModal;
+
+    private string busca = "";
+
+    private List<Servico> Filtrados =>
+        listaServico
+            .Where(s => string.IsNullOrWhiteSpace(busca)
+                        || (s.NomeServico ?? "").Contains(busca.Trim(), StringComparison.OrdinalIgnoreCase))
+            .OrderBy(s => s.NomeServico)
+            .ToList();
+
+    /// <summary>A comissão é gravada em R$; o % sai sobre o preço do serviço.</summary>
+    private static string PercentualComissao(Servico s) =>
+        s.PrecoServico > 0 ? (s.ComissaoServico / s.PrecoServico).ToString("P1") : "—";
 
     protected override void OnInitialized()
     {

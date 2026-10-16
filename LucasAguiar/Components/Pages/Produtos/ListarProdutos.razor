@@ -16,33 +16,82 @@
     <a href="/excel/produtos" class="btn-pdf" data-enhance-nav="false">Excel</a>
 </div>
 
+@* ---------- filtros ---------- *@
+<section class="filtros">
+    <div class="campo campo-largo">
+        <label>Nome ou código</label>
+        <input class="form-control" placeholder="Buscar produto" @bind="busca" @bind:event="oninput" />
+    </div>
+    <div class="campo">
+        <label>Marca</label>
+        <Seletor TItem="Opcao" TValor="string" Itens="OpcoesMarca"
+                 @bind-Valor="marca" TextoDe="o => o.Rotulo" ValorDe="o => o.Valor" />
+    </div>
+    <div class="campo">
+        <label>Fornecedor</label>
+        <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesFiltroFornecedor"
+                 @bind-Valor="idFornecedor" TextoDe="o => o.Rotulo" ValorDe="o => o.Id" />
+    </div>
+    <div class="campo">
+        <label>Estoque</label>
+        <Seletor TItem="Opcao" TValor="string" Itens="OpcoesEstoque"
+                 @bind-Valor="estoque" TextoDe="o => o.Rotulo" ValorDe="o => o.Valor"
+                 PontoDe="o => o.Cor" />
+    </div>
+    <div class="campo-acoes">
+        <button type="button" class="btn btn-outline-secondary" @onclick="Limpar">Limpar</button>
+    </div>
+</section>
+
+@* ---------- resumo ---------- *@
+<div class="resumo">
+    <div class="cartao-resumo">
+        <span class="rotulo">Itens</span>
+        <strong class="valor">@Filtrados.Count</strong>
+    </div>
+    <div class="cartao-resumo prejuizo">
+        <span class="rotulo">Zerados</span>
+        <strong class="valor">@Filtrados.Count(p => p.Quantidade <= 0)</strong>
+    </div>
+    @* Sem custo cadastrado ainda: o estoque sai a preço de venda. *@
+    <div class="cartao-resumo">
+        <span class="rotulo">Estoque a preço de venda</span>
+        <strong class="valor">@Filtrados.Sum(p => (decimal)p.Valor * Math.Max(p.Quantidade, 0)).ToString("C")</strong>
+    </div>
+</div>
+
 <div class="tabela fixa">
     <table class="table table-striped">
     <thead>
         <tr>
-            <th class="col-id">#</th>
+            <th class="col-id">Código</th>
             <th>Nome</th>
-            <th class="al-dir">Quantidade</th>
-            <th class="al-dir">Valor</th>
-            <th class="opcional">Descrição</th>
             <th class="opcional">Marca</th>
-            <th class="opcional">Fornecedor</th>
+            <th class="al-dir">Estoque</th>
+            <th class="al-dir">Preço de venda</th>
             <th class="col-acoes">Ações</th>
         </tr>
     </thead>
     <tbody>
-        @if (listaProdutos != null && listaProdutos.Any())
+        @if (Filtrados.Any())
         {
-            foreach (var produto in listaProdutos)
+            foreach (var produto in Filtrados)
             {
                 <tr>
                     <td>@produto.IdProduto</td>
                     <td>@produto.NomeProduto</td>
-                    <td class="al-dir">@produto.Quantidade</td>
+                    <td class="opcional">@Valor(produto.Marca)</td>
+                    <td class="al-dir">
+                        @if (produto.Quantidade <= 0)
+                        {
+                            <span class="status erro"><i></i>@produto.Quantidade</span>
+                        }
+                        else
+                        {
+                            @produto.Quantidade
+                        }
+                    </td>
                     <td class="al-dir">@produto.Valor.ToString("C")</td>
-                    <td class="opcional"> @produto.Descricao</td>
-                    <td class="opcional"> @produto.Marca</td>
-                    <td class="opcional"> @produto.NomeFornecedor</td>
 
                     <td class="col-acoes">
                         <AcoesLinha OnVisualizar="() => visualizando = produto"
@@ -55,7 +104,7 @@
         else
         {
             <tr>
-                <td colspan="8" class="text-center text-muted">Nenhum produto encontrado.</td>
+                <td colspan="6" class="text-center text-muted">Nenhum produto encontrado.</td>
             </tr>
         }
     </tbody>
@@ -165,9 +214,62 @@
     private List<OpcaoId> OpcoesFornecedor =>
         fornecedores.Select(f => new OpcaoId(f.IdFornecedor, f.NomeFornecedor ?? "Sem nome")).ToList();
 
+    // Filtros. A lista de cadastro e pequena: filtra em memoria, sem
+    // voltar ao banco a cada tecla.
+    private string busca = "";
+    private string marca = "";
+    private int idFornecedor;
+    private string estoque = "";
+
+    private List<Produto> Filtrados =>
+        listaProdutos
+            .Where(p => string.IsNullOrWhiteSpace(busca)
+                        || (p.NomeProduto ?? "").Contains(busca.Trim(), StringComparison.OrdinalIgnoreCase)
+                        || p.IdProduto.ToString() == busca.Trim())
+            .Where(p => marca == "" || string.Equals(p.Marca, marca, StringComparison.OrdinalIgnoreCase))
+            .Where(p => idFornecedor == 0 || p.IdFornecedor == idFornecedor)
+            .Where(p => estoque switch
+            {
+                "ZERADO" => p.Quantidade <= 0,
+                "COM" => p.Quantidade > 0,
+                _ => true
+            })
+            .ToList();
+
+    private List<Opcao> OpcoesMarca =>
+        new List<Opcao> { new("", "Todas") }
+            .Concat(listaProdutos
+                .Select(p => p.Marca?.Trim())
+                .Where(m => !string.IsNullOrWhiteSpace(m))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(m => m)
+                .Select(m => new Opcao(m!, m!)))
+            .ToList();
+
+    private List<OpcaoId> OpcoesFiltroFornecedor =>
+        new List<OpcaoId> { new(0, "Todos") }.Concat(OpcoesFornecedor).ToList();
+
+    private static readonly List<Opcao> OpcoesEstoque = new()
+    {
+        new("", "Todos"),
+        new("COM", "Com estoque", "var(--ok)"),
+        new("ZERADO", "Zerado", "var(--perigo)")
+    };
+
+    private void Limpar()
+    {
+        busca = "";
+        marca = "";
+        idFornecedor = 0;
+        estoque = "";
+    }
+
     protected override void OnInitialized()
     {
         listaProdutos = produtoDAO.ListarTodos();
+
+        try { fornecedores = fornecedorDAO.ListarTodos(); }
+        catch { /* o filtro fica so com "Todos"; o Editar tenta de novo */ }
     }
 
     private static string Valor(string? texto) =>
