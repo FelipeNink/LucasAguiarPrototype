@@ -108,6 +108,41 @@ namespace LucasAguiar.Services
                         a.NomeServico, a.NomeFuncionario, a.PrecoServico,
                         StatusAgendamento.Rotulo(a.Status), a.Observacao
                     })));
+
+            // Nunca leva senha, hash nem token -- so o que a tela mostra.
+            app.MapGet("/excel/equipe", (EquipeDAO dao) =>
+                Arquivo("equipe", "Equipe",
+                    new[] { "#", "Nome", "Usuário", "E-mail", "Função", "Perfil", "Status", "Último acesso" },
+                    (dao.Listar() ?? new List<Usuario>()).Select((u, i) => new object?[]
+                    {
+                        i + 1, u.NomeVisivel, u.NomeUsr, u.EmailUsr, u.NomeFuncao,
+                        Perfil.Rotulo(u.PerfilUsr), u.AtivoUsr ? "Ativo" : "Inativo",
+                        u.UltimoLoginUsr
+                    })));
+
+            app.MapGet("/excel/logs", (
+                LogDAO dao, string? tipo, string? nivel, string? busca,
+                DateTime? de, DateTime? ate) =>
+            {
+                var resultado = dao.Listar(new LogDAO.Filtro
+                {
+                    Tipo = tipo,
+                    Nivel = nivel,
+                    Busca = busca,
+                    De = de,
+                    Ate = ate?.AddDays(1),
+                    Pagina = 1,
+                    PorPagina = 200
+                });
+
+                return Arquivo("logs", "Logs",
+                    new[] { "Quando", "Tipo", "Nível", "Ação", "Descrição", "Quem", "IP", "Alvo" },
+                    resultado.Linhas.Select(l => new object?[]
+                    {
+                        l.Quando, TipoLog.Rotulo(l.Tipo), NivelLog.Rotulo(l.Nivel),
+                        l.Acao, l.Descricao, l.NomeGravado, l.Ip, l.Alvo
+                    }));
+            });
         }
     }
 }

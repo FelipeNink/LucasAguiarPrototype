@@ -3,10 +3,13 @@
 @attribute [Authorize(Policy = Politicas.Painel)]
 @implements IDisposable
 
+@using LucasAguiar.Configs
 @using LucasAguiar.Models
+@using LucasAguiar.Services
 @using System.Text.Json
 @inject PainelDAO painelDAO
 @inject CaixaDAO caixaDAO
+@inject Autorizacao permissao
 
 
 <div class="cabecalho-painel">
@@ -41,11 +44,20 @@
             </strong>
             <span>desde @caixaAberto.DataAbertura.ToString("dd/MM 'às' HH:mm")</span>
         </div>
-        <div class="gaveta-agora">
-            <span>Na gaveta</span>
-            <strong>@caixaAberto.Resumo.SaldoEsperadoGaveta(caixaAberto.ValorAbertura).ToString("C")</strong>
-        </div>
-        <a href="/caixa" class="link-caixa">Ver caixa</a>
+
+        @* O que tem na gaveta e valor, e so quem pode ver valores ve. *@
+        @if (podeVerValores)
+        {
+            <div class="gaveta-agora">
+                <span>Na gaveta</span>
+                <strong>@caixaAberto.Resumo.SaldoEsperadoGaveta(caixaAberto.ValorAbertura).ToString("C")</strong>
+            </div>
+        }
+
+        @if (podeVerCaixa)
+        {
+            <a href="/caixa" class="link-caixa">Ver caixa</a>
+        }
     }
     else
     {
@@ -53,61 +65,99 @@
             <strong>Nenhum caixa aberto</strong>
             <span>Abra o caixa para registrar vendas.</span>
         </div>
-        <a href="/caixa" class="link-caixa">Abrir caixa</a>
+
+        @if (podeVerCaixa)
+        {
+            <a href="/caixa" class="link-caixa">Abrir caixa</a>
+        }
     }
 </div>
 
 
-@* ---------- indicadores ---------- *@
-<div class="indicadores">
-    <div class="indicador receita">
-        <span class="rotulo">Receita</span>
-        <strong class="valor">@resumo.Receita.ToString("C")</strong>
-        <span class="detalhe">@resumo.QuantidadeVendas venda(s) · ticket @resumo.TicketMedio.ToString("C")</span>
+@* ---------- indicadores ----------
+   Faturamento, despesa, comissao e lucro so para quem tem "Ver valores".
+   Esconder apenas o menu nao bastaria: o painel e justamente onde os
+   numeros do negocio aparecem todos juntos. *@
+@if (podeVerValores)
+{
+    <div class="indicadores">
+        <div class="indicador receita">
+            <span class="rotulo">Receita</span>
+            <strong class="valor">@resumo.Receita.ToString("C")</strong>
+            <span class="detalhe">@resumo.QuantidadeVendas venda(s) · ticket @resumo.TicketMedio.ToString("C")</span>
+        </div>
+        <div class="indicador despesa">
+            <span class="rotulo">Despesas</span>
+            <strong class="valor">@resumo.Despesas.ToString("C")</strong>
+            <span class="detalhe">
+                @if (permissao.PodeVer("despesas"))
+                {
+                    <a href="/despesas">ver lançamentos</a>
+                }
+            </span>
+        </div>
+        <div class="indicador comissao">
+            <span class="rotulo">Comissões</span>
+            <strong class="valor">@resumo.Comissoes.ToString("C")</strong>
+            <span class="detalhe">a pagar aos profissionais</span>
+        </div>
+        <div class="indicador @(resumo.Lucro >= 0 ? "lucro" : "prejuizo")">
+            <span class="rotulo">@(resumo.Lucro >= 0 ? "Lucro" : "Prejuízo")</span>
+            <strong class="valor">@resumo.Lucro.ToString("C")</strong>
+            <span class="detalhe">receita − despesas − comissões</span>
+        </div>
     </div>
-    <div class="indicador despesa">
-        <span class="rotulo">Despesas</span>
-        <strong class="valor">@resumo.Despesas.ToString("C")</strong>
-        <span class="detalhe"><a href="/despesas">ver lançamentos</a></span>
+}
+else
+{
+    <div class="indicadores-ocultos">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M9.9 5.2A10.6 10.6 0 0 1 12 5c6.4 0 10 7 10 7a18 18 0 0 1-3.2 4.2M6.6 6.6A18 18 0 0 0 2 12s3.6 7 10 7a10.5 10.5 0 0 0 5.4-1.4" />
+            <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2M3 3l18 18" />
+        </svg>
+        Os valores do período ficam visíveis para quem tem a permissão
+        <strong>Ver valores</strong> no Painel.
     </div>
-    <div class="indicador comissao">
-        <span class="rotulo">Comissões</span>
-        <strong class="valor">@resumo.Comissoes.ToString("C")</strong>
-        <span class="detalhe">a pagar aos profissionais</span>
-    </div>
-    <div class="indicador @(resumo.Lucro >= 0 ? "lucro" : "prejuizo")">
-        <span class="rotulo">@(resumo.Lucro >= 0 ? "Lucro" : "Prejuízo")</span>
-        <strong class="valor">@resumo.Lucro.ToString("C")</strong>
-        <span class="detalhe">receita − despesas − comissões</span>
-    </div>
-</div>
+}
 
 @* ---------- gráficos ---------- *@
-<div class="painel">
-    <section class="cartao cartao-barras">
-        <header class="cartao-topo">
-            <h2>Receita e despesas por mês</h2>
-            <span class="cartao-sub">Últimos 12 meses</span>
-        </header>
-        <div class="area-grafico">
-            <canvas id="barChart"></canvas>
-        </div>
-    </section>
+@if (podeVerValores)
+{
+    <div class="painel">
+        <section class="cartao cartao-barras">
+            <header class="cartao-topo">
+                <h2>Receita e despesas por mês</h2>
+                <span class="cartao-sub">Últimos 12 meses</span>
+            </header>
+            <div class="area-grafico">
+                <canvas id="barChart"></canvas>
+            </div>
+        </section>
 
-    <section class="cartao cartao-pizza">
-        <header class="cartao-topo">
-            <h2>Formas de pagamento</h2>
-        </header>
-        <div class="area-grafico">
-            <canvas id="pieChart"></canvas>
-        </div>
-    </section>
-</div>
+        <section class="cartao cartao-pizza">
+            <header class="cartao-topo">
+                <h2>Formas de pagamento</h2>
+            </header>
+            <div class="area-grafico">
+                <canvas id="pieChart"></canvas>
+            </div>
+        </section>
+    </div>
+}
 
-<CalendarioAgenda />
+@if (permissao.PodeVer("agendamentos"))
+{
+    <CalendarioAgenda />
+}
 
-@* Os dados vão para o JS por um elemento oculto, lido pelo dashboard.js. *@
-<script id="dados-painel" type="application/json">@((MarkupString)dadosJson)</script>
+@* Os dados vão para o JS por um elemento oculto, lido pelo dashboard.js.
+   Sem permissao de ver valores o elemento nem existe: esconder o grafico
+   e deixar os numeros no HTML nao esconderia nada. *@
+@if (podeVerValores)
+{
+    <script id="dados-painel" type="application/json">@((MarkupString)dadosJson)</script>
+}
 
 @code {
     private PainelDAO.ResumoPainel resumo = new();
@@ -156,7 +206,18 @@
         }
     }
 
-    protected override void OnInitialized() => Carregar();
+    private bool podeVerValores;
+    private bool podeVerCaixa;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await permissao.CarregarAsync();
+
+        podeVerValores = permissao.Pode("painel", Acao.VerValores);
+        podeVerCaixa = permissao.PodeVer("caixa");
+
+        Carregar();
+    }
 
     /// <summary>
     /// Relogio que repoe os numeros enquanto a tela fica aberta.

@@ -87,8 +87,11 @@ namespace LucasAguiar.Data
         {
             var nome = Normalizar(novo.NomeUsr);
 
+            if (string.IsNullOrWhiteSpace(novo.NomeExibicao))
+                throw new Exception("Informe o nome completo.");
+
             if (string.IsNullOrWhiteSpace(nome))
-                throw new Exception("Informe o nome de usuário.");
+                throw new Exception("Informe o usuário de acesso.");
 
             var critica = SegurancaSenha.Criticar(senha);
             if (critica != null) throw new Exception(critica);
@@ -111,16 +114,17 @@ namespace LucasAguiar.Data
 
             using (var inserir = new MySqlCommand(
                 @"INSERT INTO usuario
-                      (nome_usr, email_usr, senha_usr, algo_senha_usr, ativo_usr,
+                      (nome_usr, nome_exib_usr, email_usr, senha_usr, algo_senha_usr, ativo_usr,
                        perfil_usr, raiz_usr, trocar_senha_usr,
                        id_funcao_fk, id_fun_fk, data_criacao_usr)
                   VALUES
-                      (@nome, @email, @senha, @algo, 1,
+                      (@nome, @exibicao, @email, @senha, @algo, 1,
                        @perfil, 0, @trocar,
                        @funcao, @funcionario, NOW());
                   SELECT LAST_INSERT_ID();", conexao, transacao))
             {
                 inserir.Parameters.AddWithValue("@nome", nome);
+                inserir.Parameters.AddWithValue("@exibicao", Texto(novo.NomeExibicao));
                 inserir.Parameters.AddWithValue("@email", Texto(novo.EmailUsr));
                 inserir.Parameters.AddWithValue("@senha", SegurancaSenha.Gerar(senha!));
                 inserir.Parameters.AddWithValue("@algo", SegurancaSenha.Atual);
@@ -179,8 +183,11 @@ namespace LucasAguiar.Data
         {
             var nome = Normalizar(alterado.NomeUsr);
 
+            if (string.IsNullOrWhiteSpace(alterado.NomeExibicao))
+                throw new Exception("Informe o nome completo.");
+
             if (string.IsNullOrWhiteSpace(nome))
-                throw new Exception("Informe o nome de usuário.");
+                throw new Exception("Informe o usuário de acesso.");
 
             using var conexao = _conexao.GetConnection();
             using var transacao = conexao.BeginTransaction();
@@ -204,12 +211,14 @@ namespace LucasAguiar.Data
             using (var atualizar = new MySqlCommand(
                 @"UPDATE usuario
                      SET nome_usr = @nome,
+                         nome_exib_usr = @exibicao,
                          email_usr = @email,
                          id_funcao_fk = @funcao,
                          id_fun_fk = @funcionario
                    WHERE id_usr = @id", conexao, transacao))
             {
                 atualizar.Parameters.AddWithValue("@nome", nome);
+                atualizar.Parameters.AddWithValue("@exibicao", Texto(alterado.NomeExibicao));
                 atualizar.Parameters.AddWithValue("@email", Texto(alterado.EmailUsr));
                 atualizar.Parameters.AddWithValue("@funcao", Numero(alterado.IdFuncao));
                 atualizar.Parameters.AddWithValue("@funcionario", Numero(alterado.IdFuncionario));
@@ -224,6 +233,9 @@ namespace LucasAguiar.Data
 
             if (!string.Equals(antes.NomeUsr, nome, StringComparison.Ordinal))
                 mudou["usuário"] = $"{antes.NomeUsr} → {nome}";
+
+            if (!string.Equals(antes.NomeExibicao ?? "", alterado.NomeExibicao ?? "", StringComparison.Ordinal))
+                mudou["nome"] = $"{Vazio(antes.NomeExibicao)} → {Vazio(alterado.NomeExibicao)}";
 
             if (!string.Equals(antes.EmailUsr ?? "", alterado.EmailUsr ?? "", StringComparison.Ordinal))
                 mudou["e-mail"] = $"{Vazio(antes.EmailUsr)} → {Vazio(alterado.EmailUsr)}";

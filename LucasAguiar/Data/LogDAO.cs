@@ -66,9 +66,9 @@ namespace LucasAguiar.Data
         {
             Tipo = TipoLog.Usuario,
             Acao = Acoes.Login,
-            Descricao = $"{usuario.NomeUsr} entrou no sistema.",
+            Descricao = $"{usuario.NomeVisivel} entrou no sistema.",
             IdUsuario = usuario.IdUsr,
-            NomeGravado = usuario.NomeUsr,
+            NomeGravado = usuario.NomeVisivel,
             Ip = ip
         });
 

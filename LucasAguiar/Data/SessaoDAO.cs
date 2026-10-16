@@ -79,6 +79,7 @@ namespace LucasAguiar.Data
                          u.id_usr, u.nome_usr, u.email_usr, u.ativo_usr,
                          u.data_criacao_usr, u.perfil_usr, u.raiz_usr,
                          u.trocar_senha_usr, u.algo_senha_usr,
+                         u.nome_exib_usr,
                          u.id_funcao_fk, f.nome_funcao,
                          u.id_fun_fk, fun.nome_fun,
                          u.ultimo_login_usr, u.atualizado_usr
@@ -238,6 +239,7 @@ namespace LucasAguiar.Data
         {
             IdUsr = leitor.GetInt32("id_usr"),
             NomeUsr = DAOHelper.GetString(leitor, "nome_usr"),
+            NomeExibicao = DAOHelper.GetString(leitor, "nome_exib_usr"),
             EmailUsr = DAOHelper.GetString(leitor, "email_usr"),
             AtivoUsr = leitor.GetBoolean("ativo_usr"),
             DataCriacaoUsr = leitor.GetDateTime("data_criacao_usr"),

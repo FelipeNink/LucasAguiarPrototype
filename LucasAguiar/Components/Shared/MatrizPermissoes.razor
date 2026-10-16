@@ -1,0 +1,239 @@
+@* Matriz tela x acao.
+
+   Regra central, aplicada aqui e refeita no servidor ao gravar: sem
+   "Acessar" nenhuma outra acao vale. Desmarcar Acessar desliga e zera o
+   resto da linha; marcar devolve as colunas.
+
+   Para administrador a matriz nao aparece: ele tem acesso total, e
+   mostrar interruptores que nao decidem nada seria mentira. *@
+
+@using LucasAguiar.Configs
+
+<div class="cartao matriz-cartao">
+    <button type="button" class="matriz-titulo" @onclick="() => aberto = !aberto"
+            aria-expanded="@aberto.ToString().ToLowerInvariant()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"
+             class="@(aberto ? "aberta" : "")">
+            <path d="m9 18 6-6-6-6" />
+        </svg>
+
+        <span>
+            <strong>Permissões de acesso</strong>
+            <small>Defina quais telas e ações este membro pode usar.</small>
+        </span>
+
+        @if (!EhAdmin && Alteradas > 0)
+        {
+            <span class="matriz-contador">@Alteradas alterada@(Alteradas == 1 ? "" : "s")</span>
+        }
+    </button>
+
+    @if (aberto)
+    {
+        @if (EhAdmin)
+        {
+            <div class="matriz-admin" role="status">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M12 2 3 6v6c0 5 3.8 9.4 9 10 5.2-.6 9-5 9-10V6l-9-4z" />
+                </svg>
+                <div>
+                    <strong>Acesso total a todas as telas e ações.</strong>
+                    <span>
+                        O perfil de administrador ignora a matriz. Para definir
+                        permissões tela a tela, mude o perfil para comum.
+                    </span>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="matriz-atalhos">
+                <button type="button" class="btn btn-outline-secondary" @onclick="AcessoTotal">
+                    Acesso total
+                </button>
+                <button type="button" class="btn btn-outline-secondary" @onclick="SomenteLeitura">
+                    Somente leitura
+                </button>
+                <button type="button" class="btn btn-outline-secondary" @onclick="Limpar">
+                    Limpar
+                </button>
+                <small>
+                    "Acesso total" deixa de fora as ações sensíveis
+                    (@TextoSensiveis), que são marcadas uma a uma.
+                </small>
+            </div>
+
+            <div class="matriz-rolagem">
+                <table class="matriz">
+                    <thead>
+                        <tr>
+                            <th class="col-tela">Tela</th>
+                            @foreach (var acao in Catalogo.Acoes)
+                            {
+                                <th title="@Catalogo.Explicacao(acao)">
+                                    @Catalogo.Rotulo(acao)
+                                    @if (Catalogo.EhSensivel(acao))
+                                    {
+                                        <i class="sensivel" aria-label="ação sensível"></i>
+                                    }
+                                </th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var secao in Catalogo.Secoes)
+                        {
+                            var telas = Catalogo.Telas.Where(t => t.Secao == secao).ToList();
+                            if (telas.Count == 0) continue;
+
+                            <tr class="secao">
+                                <th colspan="@(Catalogo.Acoes.Count + 1)">
+                                    <button type="button" @onclick="() => Alternar(secao)"
+                                            aria-expanded="@(!Recolhida(secao))">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                             stroke-width="2.4" stroke-linecap="round"
+                                             stroke-linejoin="round" aria-hidden="true"
+                                             class="@(Recolhida(secao) ? "" : "aberta")">
+                                            <path d="m9 18 6-6-6-6" />
+                                        </svg>
+                                        @secao
+                                        <span class="conta">@ContarLiberadas(telas) de @telas.Count</span>
+                                    </button>
+                                </th>
+                            </tr>
+
+                            @if (!Recolhida(secao))
+                            {
+                                @foreach (var tela in telas)
+                                {
+                                    <tr class="@(Mudou(tela.Chave) ? "mudou" : "")">
+                                        <th class="col-tela" scope="row">@tela.Nome</th>
+
+                                        @foreach (var acao in Catalogo.Acoes)
+                                        {
+                                            <td>
+                                                @if (!tela.Tem(acao))
+                                                {
+                                                    <span class="nao-se-aplica" aria-hidden="true">—</span>
+                                                }
+                                                else
+                                                {
+                                                    var ligado = Tem(tela.Chave, acao);
+                                                    var travado = acao != Acao.Ver && !Tem(tela.Chave, Acao.Ver);
+
+                                                    <label class="interruptor @(travado ? "travado" : "")">
+                                                        <input type="checkbox" checked="@ligado"
+                                                               disabled="@travado"
+                                                               aria-label="@Catalogo.Rotulo(acao) em @tela.Nome"
+                                                               @onchange="e => Marcar(tela, acao, (bool?)e.Value == true)" />
+                                                        <i aria-hidden="true"></i>
+                                                    </label>
+                                                }
+                                            </td>
+                                        }
+                                    </tr>
+                                }
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    /// <summary>A matriz em edicao, por chave de tela.</summary>
+    [Parameter] public Dictionary<string, Acao> Valor { get; set; } = new();
+    [Parameter] public EventCallback<Dictionary<string, Acao>> ValorChanged { get; set; }
+
+    /// <summary>Como estava ao abrir, para marcar as linhas alteradas.</summary>
+    [Parameter] public Dictionary<string, Acao>? Original { get; set; }
+
+    /// <summary>Administrador nao usa matriz; mostra o aviso no lugar.</summary>
+    [Parameter] public bool EhAdmin { get; set; }
+
+    private bool aberto = true;
+    private readonly HashSet<string> recolhidas = new();
+
+    private static readonly string TextoSensiveis = string.Join(", ",
+        Catalogo.Acoes.Where(Catalogo.EhSensivel)
+            .Select(a => Catalogo.Rotulo(a).ToLowerInvariant()));
+
+    private bool Recolhida(string secao) => recolhidas.Contains(secao);
+
+    private void Alternar(string secao)
+    {
+        if (!recolhidas.Remove(secao)) recolhidas.Add(secao);
+    }
+
+    private Acao De(string tela) =>
+        Valor.TryGetValue(tela, out var a) ? a : Acao.Nenhuma;
+
+    private bool Tem(string tela, Acao acao) => (De(tela) & acao) == acao;
+
+    private bool Mudou(string tela)
+    {
+        if (Original == null) return false;
+
+        var antes = Original.TryGetValue(tela, out var a) ? a : Acao.Nenhuma;
+
+        return antes != De(tela);
+    }
+
+    private int Alteradas => Original == null
+        ? 0
+        : Catalogo.Telas.Count(t => Mudou(t.Chave));
+
+    private int ContarLiberadas(IEnumerable<Tela> telas) =>
+        telas.Count(t => Tem(t.Chave, Acao.Ver));
+
+    private async Task Marcar(Tela tela, Acao acao, bool ligar)
+    {
+        var atual = De(tela.Chave);
+
+        if (ligar)
+        {
+            atual |= acao;
+
+            // Marcar qualquer acao implica poder abrir a tela: sem isso a
+            // linha ficaria num estado que o servidor zera ao gravar.
+            if (acao != Acao.Ver) atual |= Acao.Ver;
+        }
+        else
+        {
+            atual &= ~acao;
+
+            // Tirar o Acessar leva o resto junto, e e por isso que as
+            // outras colunas aparecem desabilitadas em seguida.
+            if (acao == Acao.Ver) atual = Acao.Nenhuma;
+        }
+
+        Valor[tela.Chave] = atual & tela.Acoes;
+
+        await ValorChanged.InvokeAsync(Valor);
+    }
+
+    /// <summary>Tudo que a tela oferece, menos as acoes sensiveis.</summary>
+    private Task AcessoTotal() => Preencher(t =>
+        t.Acoes & ~AcoesSensiveis);
+
+    private Task SomenteLeitura() => Preencher(t =>
+        t.Acoes & (Acao.Ver | Acao.Exportar));
+
+    private Task Limpar() => Preencher(_ => Acao.Nenhuma);
+
+    private static readonly Acao AcoesSensiveis = Catalogo.Acoes
+        .Where(Catalogo.EhSensivel)
+        .Aggregate(Acao.Nenhuma, (soma, a) => soma | a);
+
+    private async Task Preencher(Func<Tela, Acao> escolher)
+    {
+        foreach (var tela in Catalogo.Telas)
+            Valor[tela.Chave] = escolher(tela) & tela.Acoes;
+
+        await ValorChanged.InvokeAsync(Valor);
+    }
+}

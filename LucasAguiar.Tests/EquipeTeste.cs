@@ -41,7 +41,7 @@ namespace LucasAguiar.Tests
             var nome = BancoDeTeste.NomeUnico("novo");
 
             var id = dao.Criar(
-                new Usuario { NomeUsr = nome, PerfilUsr = Perfil.Comum },
+                new Usuario { NomeUsr = nome, NomeExibicao = "Novo Membro", PerfilUsr = Perfil.Comum },
                 "barbearia10",
                 new Dictionary<string, Acao> { ["clientes"] = Acao.Ver | Acao.Criar },
                 exigirTrocaDeSenha: true,
@@ -80,13 +80,13 @@ namespace LucasAguiar.Tests
             var nome = BancoDeTeste.NomeUnico("repetido");
 
             var id = dao.Criar(
-                new Usuario { NomeUsr = nome }, "barbearia10",
+                new Usuario { NomeUsr = nome, NomeExibicao = "Membro de Teste" }, "barbearia10",
                 TudoVisivel(), false, Raiz(0));
 
             try
             {
                 var erro = Assert.Throws<Exception>(() => dao.Criar(
-                    new Usuario { NomeUsr = nome.ToUpperInvariant() }, "barbearia10",
+                    new Usuario { NomeUsr = nome.ToUpperInvariant(), NomeExibicao = "Membro de Teste" }, "barbearia10",
                     TudoVisivel(), false, Raiz(0)));
 
                 Assert.Contains("já está cadastrado", erro.Message);
@@ -103,7 +103,7 @@ namespace LucasAguiar.Tests
             var dao = Dao();
 
             Assert.Throws<Exception>(() => dao.Criar(
-                new Usuario { NomeUsr = BancoDeTeste.NomeUnico("fraca") }, "123",
+                new Usuario { NomeUsr = BancoDeTeste.NomeUnico("fraca"), NomeExibicao = "Senha Fraca" }, "123",
                 TudoVisivel(), false, Raiz(0)));
         }
 
@@ -114,7 +114,7 @@ namespace LucasAguiar.Tests
             var dao = Dao();
 
             var erro = Assert.Throws<Exception>(() => dao.Criar(
-                new Usuario { NomeUsr = BancoDeTeste.NomeUnico("promovido"), PerfilUsr = Perfil.Admin },
+                new Usuario { NomeUsr = BancoDeTeste.NomeUnico("promovido"), NomeExibicao = "Promovido", PerfilUsr = Perfil.Admin },
                 "barbearia10", TudoVisivel(), false, Admin(0)));
 
             Assert.Contains("super-administrador", erro.Message);
@@ -139,7 +139,7 @@ namespace LucasAguiar.Tests
             try
             {
                 dao.Atualizar(
-                    new Usuario { IdUsr = id, NomeUsr = nome, EmailUsr = "novo@teste.local" },
+                    new Usuario { IdUsr = id, NomeUsr = nome, NomeExibicao = "Membro de Teste", EmailUsr = "novo@teste.local" },
                     null, Raiz(0));
 
                 Assert.False(dao.BuscarPorId(id)!.AtivoUsr);
@@ -164,7 +164,7 @@ namespace LucasAguiar.Tests
                 var carimboVelho = DateTime.Now.AddMinutes(-10);
 
                 var erro = Assert.Throws<Exception>(() => dao.Atualizar(
-                    new Usuario { IdUsr = id, NomeUsr = nome }, carimboVelho, Raiz(0)));
+                    new Usuario { IdUsr = id, NomeUsr = nome, NomeExibicao = "Membro de Teste" }, carimboVelho, Raiz(0)));
 
                 Assert.Contains("alterado por outra pessoa", erro.Message);
             }
@@ -188,7 +188,7 @@ namespace LucasAguiar.Tests
             try
             {
                 Assert.Throws<Exception>(() => dao.Atualizar(
-                    new Usuario { IdUsr = idOutro, NomeUsr = um }, null, Raiz(0)));
+                    new Usuario { IdUsr = idOutro, NomeUsr = um, NomeExibicao = "Membro de Teste" }, null, Raiz(0)));
             }
             finally
             {
@@ -298,7 +298,7 @@ namespace LucasAguiar.Tests
             var nome = BancoDeTeste.NomeUnico("sumir");
 
             var id = dao.Criar(
-                new Usuario { NomeUsr = nome }, "barbearia10",
+                new Usuario { NomeUsr = nome, NomeExibicao = "Membro de Teste" }, "barbearia10",
                 TudoVisivel(), false, Raiz(0));
 
             Assert.NotEmpty(new PermissaoDAO(BancoDeTeste.Fabricar()).Ler(id));
@@ -429,7 +429,7 @@ namespace LucasAguiar.Tests
             var permissoes = new PermissaoDAO(BancoDeTeste.Fabricar());
 
             var id = dao.Criar(
-                new Usuario { NomeUsr = BancoDeTeste.NomeUnico("subiu") }, "barbearia10",
+                new Usuario { NomeUsr = BancoDeTeste.NomeUnico("subiu"), NomeExibicao = "Subiu de Perfil" }, "barbearia10",
                 new Dictionary<string, Acao> { ["clientes"] = Acao.Ver | Acao.Criar },
                 false, Raiz(0));
 
@@ -501,7 +501,7 @@ namespace LucasAguiar.Tests
             var permissoes = new PermissaoDAO(BancoDeTeste.Fabricar());
 
             var id = dao.Criar(
-                new Usuario { NomeUsr = BancoDeTeste.NomeUnico("matriz") }, "barbearia10",
+                new Usuario { NomeUsr = BancoDeTeste.NomeUnico("matriz"), NomeExibicao = "Matriz" }, "barbearia10",
                 new Dictionary<string, Acao>
                 {
                     ["clientes"] = Acao.Ver | Acao.Criar | Acao.Editar
@@ -561,7 +561,7 @@ namespace LucasAguiar.Tests
 
             var idFuncao = funcoes.Criar(BancoDeTeste.NomeUnico("Barbeiro"), Raiz(0));
             var idUsuario = equipe.Criar(
-                new Usuario { NomeUsr = BancoDeTeste.NomeUnico("ligado"), IdFuncao = idFuncao },
+                new Usuario { NomeUsr = BancoDeTeste.NomeUnico("ligado"), NomeExibicao = "Ligado a Funcao", IdFuncao = idFuncao },
                 "barbearia10", TudoVisivel(), false, Raiz(0));
 
             try

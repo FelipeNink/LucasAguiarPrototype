@@ -1,0 +1,32 @@
+.explica-funcoes {
+    max-width: 620px;
+    margin: -6px 0 1.1rem;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--texto-3);
+}
+
+/* Numero de membros em destaque discreto: e a informacao que decide se
+   a funcao pode ser excluida. */
+.membros {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 26px;
+    height: 22px;
+    padding: 0 7px;
+    border-radius: 999px;
+    background: var(--superficie-3);
+    font-size: 12.5px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--texto-2);
+}
+
+.campo-janela .form-label {
+    font-size: 11.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--texto-2);
+}

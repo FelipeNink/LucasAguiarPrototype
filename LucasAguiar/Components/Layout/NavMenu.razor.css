@@ -163,12 +163,44 @@
     outline-offset: 2px;
 }
 /* ---------- rodape ---------- */
+/* Duas faixas: o nome em cima, com a largura toda, e as acoes de conta
+   embaixo.
+
+   Numa linha so, que era como estava, os tres botoes de 40px comiam a
+   lateral inteira e sobravam dez pixels para o nome -- "AdminBarber"
+   aparecia como "A". A grade resolve sem encurtar botao nem nome. */
 .rodape-lateral {
-    display: flex;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas:
+        "avatar dados"
+        "acoes  acoes";
     align-items: center;
-    gap: 10px;
+    gap: 6px 10px;
     padding: 10px 16px;
     border-top: 1px solid var(--lateral-linha);
+}
+
+.rodape-lateral .avatar-usuario {
+    grid-area: avatar;
+}
+
+.rodape-lateral .usuario-dados {
+    grid-area: dados;
+}
+
+/* Os tres botoes ocupam a faixa de baixo, divididos por igual: alvos
+   largos, que no celular se tocam sem erro. */
+.rodape-lateral .acoes-conta {
+    grid-area: acoes;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+    margin-top: 2px;
+}
+
+.rodape-lateral .acoes-conta .botao-conta {
+    width: 100%;
 }
 .avatar-usuario {
     display: flex;
@@ -335,4 +367,39 @@
 
 .rodape-lateral {
     padding: 10px 16px;
+}
+
+/* O modulo trouxe uma quarta secao e tres itens novos, e a lateral
+   voltou a rolar. Reaperto para caber de novo sem a barra: cada item
+   perde um pixel, os espacos entre grupos perdem dois, e o rodape
+   perde a folga que a segunda faixa de botoes tinha acrescentado.
+   Medido: 649px de conteudo em 617px de espaco, agora 614 em 625. */
+
+.nav-scrollable {
+    padding: 8px 16px;
+}
+
+.grupo + .grupo {
+    margin-top: 8px;
+}
+
+.grupo-rotulo {
+    padding: 0 10px 2px;
+}
+
+.nav-item ::deep .nav-link {
+    height: 30px;
+}
+
+.rodape-lateral {
+    gap: 4px 10px;
+    padding: 8px 16px;
+}
+
+.rodape-lateral .acoes-conta {
+    margin-top: 0;
+}
+
+.rodape-lateral .acoes-conta .botao-conta {
+    height: 34px;
 }

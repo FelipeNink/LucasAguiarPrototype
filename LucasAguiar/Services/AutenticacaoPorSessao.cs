@@ -36,6 +36,7 @@ namespace LucasAguiar.Services
         public const string ClaimToken = "sessao";
         public const string ClaimTrocarSenha = "trocar_senha";
         public const string ClaimFuncao = "funcao";
+        public const string ClaimLogin = "login";
 
         /// <summary>Para onde voltar depois de entrar.</summary>
         public const string ParametroVolta = "voltar";
@@ -171,6 +172,7 @@ namespace LucasAguiar.Services
             identidade.AddClaim(new Claim(
                 ClaimTypes.NameIdentifier, acesso.IdUsuario.ToString()));
             identidade.AddClaim(new Claim(ClaimTypes.Name, acesso.Nome));
+            identidade.AddClaim(new Claim(ClaimLogin, acesso.Login));
             identidade.AddClaim(new Claim(ClaimPerfil, acesso.Usuario.PerfilUsr));
             identidade.AddClaim(new Claim(ClaimRaiz, acesso.EhRaiz ? "1" : "0"));
             identidade.AddClaim(new Claim(

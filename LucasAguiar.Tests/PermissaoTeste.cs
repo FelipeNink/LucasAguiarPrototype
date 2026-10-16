@@ -24,7 +24,7 @@ namespace LucasAguiar.Tests
         /// </summary>
         private static readonly string[] SemPolitica =
         {
-            "Login", "Logout", "Error", "SemPermissao", "TrocarSenha"
+            "Login", "Logout", "Error", "SemPermissao", "TrocarSenha", "Conta"
         };
 
         // =========================================================

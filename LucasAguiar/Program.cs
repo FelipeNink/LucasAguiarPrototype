@@ -140,6 +140,41 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseAuthentication();
+
+// Senha provisoria obriga a trocar antes de usar o sistema. Sem isto,
+// bastava digitar outro endereco para passar direto pela tela de troca e
+// a senha definida pelo administrador viraria permanente.
+//
+// Fica antes da autorizacao para o redirecionamento ser para a troca de
+// senha, e nao para o aviso de falta de permissao.
+app.Use(async (contexto, proximo) =>
+{
+    var precisaTrocar = contexto.User
+        .FindFirst(AutenticacaoPorSessao.ClaimTrocarSenha)?.Value == "1";
+
+    if (precisaTrocar)
+    {
+        var caminho = contexto.Request.Path.Value ?? "/";
+
+        var liberado = caminho.StartsWith("/trocar-senha", StringComparison.OrdinalIgnoreCase)
+            || caminho.StartsWith("/logout", StringComparison.OrdinalIgnoreCase)
+            // Entrar como outra pessoa continua possivel sem antes ter de
+            // trocar a senha de quem esta logado.
+            || caminho.StartsWith("/login", StringComparison.OrdinalIgnoreCase)
+            || caminho.StartsWith("/_blazor", StringComparison.OrdinalIgnoreCase)
+            || caminho.StartsWith("/_framework", StringComparison.OrdinalIgnoreCase)
+            || Path.HasExtension(caminho);
+
+        if (!liberado)
+        {
+            contexto.Response.Redirect("/trocar-senha");
+            return;
+        }
+    }
+
+    await proximo();
+});
+
 app.UseAuthorization();
 
 app.UseAntiforgery();

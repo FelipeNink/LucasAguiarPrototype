@@ -21,6 +21,7 @@ namespace LucasAguiar.Data
             SELECT u.id_usr, u.nome_usr, u.email_usr, u.senha_usr, u.ativo_usr,
                    u.data_criacao_usr, u.perfil_usr, u.raiz_usr,
                    u.trocar_senha_usr, u.algo_senha_usr,
+                   u.nome_exib_usr,
                    u.id_funcao_fk, f.nome_funcao,
                    u.id_fun_fk, fun.nome_fun,
                    u.ultimo_login_usr, u.atualizado_usr

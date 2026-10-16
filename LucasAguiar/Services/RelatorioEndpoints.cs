@@ -262,6 +262,28 @@ namespace LucasAguiar.Services
                 return Results.File(pdf, TipoPdf, NomeArquivo($"caixa_{caixa.IdCaixa}"));
             });
 
+            // Sem senha, sem hash e sem token: o relatorio da equipe sai
+            // com o que se ve na tela, e nada mais.
+            app.MapGet("/relatorio/equipe", (RelatorioPdf rel, EquipeDAO dao) =>
+            {
+                var itens = dao.Listar() ?? new List<Usuario>();
+                var pdf = rel.Gerar("Relatório da Equipe",
+                    new[]
+                    {
+                        new Coluna("#", 0.6), new Coluna("Nome", 3), new Coluna("Usuário", 2.2),
+                        new Coluna("Função", 2), new Coluna("Perfil", 1.6),
+                        new Coluna("Status", 1.2)
+                    },
+                    itens.Select((u, i) => new[]
+                    {
+                        (i + 1).ToString(), u.NomeVisivel, u.NomeUsr ?? "",
+                        u.NomeFuncao ?? "—", Perfil.Rotulo(u.PerfilUsr),
+                        u.AtivoUsr ? "Ativo" : "Inativo"
+                    }).ToList());
+
+                return Results.File(pdf, TipoPdf, NomeArquivo("equipe"));
+            });
+
             app.MapGet("/relatorio/planos", (RelatorioPdf rel, PlanoDAO dao) =>
             {
                 var itens = dao.ListarTodos() ?? new List<Plano>();

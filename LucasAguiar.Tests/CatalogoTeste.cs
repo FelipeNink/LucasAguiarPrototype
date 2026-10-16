@@ -23,7 +23,7 @@ namespace LucasAguiar.Tests
         /// </summary>
         private static readonly string[] ForaDoCatalogo =
         {
-            "/login", "/logout", "/error", "/sem-permissao", "/trocar-senha"
+            "/login", "/logout", "/error", "/sem-permissao", "/trocar-senha", "/conta"
         };
 
         [Fact]

@@ -1,0 +1,324 @@
+.matriz-cartao {
+    padding: 0;
+    overflow: hidden;
+}
+
+/* ---------- cabecalho recolhivel ---------- */
+
+.matriz-titulo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 16px 18px;
+    border: 0;
+    background: none;
+    text-align: left;
+    cursor: pointer;
+    color: var(--texto);
+}
+
+.matriz-titulo:hover {
+    background: var(--superficie-2);
+}
+
+.matriz-titulo:focus-visible {
+    outline: 2px solid var(--marca);
+    outline-offset: -2px;
+}
+
+.matriz-titulo > svg {
+    width: 16px;
+    height: 16px;
+    flex: none;
+    color: var(--texto-3);
+    transition: transform 0.14s ease;
+}
+
+.matriz-titulo > svg.aberta {
+    transform: rotate(90deg);
+}
+
+.matriz-titulo span {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.matriz-titulo strong {
+    font-family: var(--fonte-titulo);
+    font-size: 19px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.01em;
+    line-height: 1.05;
+}
+
+.matriz-titulo small {
+    font-size: 12.5px;
+    color: var(--texto-3);
+}
+
+.matriz-contador {
+    margin-left: auto;
+    flex: none;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: var(--morno);
+    color: var(--morno-texto);
+    font-size: 11.5px;
+    font-weight: 700;
+}
+
+/* ---------- aviso do administrador ---------- */
+
+.matriz-admin {
+    display: flex;
+    gap: 12px;
+    margin: 0 18px 18px;
+    padding: 14px 16px;
+    border: 1px solid var(--morno-borda);
+    border-radius: var(--raio);
+    background: var(--morno);
+}
+
+.matriz-admin svg {
+    width: 20px;
+    height: 20px;
+    flex: none;
+    color: var(--marca-escura);
+}
+
+.matriz-admin div {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.matriz-admin strong {
+    color: var(--morno-texto);
+}
+
+.matriz-admin span {
+    font-size: 13px;
+    color: var(--morno-texto);
+    opacity: 0.85;
+}
+
+/* ---------- atalhos ---------- */
+
+.matriz-atalhos {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 0 18px 14px;
+}
+
+/* Mesma altura dos demais controles do sistema. */
+.matriz-atalhos .btn {
+    height: 36px;
+    padding: 0 14px;
+    display: inline-flex;
+    align-items: center;
+    font-size: 13px;
+}
+
+.matriz-atalhos small {
+    flex: 1;
+    min-width: 200px;
+    font-size: 12px;
+    color: var(--texto-fraco);
+}
+
+/* ---------- tabela ---------- */
+
+/* A rolagem lateral fica dentro do cartao, nunca na pagina: no celular
+   sao oito colunas de acao, e empurrar a tela inteira para o lado
+   quebraria todo o resto do layout. */
+.matriz-rolagem {
+    overflow-x: auto;
+    border-top: 1px solid var(--borda);
+}
+
+.matriz {
+    width: 100%;
+    min-width: 620px;
+    border-collapse: collapse;
+}
+
+.matriz th,
+.matriz td {
+    padding: 0;
+    border-bottom: 1px solid var(--borda);
+}
+
+.matriz thead th {
+    padding: 10px 8px;
+    background: var(--morno);
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: var(--morno-texto);
+    text-align: center;
+    white-space: nowrap;
+}
+
+.matriz thead th.col-tela {
+    text-align: left;
+    padding-left: 18px;
+}
+
+.matriz .col-tela {
+    width: 34%;
+    min-width: 150px;
+    padding: 9px 8px 9px 18px;
+    font-size: 13.5px;
+    font-weight: 500;
+    text-align: left;
+    color: var(--texto);
+}
+
+.matriz tbody td {
+    text-align: center;
+}
+
+/* Ponto laranja no cabecalho das acoes sensiveis: elas nascem desligadas
+   e nao entram no "Acesso total". */
+.sensivel {
+    display: inline-block;
+    width: 5px;
+    height: 5px;
+    margin-left: 4px;
+    border-radius: 50%;
+    background: var(--marca);
+    vertical-align: 2px;
+}
+
+.matriz tr.secao th {
+    padding: 0;
+    background: var(--superficie-2);
+}
+
+.matriz tr.secao button {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    width: 100%;
+    padding: 8px 18px;
+    border: 0;
+    background: none;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--texto-3);
+    cursor: pointer;
+}
+
+.matriz tr.secao button:hover {
+    color: var(--texto);
+}
+
+.matriz tr.secao button:focus-visible {
+    outline: 2px solid var(--marca);
+    outline-offset: -2px;
+}
+
+.matriz tr.secao svg {
+    width: 12px;
+    height: 12px;
+    transition: transform 0.14s ease;
+}
+
+.matriz tr.secao svg.aberta {
+    transform: rotate(90deg);
+}
+
+.matriz tr.secao .conta {
+    margin-left: auto;
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+    color: var(--texto-fraco);
+}
+
+/* Barra laranja na linha que mudou desde que a tela abriu. */
+.matriz tr.mudou .col-tela {
+    box-shadow: inset 3px 0 0 var(--marca);
+    font-weight: 600;
+}
+
+.nao-se-aplica {
+    color: var(--texto-apagado);
+    font-size: 13px;
+}
+
+/* ---------- interruptor ---------- */
+
+.interruptor {
+    display: inline-flex;
+    align-items: center;
+    margin: 0;
+    padding: 7px 0;
+    cursor: pointer;
+}
+
+.interruptor input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.interruptor i {
+    position: relative;
+    display: block;
+    width: 34px;
+    height: 19px;
+    border-radius: 999px;
+    background: var(--borda-3);
+    transition: background 0.14s ease;
+}
+
+.interruptor i::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(17, 24, 39, 0.25);
+    transition: transform 0.14s ease;
+}
+
+.interruptor input:checked + i {
+    background: var(--marca);
+}
+
+.interruptor input:checked + i::after {
+    transform: translateX(15px);
+}
+
+.interruptor input:focus-visible + i {
+    box-shadow: var(--anel-foco);
+}
+
+/* Travado = a tela nao tem "Acessar". O interruptor continua visivel
+   para a pessoa entender que a acao existe, mas nao responde. */
+.interruptor.travado {
+    cursor: not-allowed;
+    opacity: 0.4;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .matriz-titulo > svg,
+    .matriz tr.secao svg,
+    .interruptor i,
+    .interruptor i::after {
+        transition: none;
+    }
+}

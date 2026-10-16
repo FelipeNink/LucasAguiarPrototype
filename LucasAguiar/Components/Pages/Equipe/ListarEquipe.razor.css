@@ -1,0 +1,195 @@
+/* Os dois botoes e a busca na mesma linha, todos com a mesma altura.
+   A busca cresce para ocupar o que sobra. */
+
+.barra-equipe {
+    align-items: center;
+}
+
+.busca-equipe {
+    position: relative;
+    flex: 1;
+    min-width: 220px;
+}
+
+.busca-equipe svg {
+    position: absolute;
+    left: 13px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 17px;
+    height: 17px;
+    color: var(--texto-fraco);
+    pointer-events: none;
+}
+
+.busca-equipe .form-control {
+    height: var(--altura-controle);
+    padding-left: 40px;
+}
+
+/* No celular os dois botoes dividem uma linha e a busca desce inteira:
+   os tres lado a lado ficariam estreitos demais para tocar. */
+@media (max-width: 620px) {
+    .barra-equipe {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+
+    .busca-equipe {
+        grid-column: 1 / -1;
+    }
+}
+
+/* ---------- avatar ---------- */
+
+.col-avatar {
+    width: 56px;
+}
+
+.avatar-membro {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    font-family: var(--fonte);
+    font-size: 12.5px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+/* ---------- etiquetas ---------- */
+
+.etiqueta {
+    display: inline-block;
+    margin-left: 7px;
+    padding: 1px 7px;
+    border-radius: 999px;
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    vertical-align: 1px;
+}
+
+.etiqueta.admin {
+    background: var(--morno);
+    color: var(--morno-texto);
+}
+
+.etiqueta.raiz {
+    background: var(--marca);
+    color: var(--sobre-marca);
+}
+
+.etiqueta.voce {
+    background: var(--superficie-3);
+    color: var(--texto-3);
+}
+
+/* Inativo esmaecido, menos as acoes: reativar precisa continuar legivel. */
+.linha-inativa td:not(.col-acoes) {
+    opacity: 0.55;
+}
+
+/* ---------- cabecalho ordenavel ---------- */
+
+.ordenar {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    color: inherit;
+    text-transform: inherit;
+    letter-spacing: inherit;
+    cursor: pointer;
+}
+
+.ordenar svg {
+    width: 13px;
+    height: 13px;
+    opacity: 0;
+    transition: transform 0.12s ease;
+}
+
+/* A seta so aparece na coluna que esta ordenando -- e no hover, como
+   convite. Em todas ao mesmo tempo viraria ruido. */
+.ordenar:hover svg {
+    opacity: 0.45;
+}
+
+.ordenar.ativo svg {
+    opacity: 1;
+    color: var(--marca);
+}
+
+.ordenar svg.invertida {
+    transform: rotate(180deg);
+}
+
+.ordenar:focus-visible {
+    outline: 2px solid var(--marca);
+    outline-offset: 3px;
+    border-radius: 3px;
+}
+
+/* ---------- rodape ---------- */
+
+.contagem-equipe {
+    margin: 10px 2px 0;
+    font-size: 12.5px;
+    color: var(--texto-fraco);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ordenar svg {
+        transition: none;
+    }
+}
+
+/* A cor sai do nome, mas quem decide o tom e o tema: fundo translucido
+   sobre a superficie, e o texto claro ou escuro conforme o caso. */
+.avatar-membro {
+    background: hsl(var(--matiz) 55% 50% / 0.18);
+    color: hsl(var(--matiz) 55% 30%);
+}
+
+[data-tema="escuro"] .avatar-membro {
+    color: hsl(var(--matiz) 70% 74%);
+}
+
+/* O login nao e codigo-fonte: o <code> do Bootstrap vem vermelho. */
+.login {
+    font-family: var(--fonte);
+    font-size: 13px;
+    color: var(--texto-3);
+}
+
+/* No celular a tabela tinha 56px de avatar e 204px de acoes num total
+   de 343px uteis: sobravam 80px para nome e status, e o nome quebrava
+   uma letra por linha. O avatar sai -- e enfeite, nao informacao -- e a
+   coluna de acoes encolhe para os tres botoes justos. */
+@media (max-width: 620px) {
+    .col-avatar {
+        display: none;
+    }
+
+    .tabela.fixa th.col-acoes.quatro,
+    .tabela.fixa td.col-acoes {
+        width: 138px;
+    }
+
+    .acoes {
+        gap: 2px;
+    }
+
+    .etiqueta {
+        margin-left: 5px;
+        padding: 1px 5px;
+    }
+}

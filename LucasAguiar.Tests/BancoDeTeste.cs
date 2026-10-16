@@ -59,12 +59,13 @@ namespace LucasAguiar.Tests
         {
             using var comando = new MySqlCommand(
                 @"INSERT INTO usuario
-                      (nome_usr, email_usr, senha_usr, algo_senha_usr,
+                      (nome_usr, nome_exib_usr, email_usr, senha_usr, algo_senha_usr,
                        ativo_usr, perfil_usr, data_criacao_usr)
-                  VALUES (@nome, @email, @senha, @algo, @ativo, @perfil, NOW());
+                  VALUES (@nome, @exibicao, @email, @senha, @algo, @ativo, @perfil, NOW());
                   SELECT LAST_INSERT_ID();", conexao);
 
             comando.Parameters.AddWithValue("@nome", nome);
+            comando.Parameters.AddWithValue("@exibicao", "Teste " + nome);
             comando.Parameters.AddWithValue("@email", nome + "@teste.local");
             comando.Parameters.AddWithValue("@senha",
                 senha == null ? DBNull.Value : SegurancaSenha.Gerar(senha));

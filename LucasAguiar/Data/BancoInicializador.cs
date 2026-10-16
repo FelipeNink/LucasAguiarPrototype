@@ -144,6 +144,11 @@ namespace LucasAguiar.Data
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci");
 
             // ---------- usuario ----------
+            // O nome de verdade da pessoa. A tabela so tinha nome_usr, que
+            // e o login: a lista e a lateral mostravam "lucasaguiar" onde
+            // devia aparecer "Lucas Aguiar".
+            GarantirColuna(conexao, "usuario", "nome_exib_usr",
+                "varchar(100) DEFAULT NULL");
             GarantirColuna(conexao, "usuario", "perfil_usr",
                 "varchar(10) NOT NULL DEFAULT 'COMUM'");
             GarantirColuna(conexao, "usuario", "raiz_usr",

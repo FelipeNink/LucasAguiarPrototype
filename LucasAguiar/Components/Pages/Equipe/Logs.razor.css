@@ -1,0 +1,186 @@
+.explica-logs {
+    max-width: 620px;
+    margin: -6px 0 1.1rem;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--texto-3);
+}
+
+/* ---------- colunas ---------- */
+
+.col-quando {
+    width: 92px;
+}
+
+.col-tipo {
+    width: 104px;
+}
+
+.col-ip {
+    width: 120px;
+}
+
+.col-detalhe {
+    width: 56px;
+}
+
+/* Data acima, hora abaixo: cabe em 92px sem quebrar no meio. */
+.quando {
+    line-height: 1.25;
+}
+
+.quando .dia {
+    display: block;
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+}
+
+.quando .hora {
+    display: block;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    color: var(--texto-fraco);
+}
+
+/* ---------- selo de tipo ---------- */
+
+.selo {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    background: var(--superficie-3);
+    color: var(--texto-2);
+}
+
+.selo.auditoria {
+    background: var(--info-fundo);
+    color: var(--info-texto);
+}
+
+.selo.sistema {
+    background: var(--superficie-3);
+    color: var(--texto-3);
+}
+
+/* ---------- acao e nivel ---------- */
+
+/* O nivel vira um ponto colorido ao lado do nome da acao, em vez de
+   pintar a linha inteira: a tabela continua legivel e o alerta aparece. */
+.acao {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--fonte);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--texto);
+}
+
+.acao i {
+    width: 7px;
+    height: 7px;
+    flex: none;
+    border-radius: 50%;
+    background: var(--ok);
+}
+
+.acao.warn i {
+    background: var(--alerta);
+}
+
+.acao.error i {
+    background: var(--perigo);
+}
+
+.descricao {
+    margin-top: 2px;
+    font-size: 13px;
+    line-height: 1.4;
+    color: var(--texto-2);
+}
+
+.alvo {
+    margin-top: 2px;
+    font-size: 11.5px;
+    color: var(--texto-fraco);
+}
+
+/* ---------- detalhes ---------- */
+
+.col-detalhe svg {
+    transition: transform 0.14s ease;
+}
+
+.col-detalhe svg.aberta {
+    transform: rotate(180deg);
+}
+
+.linha-detalhe td {
+    background: var(--superficie-2);
+}
+
+.detalhes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 10px 20px;
+    margin: 0;
+    padding: 4px 2px;
+}
+
+.detalhes dt {
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--texto-3);
+}
+
+.detalhes dd {
+    margin: 2px 0 0;
+    font-size: 13px;
+    color: var(--texto);
+    overflow-wrap: anywhere;
+}
+
+/* ---------- paginacao ---------- */
+
+.paginacao {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 14px;
+}
+
+.paginacao .btn {
+    height: 36px;
+    padding: 0 14px;
+    display: inline-flex;
+    align-items: center;
+    font-size: 13px;
+}
+
+.paginacao span {
+    font-size: 12.5px;
+    font-variant-numeric: tabular-nums;
+    color: var(--texto-fraco);
+}
+
+@media (max-width: 760px) {
+    .col-quando {
+        width: 72px;
+    }
+
+    .col-tipo {
+        width: 84px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .col-detalhe svg {
+        transition: none;
+    }
+}

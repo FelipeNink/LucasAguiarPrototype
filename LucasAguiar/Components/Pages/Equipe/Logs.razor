@@ -1,0 +1,268 @@
+@page "/logs"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = Politicas.Logs)]
+
+@using LucasAguiar.Configs
+@using LucasAguiar.Models
+@using LucasAguiar.Services
+@inject LogDAO logDAO
+@inject Autorizacao permissao
+@inject AuthenticationService auth
+
+<PageTitle>Logs</PageTitle>
+
+<h1>Logs</h1>
+
+<p class="explica-logs">
+    O que aconteceu no sistema: entradas, alterações de acesso e recusas.
+    Senhas e tokens nunca são registrados.
+</p>
+
+<section class="filtros">
+    <div class="campo">
+        <label>Tipo</label>
+        <Seletor TItem="Opcao" TValor="string"
+                 Itens="OpcoesTipo"
+                 @bind-Valor="filtro.Tipo"
+                 TextoDe="o => o.Rotulo"
+                 ValorDe="o => o.Valor" />
+    </div>
+
+    <div class="campo">
+        <label>Nível</label>
+        <Seletor TItem="Opcao" TValor="string"
+                 Itens="OpcoesNivel"
+                 @bind-Valor="filtro.Nivel"
+                 TextoDe="o => o.Rotulo"
+                 ValorDe="o => o.Valor"
+                 PontoDe="o => o.Cor" />
+    </div>
+
+    <div class="campo campo-largo">
+        <label>Busca</label>
+        <input class="form-control" placeholder="Ação, descrição, pessoa ou alvo"
+               @bind="filtro.Busca" />
+    </div>
+
+    <div class="campo-acoes">
+        <button type="button" class="btn btn-primary" @onclick="Aplicar">Filtrar</button>
+        <button type="button" class="btn btn-outline-secondary" @onclick="Limpar">Limpar</button>
+    </div>
+</section>
+
+@if (!string.IsNullOrEmpty(erro))
+{
+    <div class="alert alert-danger" role="alert">@erro</div>
+}
+
+<div class="tabela fixa">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th class="col-quando">Quando</th>
+                <th class="col-tipo">Tipo</th>
+                <th>Ação</th>
+                <th class="opcional">Quem</th>
+                <th class="opcional col-ip">IP</th>
+                <th class="col-detalhe"></th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (carregando)
+            {
+                <tr><td colspan="6" class="text-center text-muted">Carregando…</td></tr>
+            }
+            else if (linhas.Count == 0)
+            {
+                <tr><td colspan="6" class="text-center text-muted">Nenhum registro encontrado.</td></tr>
+            }
+            else
+            {
+                @foreach (var linha in linhas)
+                {
+                    <tr>
+                        <td class="quando">
+                            <span class="dia">@linha.Quando.ToString("dd/MM/yy")</span>
+                            <span class="hora">@linha.Quando.ToString("HH:mm")</span>
+                        </td>
+                        <td>
+                            <span class="selo @linha.Tipo">@TipoLog.Rotulo(linha.Tipo)</span>
+                        </td>
+                        <td>
+                            <span class="acao @linha.Nivel">
+                                <i aria-hidden="true"></i>@linha.Acao
+                            </span>
+                            <div class="descricao">@linha.Descricao</div>
+                            @if (!string.IsNullOrWhiteSpace(linha.Alvo))
+                            {
+                                <div class="alvo">alvo: @linha.Alvo</div>
+                            }
+                        </td>
+                        <td class="opcional">@Texto(linha.NomeGravado)</td>
+                        <td class="opcional col-ip">@Texto(linha.Ip)</td>
+                        <td class="col-detalhe">
+                            @if (linha.TemDetalhes)
+                            {
+                                <button type="button" class="btn-acao" title="Ver detalhes"
+                                        aria-label="Ver detalhes"
+                                        aria-expanded="@(aberto == linha.IdLog ? "true" : "false")"
+                                        @onclick="() => aberto = aberto == linha.IdLog ? null : linha.IdLog">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                                         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"
+                                         class="@(aberto == linha.IdLog ? "aberta" : "")">
+                                        <path d="m6 9 6 6 6-6" />
+                                    </svg>
+                                </button>
+                            }
+                        </td>
+                    </tr>
+
+                    @if (aberto == linha.IdLog)
+                    {
+                        <tr class="linha-detalhe">
+                            <td colspan="6">
+                                <dl class="detalhes">
+                                    @foreach (var par in Detalhes(linha.Meta))
+                                    {
+                                        <div>
+                                            <dt>@par.Key</dt>
+                                            <dd>@par.Value</dd>
+                                        </div>
+                                    }
+                                </dl>
+                            </td>
+                        </tr>
+                    }
+                }
+            }
+        </tbody>
+    </table>
+</div>
+
+@if (!carregando && total > 0)
+{
+    <div class="paginacao">
+        <button type="button" class="btn btn-outline-secondary"
+                disabled="@(filtro.Pagina <= 1)" @onclick="() => Pagina(-1)">
+            Anterior
+        </button>
+
+        <span>
+            @Primeiro–@Ultimo de @total registro@(total == 1 ? "" : "s")
+        </span>
+
+        <button type="button" class="btn btn-outline-secondary"
+                disabled="@(Ultimo >= total)" @onclick="() => Pagina(1)">
+            Próxima
+        </button>
+    </div>
+}
+
+@code {
+    private LogDAO.Filtro filtro = new();
+    private List<LinhaLog> linhas = new();
+    private int total;
+    private int? aberto;
+    private bool carregando = true;
+    private string? erro;
+
+    private int Primeiro => total == 0 ? 0 : (filtro.Pagina - 1) * filtro.PorPagina + 1;
+    private int Ultimo => Math.Min(filtro.Pagina * filtro.PorPagina, total);
+
+    private static readonly List<Opcao> OpcoesTipo = new()
+    {
+        new("", "Todos", null, null),
+        new(TipoLog.Usuario, "Usuário", null, null),
+        new(TipoLog.Auditoria, "Auditoria", null, null),
+        new(TipoLog.Sistema, "Sistema", null, null)
+    };
+
+    private static readonly List<Opcao> OpcoesNivel = new()
+    {
+        new("", "Todos", null, null),
+        new(NivelLog.Info, "Informação", "var(--ok)", null),
+        new(NivelLog.Alerta, "Alerta", "var(--alerta)", null),
+        new(NivelLog.Erro, "Erro", "var(--perigo)", null)
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await auth.PrepararAsync();
+        await permissao.CarregarAsync();
+
+        Carregar();
+    }
+
+    private void Carregar()
+    {
+        carregando = true;
+        erro = null;
+        aberto = null;
+
+        try
+        {
+            var resultado = logDAO.Listar(filtro);
+
+            linhas = resultado.Linhas;
+            total = resultado.Total;
+        }
+        catch (Exception ex)
+        {
+            erro = "Não foi possível carregar os registros: " + ex.Message;
+            linhas = new();
+            total = 0;
+        }
+        finally
+        {
+            carregando = false;
+        }
+    }
+
+    private void Aplicar()
+    {
+        filtro.Pagina = 1;
+        Carregar();
+    }
+
+    private void Limpar()
+    {
+        filtro = new LogDAO.Filtro();
+        Carregar();
+    }
+
+    private void Pagina(int passo)
+    {
+        filtro.Pagina = Math.Max(1, filtro.Pagina + passo);
+        Carregar();
+    }
+
+    private static string Texto(string? valor) =>
+        string.IsNullOrWhiteSpace(valor) ? "—" : valor;
+
+    /// <summary>
+    /// O meta e JSON gravado pelo evento. Vira pares legiveis; se vier
+    /// quebrado, mostra o texto cru em vez de estourar a tela.
+    /// </summary>
+    private static IEnumerable<KeyValuePair<string, string>> Detalhes(string? meta)
+    {
+        if (string.IsNullOrWhiteSpace(meta))
+            return Array.Empty<KeyValuePair<string, string>>();
+
+        try
+        {
+            using var documento = System.Text.Json.JsonDocument.Parse(meta);
+
+            return documento.RootElement.EnumerateObject()
+                .Select(p => new KeyValuePair<string, string>(
+                    p.Name,
+                    p.Value.ValueKind == System.Text.Json.JsonValueKind.String
+                        ? p.Value.GetString() ?? ""
+                        : p.Value.ToString()))
+                .ToList();
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            return new[] { new KeyValuePair<string, string>("detalhe", meta) };
+        }
+    }
+}

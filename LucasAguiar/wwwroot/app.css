@@ -1409,3 +1409,104 @@ form .form-check-label {
 .aviso-acesso-origem code {
     color: var(--texto-3);
 }
+
+
+/* ===========================================================
+   VALORES OCULTOS
+   O lugar dos indicadores quando a pessoa nao tem "Ver
+   valores": um recado curto, em vez de um buraco no layout
+   que pareca erro de carregamento.
+   =========================================================== */
+
+.indicadores-ocultos {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 1.5rem;
+    padding: 18px 20px;
+    border: 1px dashed var(--borda-2);
+    border-radius: var(--raio-cartao);
+    background: var(--superficie-2);
+    font-size: 13.5px;
+    line-height: 1.5;
+    color: var(--texto-3);
+}
+
+.indicadores-ocultos svg {
+    width: 22px;
+    height: 22px;
+    flex: none;
+    color: var(--texto-fraco);
+}
+
+.indicadores-ocultos strong {
+    color: var(--texto-2);
+}
+
+
+/* ===========================================================
+   BARRA DE FILTROS
+   O mesmo bloco estava copiado no CSS escopado de Vendas e de
+   Despesas, e por isso uma tela nova nascia sem estilo nenhum
+   -- foi o que aconteceu com a de Logs. Aqui vira regra do
+   sistema; as copias escopadas continuam valendo onde existem,
+   porque CSS escopado ganha, e nenhuma tela muda de aparencia.
+
+   Tudo descendente de .filtros de proposito: .campo e
+   .campo-largo tambem sao usados dentro de modais, que nao
+   podem herdar o comportamento da barra.
+   =========================================================== */
+
+.filtros {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    margin-bottom: 0.85rem;
+    background: var(--superficie);
+    border: 1px solid var(--borda-suave);
+    border-radius: var(--raio-cartao);
+    box-shadow: var(--sombra);
+}
+
+.filtros .campo {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    min-width: 150px;
+}
+
+.filtros .campo-largo {
+    flex: 1;
+    min-width: 200px;
+}
+
+.filtros label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--texto-fraco);
+}
+
+/* Os botoes acompanham a altura dos campos ao lado. */
+.filtros .campo-acoes {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.filtros .campo-acoes .btn {
+    height: var(--altura-controle);
+    padding: 0 18px;
+    display: inline-flex;
+    align-items: center;
+}
+
+/* Campo de texto e data na mesma altura do Seletor e dos botoes ao
+   lado. Ficavam em 36px contra 44px: na barra de Vendas, a data e o
+   dropdown de profissional nao alinhavam. */
+.filtros .form-control,
+.filtros .form-select {
+    height: var(--altura-controle);
+}

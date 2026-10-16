@@ -44,6 +44,10 @@ namespace LucasAguiar.Services
         public string? GetUsuarioNome() =>
             IsAuthenticated() ? _usuario!.FindFirst(ClaimTypes.Name)?.Value : null;
 
+        /// <summary>O login, que nem sempre e o nome mostrado.</summary>
+        public string? GetLogin() =>
+            _usuario?.FindFirst(AutenticacaoPorSessao.ClaimLogin)?.Value;
+
         public int? GetUsuarioId()
         {
             var bruto = _usuario?.FindFirst(ClaimTypes.NameIdentifier)?.Value;

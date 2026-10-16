@@ -3,7 +3,18 @@ namespace LucasAguiar.Models
     public class Usuario
     {
         public int IdUsr { get; set; }
+        /// <summary>O login. Unico, sem diferenciar maiusculas.</summary>
         public string? NomeUsr { get; set; }
+
+        /// <summary>
+        /// O nome da pessoa, para a lista e a lateral. Quando nao foi
+        /// preenchido -- acessos criados antes de o campo existir --,
+        /// o login serve de reserva.
+        /// </summary>
+        public string? NomeExibicao { get; set; }
+
+        public string NomeVisivel =>
+            string.IsNullOrWhiteSpace(NomeExibicao) ? (NomeUsr ?? "") : NomeExibicao;
         public string? EmailUsr { get; set; }
         public string? SenhaUsr { get; set; }
         public bool AtivoUsr { get; set; }
@@ -45,7 +56,7 @@ namespace LucasAguiar.Models
         {
             get
             {
-                var partes = (NomeUsr ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                var partes = NomeVisivel.Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
                 if (partes.Length == 0) return "?";
                 if (partes.Length == 1) return partes[0][..1].ToUpperInvariant();

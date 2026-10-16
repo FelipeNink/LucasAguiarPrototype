@@ -1,7 +1,9 @@
 @rendermode InteractiveServer
+@using LucasAguiar.Configs
 @inject IJSRuntime JS
 @inject NavigationManager Navigation
 @inject AuthenticationService auth
+@inject Autorizacao permissao
 
 <div class="sidebar-header">
     <Marca Variante="Marca.Tipo.Compacta" />
@@ -10,187 +12,296 @@
 
 
 @* Acao principal do sistema, fixa e fora da area que rola: quem abre o
-   sistema quase sempre vem para lancar uma venda. *@
-<div class="area-nova-venda">
-    <NavLink class="botao-nova-venda" href="venda/nova">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
-             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M12 5v14M5 12h14" />
-        </svg>
-        <span>Nova venda</span>
-        <kbd>F2</kbd>
-    </NavLink>
+   sistema quase sempre vem para lancar uma venda. Os dois botoes so
+   aparecem para quem pode criar venda e agendamento. *@
+@if (permissao.Pode("vendas", Acao.Criar) || permissao.Pode("agendamentos", Acao.Criar))
+{
+    <div class="area-nova-venda">
+        @if (permissao.Pode("vendas", Acao.Criar))
+        {
+            <NavLink class="botao-nova-venda" href="venda/nova">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M12 5v14M5 12h14" />
+                </svg>
+                <span>Nova venda</span>
+                <kbd>F2</kbd>
+            </NavLink>
+        }
 
-    @* Segunda acao mais comum. Fundo branco para nao disputar com a venda. *@
-    <NavLink class="botao-novo-agendamento" href="agendamento/novo">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM16 2v4M8 2v4M3 10h18M12 13v6M9 16h6" />
-        </svg>
-        <span>Novo agendamento</span>
-        <kbd>F3</kbd>
-    </NavLink>
-</div>
+        @* Segunda acao mais comum. Fundo branco para nao disputar com a venda. *@
+        @if (permissao.Pode("agendamentos", Acao.Criar))
+        {
+            <NavLink class="botao-novo-agendamento" href="agendamento/novo">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM16 2v4M8 2v4M3 10h18M12 13v6M9 16h6" />
+                </svg>
+                <span>Novo agendamento</span>
+                <kbd>F3</kbd>
+            </NavLink>
+        }
+    </div>
+}
 
 
 <div class="nav-scrollable">
     <nav class="nav flex-column">
 
-        <div class="grupo">
-            <span class="grupo-rotulo">Operação</span>
+        @if (AlgumaDe("painel", "vendas", "agendamentos", "caixa"))
+        {
+            <div class="grupo">
+                <span class="grupo-rotulo">Operação</span>
 
-            <div class="nav-item">
-                <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                    <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                         stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z" />
-                    </svg>
-                    Painel
-                </NavLink>
+                @if (Pode("painel"))
+                {
+                    <div class="nav-item">
+                        <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                            <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z" />
+                            </svg>
+                            Painel
+                        </NavLink>
+                    </div>
+                }
+
+                @if (Pode("vendas"))
+                {
+                    <div class="nav-item">
+                        <NavLink class="nav-link" href="vendas">
+                            <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6" />
+                            </svg>
+                            Vendas
+                        </NavLink>
+                    </div>
+                }
+
+                @if (Pode("agendamentos"))
+                {
+                    <div class="nav-item">
+                        <NavLink class="nav-link" href="agendamentos">
+                            <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM16 2v4M8 2v4M3 10h18" />
+                            </svg>
+                            Agendamentos
+                        </NavLink>
+                    </div>
+                }
+
+                @if (Pode("caixa"))
+                {
+                    <div class="nav-item">
+                        <NavLink class="nav-link" href="caixa">
+                            <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M3 10h18v10H3zM5 10l2-6h10l2 6M10 15h4" />
+                            </svg>
+                            Caixa
+                        </NavLink>
+                    </div>
+                }
             </div>
+        }
 
-            <div class="nav-item">
-                <NavLink class="nav-link" href="vendas">
-                    <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                         stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6" />
-                    </svg>
-                    Vendas
-                </NavLink>
+        @if (AlgumaDe("despesas", "comissoes", "folha", "compras"))
+        {
+            <div class="grupo">
+                <span class="grupo-rotulo">Financeiro</span>
+
+                @if (Pode("despesas"))
+                {
+                    <div class="nav-item">
+                        <NavLink class="nav-link" href="despesas">
+                            <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M12 4v12M7 11l5 5 5-5M5 20h14" />
+                            </svg>
+                            Despesas
+                        </NavLink>
+                    </div>
+                }
+
+                @if (Pode("comissoes"))
+                {
+                    <div class="nav-item">
+                        <NavLink class="nav-link" href="comissoes">
+                            <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M19 5L5 19M6.5 9a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zM17.5 20a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z" />
+                            </svg>
+                            Comissões
+                        </NavLink>
+                    </div>
+                }
+
+                @if (Pode("folha"))
+                {
+                    <div class="nav-item">
+                        <NavLink class="nav-link" href="folha">
+                            <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M16 20v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2M9.5 10a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM21 20v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8" />
+                            </svg>
+                            Folha de pagamento
+                        </NavLink>
+                    </div>
+                }
+
+                @if (Pode("compras"))
+                {
+                    <div class="nav-item">
+                        <NavLink class="nav-link" href="compra">
+                            <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.5L21 8H6M9 21a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM18 21a1 1 0 1 0 0-2 1 1 0 0 0 0 2z" />
+                            </svg>
+                            Compras
+                        </NavLink>
+                    </div>
+                }
             </div>
+        }
 
-            <div class="nav-item">
-                <NavLink class="nav-link" href="agendamentos">
-                    <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                         stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM16 2v4M8 2v4M3 10h18" />
-                    </svg>
-                    Agendamentos
-                </NavLink>
+        @if (AlgumaDe("clientes", "servicos", "produtos", "planos", "funcionarios", "fornecedores"))
+        {
+            <div class="grupo">
+                <span class="grupo-rotulo">Cadastros</span>
+
+                @if (Pode("clientes"))
+                {
+                    <div class="nav-item">
+                        <NavLink class="nav-link" href="/cliente">
+                            <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" />
+                            </svg>
+                            Clientes
+                        </NavLink>
+                    </div>
+                }
+
+                @if (Pode("servicos"))
+                {
+                    <div class="nav-item">
+                        <NavLink class="nav-link" href="servico">
+                            <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M19 5L5 19M6.5 9a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zM17.5 20a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z" />
+                            </svg>
+                            Serviços
+                        </NavLink>
+                    </div>
+                }
+
+                @if (Pode("produtos"))
+                {
+                    <div class="nav-item">
+                        <NavLink class="nav-link" href="produto">
+                            <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M21 16V8l-9-5-9 5v8l9 5zM3.3 7.3L12 12l8.7-4.7M12 12v9.5" />
+                            </svg>
+                            Produtos
+                        </NavLink>
+                    </div>
+                }
+
+                @if (Pode("planos"))
+                {
+                    <div class="nav-item">
+                        <NavLink class="nav-link" href="/plano">
+                            <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M12 3l9 5-9 5-9-5zM3 13l9 5 9-5" />
+                            </svg>
+                            Planos
+                        </NavLink>
+                    </div>
+                }
+
+                @if (Pode("funcionarios"))
+                {
+                    <div class="nav-item">
+                        <NavLink class="nav-link" href="funcionario">
+                            <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M16 20v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2M9.5 10a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM21 20v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8" />
+                            </svg>
+                            Funcionários
+                        </NavLink>
+                    </div>
+                }
+
+                @if (Pode("fornecedores"))
+                {
+                    <div class="nav-item">
+                        <NavLink class="nav-link" href="fornecedores">
+                            <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M3 10h13v8H3zM16 12h3.5l2.5 3v3h-6M6.5 21a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM18 21a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z" />
+                            </svg>
+                            Fornecedores
+                        </NavLink>
+                    </div>
+                }
             </div>
+        }
 
-            <div class="nav-item">
-                <NavLink class="nav-link" href="caixa">
-                    <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                         stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M3 10h18v10H3zM5 10l2-6h10l2 6M10 15h4" />
-                    </svg>
-                    Caixa
-                </NavLink>
+        @* Quem administra o sistema. Para a maior parte da equipe esta
+           secao inteira nao existe. *@
+        @if (AlgumaDe("equipe", "funcoes", "logs"))
+        {
+            <div class="grupo">
+                <span class="grupo-rotulo">Sistema</span>
+
+                @if (Pode("equipe"))
+                {
+                    <div class="nav-item">
+                        <NavLink class="nav-link" href="equipe">
+                            <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8" />
+                            </svg>
+                            Equipe
+                        </NavLink>
+                    </div>
+                }
+
+                @if (Pode("funcoes"))
+                {
+                    <div class="nav-item">
+                        <NavLink class="nav-link" href="funcoes">
+                            <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M3 7h18M3 12h18M3 17h10" />
+                            </svg>
+                            Funções
+                        </NavLink>
+                    </div>
+                }
+
+                @if (Pode("logs"))
+                {
+                    <div class="nav-item">
+                        <NavLink class="nav-link" href="logs">
+                            <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M8 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-3M8 3v4h8V3M8 12h8M8 16h5" />
+                            </svg>
+                            Logs
+                        </NavLink>
+                    </div>
+                }
             </div>
-        </div>
-
-        <div class="grupo">
-            <span class="grupo-rotulo">Financeiro</span>
-
-            <div class="nav-item">
-                <NavLink class="nav-link" href="despesas">
-                    <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                         stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M12 4v12M7 11l5 5 5-5M5 20h14" />
-                    </svg>
-                    Despesas
-                </NavLink>
-            </div>
-
-            <div class="nav-item">
-                <NavLink class="nav-link" href="comissoes">
-                    <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                         stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M19 5L5 19M6.5 9a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zM17.5 20a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z" />
-                    </svg>
-                    Comissões
-                </NavLink>
-            </div>
-
-            <div class="nav-item">
-                <NavLink class="nav-link" href="folha">
-                    <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                         stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M16 20v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2M9.5 10a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM21 20v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8" />
-                    </svg>
-                    Folha de pagamento
-                </NavLink>
-            </div>
-
-            <div class="nav-item">
-                <NavLink class="nav-link" href="compra">
-                    <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                         stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.5L21 8H6M9 21a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM18 21a1 1 0 1 0 0-2 1 1 0 0 0 0 2z" />
-                    </svg>
-                    Compras
-                </NavLink>
-            </div>
-        </div>
-
-        <div class="grupo">
-            <span class="grupo-rotulo">Cadastros</span>
-
-            <div class="nav-item">
-                <NavLink class="nav-link" href="/cliente">
-                    <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                         stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" />
-                    </svg>
-                    Clientes
-                </NavLink>
-            </div>
-
-            <div class="nav-item">
-                <NavLink class="nav-link" href="servico">
-                    <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                         stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M19 5L5 19M6.5 9a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zM17.5 20a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z" />
-                    </svg>
-                    Serviços
-                </NavLink>
-            </div>
-
-            <div class="nav-item">
-                <NavLink class="nav-link" href="produto">
-                    <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                         stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M21 16V8l-9-5-9 5v8l9 5zM3.3 7.3L12 12l8.7-4.7M12 12v9.5" />
-                    </svg>
-                    Produtos
-                </NavLink>
-            </div>
-
-            <div class="nav-item">
-                <NavLink class="nav-link" href="/plano">
-                    <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                         stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M12 3l9 5-9 5-9-5zM3 13l9 5 9-5" />
-                    </svg>
-                    Planos
-                </NavLink>
-            </div>
-
-            <div class="nav-item">
-                <NavLink class="nav-link" href="funcionario">
-                    <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                         stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M16 20v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2M9.5 10a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM21 20v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8" />
-                    </svg>
-                    Funcionários
-                </NavLink>
-            </div>
-
-            <div class="nav-item">
-                <NavLink class="nav-link" href="fornecedores">
-                    <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                         stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M3 10h13v8H3zM16 12h3.5l2.5 3v3h-6M6.5 21a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM18 21a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z" />
-                    </svg>
-                    Fornecedores
-                </NavLink>
-            </div>
-        </div>
+        }
     </nav>
 </div>
 
-@* Rodape: quem esta usando o sistema, e as duas acoes de conta. *@
+@* Rodape: quem esta usando o sistema, e as acoes de conta. *@
 <div class="rodape-lateral">
     <span class="avatar-usuario" aria-hidden="true">@Iniciais</span>
 
@@ -201,6 +312,15 @@
            uma, e senao o perfil. *@
         <span class="usuario-papel">@Papel</span>
     </div>
+
+    <div class="acoes-conta">
+    <a class="botao-conta" href="/conta" aria-label="Configurações da conta" title="Minha conta">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" />
+            <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5v.2a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1h.2a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" />
+        </svg>
+    </a>
 
     <button type="button" class="botao-conta"
             aria-label="@(tema == "escuro" ? "Usar tema claro" : "Usar tema escuro")"
@@ -227,6 +347,7 @@
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
         </svg>
     </button>
+    </div>
 </div>
 
 <ConfirmarModal Visivel="mostrarConfirmacao" Titulo="Sair do sistema" TextoConfirmar="Sair"
@@ -246,14 +367,27 @@
     private string Papel => auth.GetFuncao() ?? Perfil.Rotulo(auth.GetPerfil());
 
     /// <summary>
-    /// Carrega quem esta logado. Precisa acontecer aqui, e nao numa
-    /// propriedade: ler o estado de autenticacao e assincrono, e dentro do
-    /// circuito nao existe HttpContext de onde tirar isso na hora.
+    /// Carrega quem esta logado e o que ele pode. Precisa acontecer aqui,
+    /// e nao numa propriedade: ler o estado de autenticacao e assincrono,
+    /// e dentro do circuito nao existe HttpContext de onde tirar isso na
+    /// hora.
     /// </summary>
     protected override async Task OnInitializedAsync()
     {
         await auth.PrepararAsync();
+        await permissao.CarregarAsync();
     }
+
+    /// <summary>
+    /// O item aparece? Esconder o que a pessoa nao pode abrir evita o
+    /// menu virar uma lista de portas trancadas -- mas quem protege de
+    /// verdade e a guarda da pagina: isto aqui e so cortesia com quem
+    /// esta olhando.
+    /// </summary>
+    private bool Pode(string tela) => permissao.PodeVer(tela);
+
+    /// <summary>A secao so aparece se algum item dela aparecer.</summary>
+    private bool AlgumaDe(params string[] telas) => telas.Any(Pode);
 
     /// <summary>
     /// Tema em exibicao. Comeca em "claro" so para o render estatico do

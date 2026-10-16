@@ -8,7 +8,11 @@ namespace LucasAguiar.Models
     public record Acesso(Usuario Usuario, int IdSessao, DateTime ExpiraEm)
     {
         public int IdUsuario => Usuario.IdUsr;
-        public string Nome => Usuario.NomeUsr ?? "";
+        /// <summary>O nome da pessoa, para mostrar e para gravar no log.</summary>
+        public string Nome => Usuario.NomeVisivel;
+
+        /// <summary>O login, para a lista de sessoes e a tela de conta.</summary>
+        public string Login => Usuario.NomeUsr ?? "";
         public bool EhAdmin => Usuario.EhAdmin;
         public bool EhRaiz => Usuario.RaizUsr;
         public bool PrecisaTrocarSenha => Usuario.TrocarSenhaUsr;

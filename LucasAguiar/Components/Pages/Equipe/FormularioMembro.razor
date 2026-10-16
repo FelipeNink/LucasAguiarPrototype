@@ -1,0 +1,383 @@
+@page "/equipe/novo"
+@page "/equipe/{Id:int}"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = Politicas.Equipe)]
+
+@using LucasAguiar.Configs
+@using LucasAguiar.Models
+@using LucasAguiar.Services
+@inject EquipeDAO equipeDAO
+@inject FuncaoDAO funcaoDAO
+@inject PermissaoDAO permissaoDAO
+@inject FuncionarioDAO funcionarioDAO
+@inject Autorizacao permissao
+@inject AuthenticationService auth
+@inject NavigationManager Navigation
+
+<PageTitle>@(Novo ? "Adicionar membro" : "Editar membro")</PageTitle>
+
+<div class="topo-membro">
+    <a href="/equipe" class="voltar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="m15 18-6-6 6-6" />
+        </svg>
+        Equipe
+    </a>
+    <h1>@(Novo ? "Adicionar membro" : "Editar membro")</h1>
+</div>
+
+@if (!string.IsNullOrEmpty(erro))
+{
+    <div class="alert alert-danger" role="alert">@erro</div>
+}
+
+@if (carregando)
+{
+    <p class="text-muted">Carregando…</p>
+}
+else if (!podeSalvar)
+{
+    <div class="alert alert-warning" role="alert">
+        Você pode ver a equipe, mas não @(Novo ? "adicionar membros" : "editar este acesso").
+    </div>
+}
+else
+{
+    @* Duas colunas no computador: dados a esquerda, permissoes a direita.
+       No celular vira uma coluna so, na mesma ordem. *@
+    <div class="grade-membro">
+        <section class="cartao dados-membro">
+            <div class="campo">
+                <label for="nome">Nome completo <i aria-hidden="true">*</i></label>
+                <input id="nome" class="form-control" maxlength="100"
+                       autocomplete="off" @bind="membro.NomeExibicao" />
+            </div>
+
+            <div class="campo">
+                <label for="funcao">Função</label>
+                <div class="campo-com-botao">
+                    <Seletor TItem="Funcao" TValor="int"
+                             Itens="funcoes"
+                             @bind-Valor="idFuncao"
+                             TextoDe="f => f.Nome"
+                             ValorDe="f => f.IdFuncao"
+                             Placeholder="Sem função" />
+                    <button type="button" class="btn btn-outline-secondary"
+                            @onclick="() => criandoFuncao = true">Nova</button>
+                </div>
+            </div>
+
+            @if (criandoFuncao)
+            {
+                <div class="campo nova-funcao">
+                    <label for="funcao-nova">Nome da nova função</label>
+                    <div class="campo-com-botao">
+                        <input id="funcao-nova" class="form-control" maxlength="60"
+                               placeholder="Barbeiro, Recepção…" @bind="nomeFuncaoNova" />
+                        <button type="button" class="btn btn-primary"
+                                @onclick="CriarFuncao">Criar</button>
+                        <button type="button" class="btn btn-outline-secondary"
+                                @onclick="() => { criandoFuncao = false; nomeFuncaoNova = string.Empty; }">
+                            Cancelar
+                        </button>
+                    </div>
+                    @if (!string.IsNullOrEmpty(erroFuncao))
+                    {
+                        <small class="erro-campo">@erroFuncao</small>
+                    }
+                </div>
+            }
+
+            <div class="campo">
+                <label for="profissional">Profissional da barbearia</label>
+                <Seletor TItem="Funcionario" TValor="int"
+                         Itens="profissionais"
+                         @bind-Valor="idFuncionario"
+                         TextoDe="f => f.NomeFuncionario ?? string.Empty"
+                         ValorDe="f => f.IdFuncionario"
+                         Placeholder="Nenhum" />
+                <small class="dica">
+                    Liga este acesso a um profissional do cadastro, para o login e
+                    a comissão serem da mesma pessoa.
+                </small>
+            </div>
+
+            <div class="campo">
+                <label for="login">Usuário <i aria-hidden="true">*</i></label>
+                <input id="login" class="form-control" maxlength="100"
+                       autocomplete="off" autocapitalize="none" spellcheck="false"
+                       @bind="membro.NomeUsr" />
+                <small class="dica">
+                    É o que a pessoa digita para entrar. Sem espaços, e sempre
+                    gravado em minúsculas.
+                </small>
+            </div>
+
+            <div class="campo">
+                <label for="email">E-mail</label>
+                <input id="email" type="email" class="form-control" maxlength="100"
+                       autocomplete="off" @bind="membro.EmailUsr" />
+            </div>
+
+            <hr />
+
+            <div class="campo">
+                <label for="senha">
+                    @(Novo ? "Senha" : "Nova senha")
+                    @if (Novo)
+                    {
+                        <i aria-hidden="true">*</i>
+                    }
+                </label>
+                <span class="campo-senha">
+                    <input id="senha" type="password" class="form-control"
+                           autocomplete="new-password" @bind="senha" />
+                    <button type="button" class="ver-senha" data-ver-senha="senha"
+                            aria-label="Mostrar senha" aria-pressed="false">@Olho</button>
+                </span>
+                <small class="dica">
+                    @(Novo
+                        ? SegurancaSenha.DicaPolitica
+                        : "Deixe em branco para manter a senha atual. " + SegurancaSenha.DicaPolitica)
+                </small>
+            </div>
+
+            <div class="campo">
+                <label for="senha2">Confirmar a senha</label>
+                <span class="campo-senha">
+                    <input id="senha2" type="password" class="form-control"
+                           autocomplete="new-password" @bind="senhaConfirma" />
+                    <button type="button" class="ver-senha" data-ver-senha="senha2"
+                            aria-label="Mostrar senha" aria-pressed="false">@Olho</button>
+                </span>
+            </div>
+
+            <label class="caixa">
+                <input type="checkbox" @bind="exigirTroca" />
+                <span>
+                    Exigir troca de senha no primeiro acesso
+                    <small>A senha definida aqui vale só até a pessoa escolher a dela.</small>
+                </span>
+            </label>
+
+            @* O cartao de administrador so existe para a raiz: e ela quem
+               concede o perfil, e mostrar a opcao a quem nao pode usa-la
+               so geraria uma recusa depois. *@
+            @if (auth.EhRaiz() && !membro.RaizUsr)
+            {
+                <label class="caixa cartao-admin">
+                    <input type="checkbox" @bind="ehAdmin" />
+                    <span>
+                        Administrador do sistema
+                        <small>
+                            Acesso total a todas as telas e ações, incluindo gerenciar a
+                            equipe. A matriz de permissões deixa de valer.
+                        </small>
+                    </span>
+                </label>
+            }
+
+            @if (!Novo && membro.RaizUsr)
+            {
+                <p class="aviso-raiz">
+                    Este é o super-administrador do sistema. O perfil dele não pode
+                    ser alterado, e o acesso não pode ser desativado nem excluído.
+                </p>
+            }
+
+            <div class="botoes-membro">
+                <a href="/equipe" class="btn btn-outline-secondary">Cancelar</a>
+                <button type="button" class="btn btn-primary" disabled="@salvando"
+                        @onclick="Salvar">
+                    @(salvando ? "Salvando…" : "Salvar")
+                </button>
+            </div>
+        </section>
+
+        <div class="coluna-permissoes">
+            <MatrizPermissoes @bind-Valor="matriz" Original="matrizOriginal" EhAdmin="ehAdmin" />
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public int? Id { get; set; }
+
+    private bool Novo => Id == null;
+
+    private Usuario membro = new();
+    private List<Funcao> funcoes = new();
+    private List<Funcionario> profissionais = new();
+
+    private Dictionary<string, Acao> matriz = new();
+    private Dictionary<string, Acao> matrizOriginal = new();
+
+    private int idFuncao;
+    private int idFuncionario;
+    private string? senha;
+    private string? senhaConfirma;
+    private bool exigirTroca = true;
+    private bool ehAdmin;
+
+    private bool criandoFuncao;
+    private string nomeFuncaoNova = "";
+    private string? erroFuncao;
+
+    private bool carregando = true;
+    private bool salvando;
+    private bool podeSalvar;
+    private string? erro;
+
+    /// <summary>Carimbo lido ao abrir, para detectar edicao concorrente.</summary>
+    private DateTime? atualizadoAoAbrir;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await auth.PrepararAsync();
+        await permissao.CarregarAsync();
+
+        podeSalvar = permissao.Pode("equipe", Novo ? Acao.Criar : Acao.Editar);
+
+        try
+        {
+            // As funcoes vem antes de aplicar o valor selecionado: ao
+            // contrario, o Seletor nao acharia o item e o campo abriria
+            // vazio mesmo com funcao definida.
+            funcoes = funcaoDAO.Listar();
+            profissionais = funcionarioDAO.ListarTodos() ?? new();
+
+            if (!Novo)
+            {
+                var encontrado = equipeDAO.BuscarPorId(Id!.Value);
+
+                if (encontrado == null)
+                {
+                    erro = "Acesso não encontrado.";
+                    return;
+                }
+
+                membro = encontrado;
+                idFuncao = encontrado.IdFuncao ?? 0;
+                idFuncionario = encontrado.IdFuncionario ?? 0;
+                ehAdmin = encontrado.EhAdmin;
+                atualizadoAoAbrir = encontrado.AtualizadoUsr;
+                exigirTroca = false;
+
+                matriz = encontrado.EhAdmin
+                    ? new Dictionary<string, Acao>()
+                    : permissaoDAO.Ler(encontrado.IdUsr);
+            }
+
+            // Toda tela do catalogo presente, para a matriz nunca aparecer
+            // incompleta mesmo que o banco ainda nao tenha a linha.
+            foreach (var tela in Catalogo.Telas)
+                matriz.TryAdd(tela.Chave, Acao.Nenhuma);
+
+            matrizOriginal = new Dictionary<string, Acao>(matriz);
+        }
+        catch (Exception ex)
+        {
+            erro = ex.Message;
+        }
+        finally
+        {
+            carregando = false;
+        }
+    }
+
+    private void CriarFuncao()
+    {
+        erroFuncao = null;
+
+        try
+        {
+            var id = funcaoDAO.Criar(nomeFuncaoNova, Autor());
+
+            funcoes = funcaoDAO.Listar();
+            idFuncao = id;
+
+            criandoFuncao = false;
+            nomeFuncaoNova = "";
+        }
+        catch (Exception ex)
+        {
+            erroFuncao = ex.Message;
+        }
+    }
+
+    private void Salvar()
+    {
+        erro = null;
+
+        if (!string.IsNullOrEmpty(senha) && senha != senhaConfirma)
+        {
+            erro = "A confirmação não é igual à senha.";
+            return;
+        }
+
+        salvando = true;
+
+        try
+        {
+            membro.IdFuncao = idFuncao > 0 ? idFuncao : null;
+            membro.IdFuncionario = idFuncionario > 0 ? idFuncionario : null;
+            membro.PerfilUsr = ehAdmin ? Perfil.Admin : Perfil.Comum;
+
+            if (Novo)
+                Criar();
+            else
+                Atualizar();
+
+            Navigation.NavigateTo("/equipe");
+        }
+        catch (Exception ex)
+        {
+            erro = ex.Message;
+        }
+        finally
+        {
+            salvando = false;
+        }
+    }
+
+    private void Criar()
+    {
+        equipeDAO.Criar(membro, senha, matriz, exigirTroca, Autor());
+    }
+
+    /// <summary>
+    /// Editar nao muda ativo nem senha por tabela: cada um e uma operacao
+    /// propria no DAO, com a sua protecao e o seu registro no log.
+    /// </summary>
+    private void Atualizar()
+    {
+        equipeDAO.Atualizar(membro, atualizadoAoAbrir, Autor());
+
+        if (!membro.RaizUsr && ehAdmin != membro.EhAdmin && auth.EhRaiz())
+            equipeDAO.AlterarPerfil(membro.IdUsr, membro.PerfilUsr, Autor());
+
+        if (!ehAdmin)
+            equipeDAO.SalvarPermissoes(membro.IdUsr, matriz, Autor());
+
+        if (!string.IsNullOrEmpty(senha))
+            equipeDAO.RedefinirSenha(membro.IdUsr, senha, exigirTroca, Autor());
+    }
+
+    private Autor Autor() => new(
+        auth.GetUsuarioId() ?? 0, auth.GetUsuarioNome() ?? "",
+        auth.EhAdmin(), auth.EhRaiz());
+
+    private static readonly RenderFragment Olho = @<text>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="olho-aberto">
+            <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z" />
+            <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" />
+        </svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="olho-fechado">
+            <path d="M9.9 5.2A10.6 10.6 0 0 1 12 5c6.4 0 10 7 10 7a18 18 0 0 1-3.2 4.2M6.6 6.6A18 18 0 0 0 2 12s3.6 7 10 7a10.5 10.5 0 0 0 5.4-1.4" />
+            <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2M3 3l18 18" />
+        </svg>
+    </text>;
+}
