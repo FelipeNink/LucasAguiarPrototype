@@ -1,0 +1,43 @@
+@page "/plano/{Id:int}"
+@page "/plano/{Id:int}/componentes"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = Politicas.EditarPlano)]
+
+@using LucasAguiar.Models
+@inject PlanoDAO planoDAO
+
+@* /componentes era a tela so dos itens; os itens agora ficam no proprio
+   formulario do plano, e o endereco antigo continua levando para ele. *@
+
+<PageTitle>Editar plano</PageTitle>
+
+@if (erro != null)
+{
+    <div class="alert alert-danger" role="alert">@erro</div>
+}
+else if (plano != null)
+{
+    <FormPlano Modelo="plano" Novo="false" ItensIniciais="itens" />
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private Plano? plano;
+    private List<PlanoItem> itens = new();
+    private string? erro;
+
+    protected override void OnParametersSet()
+    {
+        try
+        {
+            plano = planoDAO.BuscarPorId(Id);
+            if (plano == null) { erro = $"Plano #{Id} não encontrado."; return; }
+            itens = planoDAO.ListarItens(Id);
+        }
+        catch (Exception ex)
+        {
+            erro = "Erro ao carregar o plano: " + ex.Message;
+        }
+    }
+}

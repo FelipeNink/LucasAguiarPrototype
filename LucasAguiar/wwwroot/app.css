@@ -1686,3 +1686,41 @@ form .form-check-label {
     text-align: right;
     font-variant-numeric: tabular-nums;
 }
+
+/* Liga/desliga na altura dos outros campos. */
+.form-pagina .campo-switch {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: var(--altura-controle);
+    margin: 0;
+    padding-left: 2.6em;
+}
+
+.form-pagina .campo-switch .form-check-input {
+    width: 2.4em;
+    height: 1.3em;
+    margin-top: 0;
+    cursor: pointer;
+}
+
+.form-pagina .campo-switch .form-check-input:checked {
+    background-color: var(--marca);
+    border-color: var(--marca);
+}
+
+.form-pagina .campo-switch .form-check-label {
+    font-size: 14px;
+    color: var(--texto);
+    cursor: pointer;
+}
+
+/* Recado sobre o que o formulario faz ao salvar. */
+.form-pagina .aviso-form {
+    margin: 16px 0 0;
+    padding: 10px 14px;
+    border-radius: var(--raio);
+    background: var(--superficie-2);
+    font-size: 13.5px;
+    color: var(--texto-3);
+}

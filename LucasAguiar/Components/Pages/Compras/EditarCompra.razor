@@ -1,0 +1,38 @@
+@page "/compra/{Id:int}"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = Politicas.EditarCompra)]
+
+@using LucasAguiar.Models
+@inject CompraDAO compraDAO
+
+<PageTitle>Editar compra</PageTitle>
+
+@if (erro != null)
+{
+    <div class="alert alert-danger" role="alert">@erro</div>
+}
+else if (compra != null)
+{
+    <FormCompra Modelo="compra" Novo="false" />
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private Compra? compra;
+    private string? erro;
+
+    protected override void OnParametersSet()
+    {
+        try
+        {
+            // A listagem traz a forma de pagamento da despesa; o BuscarPorId nao.
+            compra = compraDAO.ListarTodos().FirstOrDefault(c => c.IdCompra == Id);
+            if (compra == null) erro = $"Compra #{Id} não encontrada.";
+        }
+        catch (Exception ex)
+        {
+            erro = "Erro ao carregar a compra: " + ex.Message;
+        }
+    }
+}
