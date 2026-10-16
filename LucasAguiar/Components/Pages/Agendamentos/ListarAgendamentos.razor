@@ -230,20 +230,6 @@
 </Janela>
 
 @* ---------- editar ---------- *@
-<Janela Visivel="@(editando != null)" Titulo="@($"Editar agendamento #{editando?.IdAgendamento}")"
-        Largura="640" Erro="@erroModal" OnFechar="Fechar">
-    <ChildContent>
-        @if (editando != null)
-        {
-            <CamposAgendamento Agendamento="editando" MostrarStatus="true" OnErro="m => erroModal = m" />
-        }
-    </ChildContent>
-    <Rodape>
-        <button type="button" class="btn btn-outline-secondary" @onclick="Fechar">Cancelar</button>
-        <button type="button" class="btn btn-primary" @onclick="Salvar">Salvar</button>
-    </Rodape>
-</Janela>
-
 @code {
     private Agendamento? excluindo;
     private string? erroExclusao;
@@ -290,10 +276,8 @@
 
     private List<OpcaoId> OpcoesFuncionario = new() { new(0, "Todos") };
     private List<OpcaoId> OpcoesServico = new() { new(0, "Todos") };
-    private string? erroModal;
 
     private Agendamento? visualizando;
-    private Agendamento? editando;
 
     private static readonly List<Opcao> OpcoesFiltroStatus = new()
     {
@@ -379,51 +363,14 @@
 
     private void Visualizar(Agendamento a)
     {
-        editando = null;
         visualizando = a;
     }
 
-    /// <summary>Edita uma copia: cancelar o modal nao pode alterar a linha da tabela.</summary>
-    private void Editar(Agendamento a)
-    {
-        visualizando = null;
-        erroModal = null;
-        editando = new Agendamento
-        {
-            IdAgendamento = a.IdAgendamento,
-            DataHora = a.DataHora,
-            DuracaoMin = a.DuracaoMin,
-            IdCliente = a.IdCliente,
-            IdFuncionario = a.IdFuncionario,
-            IdServico = a.IdServico,
-            Observacao = a.Observacao,
-            Status = a.Status,
-            IdVenda = a.IdVenda
-        };
-    }
+    /// <summary>A edicao e uma pagina propria, com o mesmo formulario do cadastro.</summary>
+    private void Editar(Agendamento a) => Navigation.NavigateTo($"/agendamento/{a.IdAgendamento}");
 
-    private void Fechar()
-    {
-        visualizando = null;
-        editando = null;
-        erroModal = null;
-    }
+    private void Fechar() => visualizando = null;
 
-    private void Salvar()
-    {
-        if (editando == null) return;
-
-        try
-        {
-            agendamentoDAO.Atualizar(editando);
-            Fechar();
-            Carregar();
-        }
-        catch (Exception ex)
-        {
-            erroModal = ex.Message;
-        }
-    }
 
     private static string UrlGerarVenda(Agendamento a) => $"/venda/nova?agendamento={a.IdAgendamento}";
 

@@ -1,0 +1,384 @@
+@* Tela de agendamento, a mesma para criar e editar: blocos a esquerda e
+   resumo a direita com a agenda do profissional no dia, no padrao da
+   Nova Venda. Na edicao entra o status. *@
+
+@inject AgendamentoDAO agendamentoDAO
+@inject ClienteDAO clienteDAO
+@inject FuncionarioDAO funcionarioDAO
+@inject ServicoDAO servicoDAO
+@inject NavigationManager Navigation
+
+<div class="form-pagina">
+    <TopoForm Titulo="@(Novo ? "Novo agendamento" : $"Editar agendamento #{Modelo.IdAgendamento}")"
+              Voltar="/agendamentos" RotuloVoltar="Agendamentos" />
+
+    @if (erro != null)
+    {
+        <div class="alert alert-danger" role="alert">@erro</div>
+    }
+
+    <div class="agendamento">
+
+        <div class="coluna-esquerda">
+
+            @* ================= 1. CLIENTE ================= *@
+            <section class="bloco">
+                <h2 class="bloco-titulo">
+                    <span class="passo @(Modelo.IdCliente > 0 ? "ok" : "")">@(Modelo.IdCliente > 0 ? "✓" : "1")</span>
+                    Cliente
+                </h2>
+
+                <div class="grade-12">
+                    <Campo Rotulo="Cliente" Colunas="12" Obrigatorio="true"
+                           Erro="@(tentouSalvar && Modelo.IdCliente <= 0 ? "Selecione o cliente." : null)">
+                        <ChildContent>
+                            <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesCliente"
+                                     @bind-Valor="Modelo.IdCliente" TextoDe="o => o.Rotulo" ValorDe="o => o.Id"
+                                     ComAvatar="true" Placeholder="Selecione o cliente" />
+                        </ChildContent>
+                        <Acao>
+                            <button type="button" class="acao-campo" @onclick="() => modalAberto = CadastroRapido.TipoCadastro.Cliente">
+                                + Cadastrar cliente
+                            </button>
+                        </Acao>
+                    </Campo>
+                </div>
+            </section>
+
+            @* ================= 2. SERVICO E PROFISSIONAL ================= *@
+            <section class="bloco">
+                <h2 class="bloco-titulo">
+                    <span class="passo @(Modelo.IdServico > 0 && Modelo.IdFuncionario > 0 ? "ok" : "")">@(Modelo.IdServico > 0 && Modelo.IdFuncionario > 0 ? "✓" : "2")</span>
+                    Serviço e profissional
+                </h2>
+
+                <div class="grade-12">
+                    <Campo Rotulo="Serviço" Colunas="6" Obrigatorio="true"
+                           Erro="@(tentouSalvar && Modelo.IdServico <= 0 ? "Selecione o serviço." : null)">
+                        <ChildContent>
+                            <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesServico"
+                                     Valor="Modelo.IdServico" ValorChanged="EscolherServico"
+                                     TextoDe="o => o.Rotulo" ValorDe="o => o.Id" Placeholder="Selecione" />
+                        </ChildContent>
+                        <Acao>
+                            <button type="button" class="acao-campo" @onclick="() => modalAberto = CadastroRapido.TipoCadastro.Servico">
+                                + Cadastrar serviço
+                            </button>
+                        </Acao>
+                    </Campo>
+                    <Campo Rotulo="Profissional" Colunas="6" Obrigatorio="true"
+                           Erro="@(tentouSalvar && Modelo.IdFuncionario <= 0 ? "Selecione o profissional." : null)">
+                        <ChildContent>
+                            <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesFuncionario"
+                                     Valor="Modelo.IdFuncionario" ValorChanged="EscolherProfissional"
+                                     TextoDe="o => o.Rotulo" ValorDe="o => o.Id"
+                                     ComAvatar="true" Placeholder="Selecione" />
+                        </ChildContent>
+                        <Acao>
+                            <button type="button" class="acao-campo" @onclick="() => modalAberto = CadastroRapido.TipoCadastro.Funcionario">
+                                + Cadastrar profissional
+                            </button>
+                        </Acao>
+                    </Campo>
+                </div>
+            </section>
+
+            @* ================= 3. DATA E HORARIO ================= *@
+            <section class="bloco">
+                <h2 class="bloco-titulo">
+                    <span class="passo ok">3</span>
+                    Data e horário
+                </h2>
+
+                <div class="grade-12">
+                    <Campo Rotulo="Data" Para="agd-data" Colunas="4" Obrigatorio="true">
+                        <input id="agd-data" type="date" class="form-control" value="@Data.ToString("yyyy-MM-dd")"
+                               @onchange="AoMudarData" />
+                    </Campo>
+                    <Campo Rotulo="Hora" Para="agd-hora" Colunas="3" Obrigatorio="true">
+                        <input id="agd-hora" type="time" class="form-control" value="@Modelo.DataHora.ToString("HH:mm")"
+                               @onchange="AoMudarHora" />
+                    </Campo>
+                    <Campo Rotulo="Duração (min)" Para="agd-duracao" Colunas="2"
+                           Erro="@(Modelo.DuracaoMin <= 0 ? "Maior que zero." : null)">
+                        <input id="agd-duracao" type="number" min="5" step="5" class="form-control" @bind="Modelo.DuracaoMin" />
+                    </Campo>
+
+                    @if (!Novo)
+                    {
+                        <Campo Rotulo="Status" Colunas="3">
+                            <Seletor TItem="Opcao" TValor="string" Itens="OpcoesStatus"
+                                     @bind-Valor="Modelo.Status" TextoDe="o => o.Rotulo" ValorDe="o => o.Valor"
+                                     PontoDe="o => o.Cor" />
+                        </Campo>
+                    }
+
+                    <Campo Rotulo="Observação" Para="agd-obs" Colunas="12">
+                        <textarea id="agd-obs" class="form-control" rows="3" maxlength="300"
+                                  placeholder="Ex.: prefere máquina 2 nas laterais"
+                                  @bind="Modelo.Observacao"></textarea>
+                    </Campo>
+                </div>
+            </section>
+        </div>
+
+        @* ================= RESUMO ================= *@
+        <aside class="resumo-agenda">
+            <div class="resumo-topo">
+                <span class="resumo-marca">Resumo</span>
+                <span class="resumo-data">@Data.ToString("dd/MM/yyyy")</span>
+            </div>
+
+            <dl class="resumo-itens">
+                <div>
+                    <dt>Cliente</dt>
+                    <dd class="@(ClienteEscolhido == null ? "suave" : "")">@(ClienteEscolhido?.NomeCliente ?? "Não selecionado")</dd>
+                </div>
+                <div>
+                    <dt>Serviço</dt>
+                    <dd class="@(ServicoEscolhido == null ? "suave" : "")">@(ServicoEscolhido?.NomeServico ?? "Não selecionado")</dd>
+                </div>
+                <div>
+                    <dt>Profissional</dt>
+                    <dd class="@(ProfissionalEscolhido == null ? "suave" : "")">@(ProfissionalEscolhido?.NomeFuncionario ?? "Não selecionado")</dd>
+                </div>
+                <div>
+                    <dt>Horário</dt>
+                    <dd>@Modelo.DataHora.ToString("HH:mm") às @Modelo.Fim.ToString("HH:mm")
+                        <span class="suave">(@Modelo.DuracaoMin min)</span></dd>
+                </div>
+            </dl>
+
+            @if (ServicoEscolhido != null)
+            {
+                <div class="resumo-total">
+                    <span>Valor do serviço</span>
+                    <strong>@ServicoEscolhido.PrecoServico.ToString("C")</strong>
+                </div>
+            }
+
+            @if (Modelo.IdFuncionario > 0)
+            {
+                <div class="agenda-profissional">
+                    <h3>Agenda de @(ProfissionalEscolhido?.NomeFuncionario?.Split(' ')[0]) em @Data.ToString("dd/MM")</h3>
+
+                    @if (ocupados.Count == 0)
+                    {
+                        <p class="suave">Dia livre.</p>
+                    }
+                    else
+                    {
+                        <ul>
+                            @foreach (var o in ocupados)
+                            {
+                                <li class="@(Conflita(o) ? "conflito" : "")">
+                                    <span>@o.DataHora.ToString("HH:mm")–@o.Fim.ToString("HH:mm")</span>
+                                    <span>@(o.NomeCliente ?? "—")</span>
+                                </li>
+                            }
+                        </ul>
+
+                        @if (ocupados.Any(Conflita))
+                        {
+                            <p class="aviso-conflito">O horário escolhido bate com um agendamento deste profissional.</p>
+                        }
+                    }
+                </div>
+            }
+
+            @* Nesta tela o Salvar fica no resumo, como na Nova Venda: e onde o
+               olho termina de conferir. *@
+            <button type="button" class="btn btn-primary btn-cta" disabled="@salvando" @onclick="Salvar">
+                @(Novo ? "Agendar" : "Salvar")
+            </button>
+            <a href="/agendamentos" class="btn btn-outline-secondary cancelar">Cancelar</a>
+        </aside>
+    </div>
+</div>
+
+<CadastroRapido Visivel="@(modalAberto != null)"
+                Tipo="@(modalAberto ?? CadastroRapido.TipoCadastro.Cliente)"
+                OnCriado="AoCriarRegistro"
+                OnCancelado="() => modalAberto = null" />
+
+@code {
+    [Parameter, EditorRequired] public Agendamento Modelo { get; set; } = new();
+    [Parameter] public bool Novo { get; set; }
+
+    private string? erro;
+    private bool tentouSalvar;
+    private bool salvando;
+    private CadastroRapido.TipoCadastro? modalAberto;
+
+    private List<Cliente> clientes = new();
+    private List<Funcionario> funcionarios = new();
+    private List<Servico> servicos = new();
+    private List<Agendamento> ocupados = new();
+
+    private Cliente? ClienteEscolhido => clientes.FirstOrDefault(c => c.IdCliente == Modelo.IdCliente);
+    private Servico? ServicoEscolhido => servicos.FirstOrDefault(s => s.IdServico == Modelo.IdServico);
+    private Funcionario? ProfissionalEscolhido => funcionarios.FirstOrDefault(f => f.IdFuncionario == Modelo.IdFuncionario);
+
+    private DateTime Data => Modelo.DataHora.Date;
+
+    private List<OpcaoId> OpcoesCliente =>
+        clientes.Select(c => new OpcaoId(c.IdCliente, c.Identificacao)).ToList();
+
+    private List<OpcaoId> OpcoesFuncionario =>
+        funcionarios.Select(f => new OpcaoId(f.IdFuncionario, f.NomeFuncionario ?? "Sem nome")).ToList();
+
+    private List<OpcaoId> OpcoesServico =>
+        servicos.Select(s => new OpcaoId(s.IdServico,
+            $"{s.NomeServico} — {s.PrecoServico.ToString("C")} · {s.DuracaoServico} min")).ToList();
+
+    private static readonly List<Opcao> OpcoesStatus = new()
+    {
+        new(StatusAgendamento.Agendado, "Agendado", "var(--alerta)"),
+        new(StatusAgendamento.Concluido, "Concluído", "var(--ok)"),
+        new(StatusAgendamento.Cancelado, "Cancelado", "var(--texto-fraco)")
+    };
+
+    protected override void OnInitialized()
+    {
+        try
+        {
+            clientes = clienteDAO.ListarTodos();
+            funcionarios = funcionarioDAO.ListarTodos();
+            servicos = servicoDAO.ListarTodos();
+        }
+        catch (Exception ex)
+        {
+            erro = "Erro ao carregar os cadastros: " + ex.Message;
+        }
+
+        CarregarOcupados();
+    }
+
+    /// <summary>Trocar o servico traz a duracao dele, que o operador ainda pode ajustar.</summary>
+    private void EscolherServico(int id)
+    {
+        Modelo.IdServico = id;
+
+        var servico = ServicoEscolhido;
+        if (servico != null && servico.DuracaoServico > 0)
+            Modelo.DuracaoMin = servico.DuracaoServico;
+    }
+
+    private void EscolherProfissional(int id)
+    {
+        Modelo.IdFuncionario = id;
+        CarregarOcupados();
+    }
+
+    private void AoMudarData(ChangeEventArgs e)
+    {
+        if (DateTime.TryParse(e.Value?.ToString(), out var nova))
+        {
+            Modelo.DataHora = nova.Date + Modelo.DataHora.TimeOfDay;
+            CarregarOcupados();
+        }
+    }
+
+    private void AoMudarHora(ChangeEventArgs e)
+    {
+        if (TimeSpan.TryParse(e.Value?.ToString(), out var hora))
+            Modelo.DataHora = Modelo.DataHora.Date + hora;
+    }
+
+    /// <summary>
+    /// Horarios ja marcados do profissional no dia, para ele nao agendar no
+    /// escuro. Na edicao o proprio agendamento fica de fora.
+    /// </summary>
+    private void CarregarOcupados()
+    {
+        if (Modelo.IdFuncionario <= 0)
+        {
+            ocupados = new();
+            return;
+        }
+
+        try
+        {
+            ocupados = agendamentoDAO.Listar(Data, Data.AddDays(1), StatusAgendamento.Agendado)
+                .Where(a => a.IdFuncionario == Modelo.IdFuncionario && a.IdAgendamento != Modelo.IdAgendamento)
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            erro = ex.Message;
+        }
+    }
+
+    private bool Conflita(Agendamento outro) =>
+        outro.DataHora < Modelo.Fim && outro.Fim > Modelo.DataHora;
+
+    private void AoCriarRegistro(int id)
+    {
+        try
+        {
+            erro = null;
+
+            switch (modalAberto)
+            {
+                case CadastroRapido.TipoCadastro.Cliente:
+                    clientes = clienteDAO.ListarTodos();
+                    Modelo.IdCliente = id;
+                    break;
+
+                case CadastroRapido.TipoCadastro.Funcionario:
+                    funcionarios = funcionarioDAO.ListarTodos();
+                    EscolherProfissional(id);
+                    break;
+
+                case CadastroRapido.TipoCadastro.Servico:
+                    servicos = servicoDAO.ListarTodos();
+                    EscolherServico(id);
+                    break;
+            }
+        }
+        catch (Exception ex)
+        {
+            erro = ex.Message;
+        }
+        finally
+        {
+            modalAberto = null;
+        }
+    }
+
+    private void Salvar()
+    {
+        tentouSalvar = true;
+        erro = null;
+
+        if (Modelo.IdCliente <= 0 || Modelo.IdServico <= 0 || Modelo.IdFuncionario <= 0 || Modelo.DuracaoMin <= 0)
+        {
+            erro = "Confira os campos destacados.";
+            return;
+        }
+
+        try
+        {
+            salvando = true;
+
+            if (Novo)
+            {
+                var id = agendamentoDAO.Inserir(Modelo);
+                Navigation.NavigateTo($"/agendamentos?novo={id}");
+            }
+            else
+            {
+                agendamentoDAO.Atualizar(Modelo);
+                Navigation.NavigateTo("/agendamentos");
+            }
+        }
+        catch (Exception ex)
+        {
+            erro = ex.Message;
+        }
+        finally
+        {
+            salvando = false;
+        }
+    }
+}

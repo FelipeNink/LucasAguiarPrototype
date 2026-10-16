@@ -89,7 +89,7 @@ namespace LucasAguiar.Configs
 
             new("agendamentos", "Agendamentos", Operacao,
                 Acao.Ver | Acao.Criar | Acao.Editar | Acao.Excluir | Acao.Exportar,
-                new[] { "/agendamentos", "/agendamento/novo" },
+                new[] { "/agendamentos", "/agendamento/novo", "/agendamento" },
                 new[] { "/excel/agendamentos" }),
 
             // Liquidar = abrir, fechar, sangria e suprimento.

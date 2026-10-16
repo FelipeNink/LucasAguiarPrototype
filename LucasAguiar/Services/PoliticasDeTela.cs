@@ -65,6 +65,7 @@ namespace LucasAguiar.Services
     public const string EditarFuncionario = "tela:funcionarios:Editar";
     public const string EditarFornecedor = "tela:fornecedores:Editar";
     public const string EditarCompra = "tela:compras:Editar";
+    public const string EditarAgendamento = "tela:agendamentos:Editar";
     }
 
     /// <summary>Exige uma acao numa tela nomeada.</summary>
