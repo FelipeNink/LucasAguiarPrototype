@@ -167,7 +167,7 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 14px 16px;
+    padding: 10px 16px;
     border-top: 1px solid var(--lateral-linha);
 }
 .avatar-usuario {
@@ -279,4 +279,60 @@
     font-family: var(--fonte);
     font-size: 11px;
     color: inherit;
+}
+
+/* ===========================================================
+   Lateral sem rolagem
+   Com 13 itens em tres grupos, o menu nao cabia e aparecia
+   barra de rolagem. Aqui as medidas sao apertadas ate caber:
+   e preferivel linha mais baixa do que menu que rola.
+   =========================================================== */
+
+.sidebar-header {
+    padding: 14px 16px 0;
+}
+
+.area-nova-venda {
+    padding: 14px 16px 0;
+}
+
+.area-nova-venda ::deep .botao-nova-venda,
+.area-nova-venda ::deep .botao-novo-agendamento {
+    height: 40px;
+    font-size: 14px;
+}
+
+.area-nova-venda ::deep .botao-novo-agendamento {
+    margin-top: 7px;
+}
+
+.nav-scrollable {
+    padding: 10px 16px;
+    /* Continua auto como rede de seguranca: numa janela muito baixa
+       e melhor rolar do que cortar item. */
+    overflow-y: auto;
+}
+
+.grupo + .grupo {
+    margin-top: 10px;
+}
+
+.grupo-rotulo {
+    padding: 0 10px 3px;
+    font-size: 10px;
+}
+
+.nav-item ::deep .nav-link {
+    height: 31px;
+    font-size: 13.5px;
+    gap: 10px;
+}
+
+.nav-item ::deep .nav-link .icone {
+    width: 16px;
+    height: 16px;
+}
+
+.rodape-lateral {
+    padding: 10px 16px;
 }
