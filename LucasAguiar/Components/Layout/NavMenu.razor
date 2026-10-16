@@ -107,10 +107,25 @@
             </div>
         }
 
-        @if (AlgumaDe("despesas", "comissoes", "folha", "compras"))
+        @if (AlgumaDe("relatorios", "despesas", "comissoes", "folha", "compras"))
         {
             <div class="grupo">
                 <span class="grupo-rotulo">Financeiro</span>
+
+                @* Primeiro da secao: depois do painel, e a tela que o dono
+                   mais abre. *@
+                @if (Pode("relatorios"))
+                {
+                    <div class="nav-item">
+                        <NavLink class="nav-link" href="relatorios">
+                            <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M3 3v18h18M7 15l3-4 3 3 5-7" />
+                            </svg>
+                            Relatórios
+                        </NavLink>
+                    </div>
+                }
 
                 @if (Pode("despesas"))
                 {

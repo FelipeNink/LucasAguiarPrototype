@@ -9,6 +9,18 @@ namespace LucasAguiar.Services
     {
         private const string TipoPdf = "application/pdf";
 
+        /// <summary>
+        /// Abre uma secao do gerencial: linha em branco e o titulo com os
+        /// rotulos das colunas daquele trecho, que mudam de secao para
+        /// secao.
+        /// </summary>
+        private static void Secao(
+            List<string[]> linhas, string titulo, string detalhe, string terceira, string quarta)
+        {
+            linhas.Add(new[] { "", "", "", "" });
+            linhas.Add(new[] { titulo, detalhe, terceira, quarta });
+        }
+
         public static void MapearRelatorios(this WebApplication app)
         {
             app.MapGet("/relatorio/fornecedores", (RelatorioPdf rel, FornecedorDAO dao) =>
@@ -260,6 +272,84 @@ namespace LucasAguiar.Services
                     linhas);
 
                 return Results.File(pdf, TipoPdf, NomeArquivo($"caixa_{caixa.IdCaixa}"));
+            });
+
+            // O gerencial e a tela de Relatorios inteira num arquivo so:
+            // o dono leva para o contador ou para a reuniao sem ter de
+            // baixar seis coisas. Secoes separadas por linha em branco,
+            // como o fechamento de caixa ja faz.
+            app.MapGet("/relatorio/gerencial", (
+                RelatorioPdf rel, RelatoriosDAO dao, PainelDAO painel,
+                DateTime? de, DateTime? ate, int? dias) =>
+            {
+                var inicio = de ?? DateTime.Today.AddDays(-30);
+                var fim = (ate ?? DateTime.Today).AddDays(1);
+                var semVir = Math.Clamp(dias ?? 60, 7, 730);
+
+                var resumo = painel.Resumo(inicio, fim);
+                var linhas = new List<string[]>
+                {
+                    new[] { "FATURAMENTO", "", "", "" },
+                    new[] { "Faturamento do período", $"{resumo.QuantidadeVendas} atendimento(s)", "", resumo.Receita.ToString("C") },
+                    new[] { "Ticket médio", "por atendimento", "", resumo.TicketMedio.ToString("C") },
+                    new[] { "Comissões", "geradas no período", "", resumo.Comissoes.ToString("C") },
+                    new[] { "Despesas", "lançadas no período", "", resumo.Despesas.ToString("C") },
+                    new[] { resumo.Lucro >= 0 ? "LUCRO" : "PREJUÍZO", "receita − despesas − comissões", "", resumo.Lucro.ToString("C") },
+                    new[] { "", "", "", "" },
+                    new[] { "POR PROFISSIONAL", "ticket", "atend.", "faturamento" }
+                };
+
+                foreach (var p in dao.FaturamentoPorProfissional(inicio, fim))
+                {
+                    linhas.Add(new[]
+                    {
+                        p.Nome, p.TicketMedio.ToString("C"),
+                        p.Atendimentos.ToString(),
+                        $"{p.Faturamento:C}  ({p.Participacao:0.#}%)"
+                    });
+                }
+
+                Secao(linhas, "SERVIÇOS MAIS VENDIDOS", "", "qtd.", "total");
+                foreach (var i in dao.MaisVendidos(inicio, fim, "SERVICO"))
+                    linhas.Add(new[] { i.Descricao, "", i.Quantidade.ToString(), i.Total.ToString("C") });
+
+                Secao(linhas, "PRODUTOS MAIS VENDIDOS", "", "qtd.", "total");
+                foreach (var i in dao.MaisVendidos(inicio, fim, "PRODUTO"))
+                    linhas.Add(new[] { i.Descricao, "", i.Quantidade.ToString(), i.Total.ToString("C") });
+
+                var faltas = dao.Faltas(inicio, fim);
+                Secao(linhas, "FALTAS", "", "", "");
+                linhas.Add(new[] { "Taxa de faltas", $"sobre {faltas.Encerrados} horário(s) encerrado(s)", "", $"{faltas.Taxa:0.#}%" });
+                linhas.Add(new[] { "Faltas", "não apareceram", faltas.Faltas.ToString(), "" });
+                linhas.Add(new[] { "Concluídos", "atendidos", faltas.Concluidos.ToString(), "" });
+                linhas.Add(new[] { "Cancelados", "desmarcados com aviso", faltas.Cancelados.ToString(), "" });
+
+                Secao(linhas, "OCUPAÇÃO DA AGENDA", RelatoriosDAO.Jornada.Descricao, "horas", "ocupação");
+                foreach (var o in dao.OcupacaoDaAgenda(inicio, fim))
+                    linhas.Add(new[] { o.Nome, $"{o.Agendamentos} agendamento(s)", o.HorasAgendadas, $"{o.Ocupacao:0.#}%" });
+
+                Secao(linhas, $"CLIENTES SEM VIR HÁ MAIS DE {semVir} DIAS", "", "visitas", "já gastou");
+                foreach (var c in dao.ClientesInativos(semVir, 60))
+                {
+                    linhas.Add(new[]
+                    {
+                        c.Nome,
+                        c.DiasSemVir == null ? "nunca veio" : $"há {c.DiasSemVir} dias",
+                        c.Visitas.ToString(),
+                        c.TotalGasto.ToString("C")
+                    });
+                }
+
+                var pdf = rel.Gerar(
+                    $"Relatório gerencial — {inicio:dd/MM/yyyy} a {fim.AddDays(-1):dd/MM/yyyy}",
+                    new[]
+                    {
+                        new Coluna("", 4), new Coluna("", 3.4),
+                        new Coluna("", 1.6, true), new Coluna("", 2.2, true)
+                    },
+                    linhas);
+
+                return Results.File(pdf, TipoPdf, NomeArquivo("gerencial"));
             });
 
             // Sem senha, sem hash e sem token: o relatorio da equipe sai

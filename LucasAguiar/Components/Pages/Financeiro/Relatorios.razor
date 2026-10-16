@@ -1,0 +1,482 @@
+@page "/relatorios"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = Politicas.Relatorios)]
+
+@using LucasAguiar.Configs
+@using LucasAguiar.Models
+@using LucasAguiar.Services
+@inject RelatoriosDAO relatoriosDAO
+@inject PainelDAO painelDAO
+@inject Autorizacao permissao
+@inject AuthenticationService auth
+
+<PageTitle>Relatórios</PageTitle>
+
+<div class="cabecalho-painel">
+    <div>
+        <span class="linha-titulo">@RotuloPeriodo · @Intervalo.De.ToString("dd/MM") a @Intervalo.Ate.AddDays(-1).ToString("dd/MM/yyyy")</span>
+        <h1 class="titulo-painel">Relatórios</h1>
+    </div>
+
+    <div class="atalhos-periodo">
+        <button type="button" class="@(periodo == 0 ? "ativo" : "")" @onclick="() => TrocarPeriodo(0)">Hoje</button>
+        <button type="button" class="@(periodo == 7 ? "ativo" : "")" @onclick="() => TrocarPeriodo(7)">7 dias</button>
+        <button type="button" class="@(periodo == 30 ? "ativo" : "")" @onclick="() => TrocarPeriodo(30)">30 dias</button>
+        <button type="button" class="@(periodo == -1 ? "ativo" : "")" @onclick="() => TrocarPeriodo(-1)">Este mês</button>
+        <button type="button" class="@(periodo == -2 ? "ativo" : "")" @onclick="() => TrocarPeriodo(-2)">Mês passado</button>
+    </div>
+</div>
+
+@if (podeExportar)
+{
+    <div class="barra-acoes">
+        <a href="@UrlExportacao("/relatorio/gerencial")" class="btn-pdf" data-enhance-nav="false">
+            Relatório PDF
+        </a>
+        <a href="@UrlExportacao("/excel/gerencial")" class="btn-pdf" data-enhance-nav="false">
+            Excel
+        </a>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(erro))
+{
+    <div class="alert alert-danger" role="alert">@erro</div>
+}
+
+@if (carregando)
+{
+    <p class="text-muted">Apurando…</p>
+}
+else
+{
+    @* ---------- 1 e 2: faturamento e ticket medio ---------- *@
+    <section class="bloco-relatorio">
+        <header>
+            <h2>Faturamento</h2>
+            <span>Venda cancelada não entra em nenhum número desta tela.</span>
+        </header>
+
+        <div class="indicadores">
+            <div class="indicador receita">
+                <span class="rotulo">Faturamento</span>
+                <strong class="valor">@resumo.Receita.ToString("C")</strong>
+                <span class="detalhe">@resumo.QuantidadeVendas atendimento(s)</span>
+            </div>
+            <div class="indicador">
+                <span class="rotulo">Ticket médio</span>
+                <strong class="valor">@resumo.TicketMedio.ToString("C")</strong>
+                <span class="detalhe">por atendimento</span>
+            </div>
+            <div class="indicador comissao">
+                <span class="rotulo">Comissões</span>
+                <strong class="valor">@resumo.Comissoes.ToString("C")</strong>
+                <span class="detalhe">geradas no período</span>
+            </div>
+            <div class="indicador @(resumo.Lucro >= 0 ? "lucro" : "prejuizo")">
+                <span class="rotulo">@(resumo.Lucro >= 0 ? "Lucro" : "Prejuízo")</span>
+                <strong class="valor">@resumo.Lucro.ToString("C")</strong>
+                <span class="detalhe">receita − despesas − comissões</span>
+            </div>
+        </div>
+
+        <div class="tabela fixa">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Profissional</th>
+                        <th class="al-dir">Atend.</th>
+                        <th class="al-dir opcional">Serviços</th>
+                        <th class="al-dir opcional">Produtos</th>
+                        <th class="al-dir">Ticket</th>
+                        <th class="al-dir">Faturamento</th>
+                        <th class="col-participacao">Fatia</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (profissionais.Count == 0)
+                    {
+                        <tr><td colspan="7" class="text-center text-muted">Nenhuma venda no período.</td></tr>
+                    }
+                    else
+                    {
+                        @foreach (var linha in profissionais)
+                        {
+                            <tr>
+                                <td><strong>@linha.Nome</strong></td>
+                                <td class="al-dir">@linha.Atendimentos</td>
+                                <td class="al-dir opcional dinheiro">@linha.Servicos.ToString("C")</td>
+                                <td class="al-dir opcional dinheiro">@linha.Produtos.ToString("C")</td>
+                                <td class="al-dir dinheiro">@linha.TicketMedio.ToString("C")</td>
+                                <td class="al-dir dinheiro"><strong>@linha.Faturamento.ToString("C")</strong></td>
+                                <td class="col-participacao">
+                                    <span class="barra" title="@linha.Participacao.ToString("0.#")% do período">
+                                        <i style="width: @linha.Participacao.ToString("0.#", Invariante)%"></i>
+                                    </span>
+                                    <span class="percentual">@linha.Participacao.ToString("0.#")%</span>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    @* ---------- 3: mais vendidos ---------- *@
+    <div class="par-relatorios">
+        <section class="bloco-relatorio">
+            <header>
+                <h2>Serviços mais vendidos</h2>
+                <span>Por quantidade no período.</span>
+            </header>
+            @RenderItens(servicos, "Nenhum serviço vendido no período.")
+        </section>
+
+        <section class="bloco-relatorio">
+            <header>
+                <h2>Produtos mais vendidos</h2>
+                <span>Por quantidade no período.</span>
+            </header>
+            @RenderItens(produtos, "Nenhum produto vendido no período.")
+        </section>
+    </div>
+
+    @* ---------- 4: faltas ---------- *@
+    <section class="bloco-relatorio">
+        <header>
+            <h2>Faltas</h2>
+            <span>
+                O sistema não tem status "faltou": falta aqui é o agendamento cujo
+                horário já passou e que ninguém concluiu nem cancelou. Quem desmarcou
+                avisando entra como cancelado, à parte.
+            </span>
+        </header>
+
+        <div class="indicadores">
+            <div class="indicador @(faltas.Taxa >= 20 ? "prejuizo" : "lucro")">
+                <span class="rotulo">Taxa de faltas</span>
+                <strong class="valor">@faltas.Taxa.ToString("0.#")%</strong>
+                <span class="detalhe">sobre @faltas.Encerrados horário(s) encerrado(s)</span>
+            </div>
+            <div class="indicador">
+                <span class="rotulo">Faltas</span>
+                <strong class="valor">@faltas.Faltas</strong>
+                <span class="detalhe">não apareceram</span>
+            </div>
+            <div class="indicador">
+                <span class="rotulo">Concluídos</span>
+                <strong class="valor">@faltas.Concluidos</strong>
+                <span class="detalhe">atendidos</span>
+            </div>
+            <div class="indicador">
+                <span class="rotulo">Cancelados</span>
+                <strong class="valor">@faltas.Cancelados</strong>
+                <span class="detalhe">desmarcados com aviso</span>
+            </div>
+        </div>
+
+        @if (quemFaltou.Count > 0)
+        {
+            <div class="tabela fixa">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Quando</th>
+                            <th>Cliente</th>
+                            <th class="opcional">Telefone</th>
+                            <th class="opcional">Profissional</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var falta in quemFaltou)
+                        {
+                            <tr>
+                                <td>@falta.Quando.ToString("dd/MM 'às' HH:mm")</td>
+                                <td><strong>@falta.Cliente</strong></td>
+                                <td class="opcional">@(string.IsNullOrWhiteSpace(falta.Telefone) ? "—" : falta.Telefone)</td>
+                                <td class="opcional">@falta.Profissional</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+
+    @* ---------- 6: ocupacao ---------- *@
+    <section class="bloco-relatorio">
+        <header>
+            <h2>Ocupação da agenda</h2>
+            <span>
+                Minutos agendados sobre a jornada de referência
+                (@RelatoriosDAO.Jornada.Descricao), em @diasDeFuncionamento dia(s) de
+                funcionamento no período. Horário cancelado não conta.
+            </span>
+        </header>
+
+        <div class="tabela fixa">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Profissional</th>
+                        <th class="al-dir">Agend.</th>
+                        <th class="al-dir opcional">Horas</th>
+                        <th class="col-participacao">Ocupação</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (ocupacao.Count == 0)
+                    {
+                        <tr><td colspan="4" class="text-center text-muted">Nenhum agendamento no período.</td></tr>
+                    }
+                    else
+                    {
+                        @foreach (var linha in ocupacao)
+                        {
+                            <tr>
+                                <td><strong>@linha.Nome</strong></td>
+                                <td class="al-dir">@linha.Agendamentos</td>
+                                <td class="al-dir opcional">@linha.HorasAgendadas</td>
+                                <td class="col-participacao">
+                                    <span class="barra @(linha.Ocupacao >= 85 ? "cheia" : "")">
+                                        <i style="width: @Math.Min(100, linha.Ocupacao).ToString("0.#", Invariante)%"></i>
+                                    </span>
+                                    <span class="percentual">@linha.Ocupacao.ToString("0.#")%</span>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    @* ---------- 5: clientes inativos ---------- *@
+    <section class="bloco-relatorio">
+        <header>
+            <h2>Clientes inativos</h2>
+            <span>
+                Sem vir há mais de @diasInatividade dias. Independe do período
+                escolhido acima: olha sempre a última visita até hoje.
+            </span>
+        </header>
+
+        <div class="faixa-inativos">
+            <label for="dias">Dias sem vir</label>
+            <input id="dias" type="number" class="form-control" min="7" max="730" step="1"
+                   @bind="diasInatividade" @bind:event="onchange" />
+            <button type="button" class="btn btn-primary" @onclick="CarregarInativos">Aplicar</button>
+
+            <span class="contagem">
+                @inativos.Count cliente(s)@(inativos.Count >= 100 ? " — mostrando os 100 mais antigos" : "")
+            </span>
+        </div>
+
+        <div class="tabela fixa">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Cliente</th>
+                        <th class="opcional">Telefone</th>
+                        <th class="al-dir">Sem vir há</th>
+                        <th class="al-dir opcional">Visitas</th>
+                        <th class="al-dir opcional">Já gastou</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (inativos.Count == 0)
+                    {
+                        <tr><td colspan="5" class="text-center text-muted">Nenhum cliente nessa situação.</td></tr>
+                    }
+                    else
+                    {
+                        @foreach (var cliente in inativos)
+                        {
+                            <tr>
+                                <td><strong>@cliente.Nome</strong></td>
+                                <td class="opcional">@(string.IsNullOrWhiteSpace(cliente.Telefone) ? "—" : cliente.Telefone)</td>
+                                <td class="al-dir">
+                                    @if (cliente.DiasSemVir == null)
+                                    {
+                                        <span class="nunca">nunca veio</span>
+                                    }
+                                    else
+                                    {
+                                        <text>@cliente.DiasSemVir dias</text>
+                                    }
+                                </td>
+                                <td class="al-dir opcional">@cliente.Visitas</td>
+                                <td class="al-dir opcional dinheiro">@cliente.TotalGasto.ToString("C")</td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
+}
+
+@code {
+    private PainelDAO.ResumoPainel resumo = new();
+    private List<RelatoriosDAO.LinhaProfissional> profissionais = new();
+    private List<RelatoriosDAO.LinhaItem> servicos = new();
+    private List<RelatoriosDAO.LinhaItem> produtos = new();
+    private RelatoriosDAO.ResumoFaltas faltas = new();
+    private List<(string Cliente, string Telefone, string Profissional, DateTime Quando)> quemFaltou = new();
+    private List<RelatoriosDAO.LinhaOcupacao> ocupacao = new();
+    private List<RelatoriosDAO.LinhaInativo> inativos = new();
+
+    private int diasDeFuncionamento;
+    private int diasInatividade = 60;
+
+    private bool carregando = true;
+    private bool podeExportar;
+    private string? erro;
+
+    /// <summary>0 = hoje, 7/30 = últimos dias, -1 = mês corrente, -2 = mês passado.</summary>
+    private int periodo = 30;
+
+    /// <summary>
+    /// A largura da barra vai no atributo style, que é CSS e não aceita
+    /// vírgula decimal. Sem isto, "12,5%" não é largura nenhuma e a barra
+    /// some na cultura pt-BR.
+    /// </summary>
+    private static readonly System.Globalization.CultureInfo Invariante =
+        System.Globalization.CultureInfo.InvariantCulture;
+
+    private (DateTime De, DateTime Ate) Intervalo
+    {
+        get
+        {
+            var hoje = DateTime.Today;
+
+            return periodo switch
+            {
+                0 => (hoje, hoje.AddDays(1)),
+                -1 => (new DateTime(hoje.Year, hoje.Month, 1), hoje.AddDays(1)),
+                -2 => (new DateTime(hoje.Year, hoje.Month, 1).AddMonths(-1),
+                       new DateTime(hoje.Year, hoje.Month, 1)),
+                _ => (hoje.AddDays(-periodo), hoje.AddDays(1))
+            };
+        }
+    }
+
+    private string RotuloPeriodo => periodo switch
+    {
+        0 => "Hoje",
+        -1 => "Este mês",
+        -2 => "Mês passado",
+        _ => $"Últimos {periodo} dias"
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await auth.PrepararAsync();
+        await permissao.CarregarAsync();
+
+        podeExportar = permissao.Pode("relatorios", Acao.Exportar);
+
+        Carregar();
+        CarregarInativos();
+    }
+
+    private void TrocarPeriodo(int novo)
+    {
+        periodo = novo;
+        Carregar();
+    }
+
+    private void Carregar()
+    {
+        carregando = true;
+        erro = null;
+
+        var (de, ate) = Intervalo;
+
+        try
+        {
+            resumo = painelDAO.Resumo(de, ate);
+            profissionais = relatoriosDAO.FaturamentoPorProfissional(de, ate);
+            servicos = relatoriosDAO.MaisVendidos(de, ate, "SERVICO");
+            produtos = relatoriosDAO.MaisVendidos(de, ate, "PRODUTO");
+            faltas = relatoriosDAO.Faltas(de, ate);
+            quemFaltou = relatoriosDAO.QuemFaltou(de, ate);
+            ocupacao = relatoriosDAO.OcupacaoDaAgenda(de, ate);
+
+            diasDeFuncionamento = RelatoriosDAO.Jornada.DiasNoIntervalo(de, ate);
+        }
+        catch (Exception ex)
+        {
+            erro = "Não foi possível apurar os números: " + ex.Message;
+        }
+        finally
+        {
+            carregando = false;
+        }
+    }
+
+    /// <summary>
+    /// Separado do resto: a inatividade não depende do período escolhido
+    /// em cima, e recarregar tudo ao mudar os dias seria desperdício.
+    /// </summary>
+    private void CarregarInativos()
+    {
+        try
+        {
+            diasInatividade = Math.Clamp(diasInatividade, 7, 730);
+            inativos = relatoriosDAO.ClientesInativos(diasInatividade);
+        }
+        catch (Exception ex)
+        {
+            erro = "Não foi possível listar os clientes inativos: " + ex.Message;
+        }
+    }
+
+    private string UrlExportacao(string caminho)
+    {
+        var (de, ate) = Intervalo;
+
+        return $"{caminho}?de={de:yyyy-MM-dd}&ate={ate.AddDays(-1):yyyy-MM-dd}"
+             + $"&dias={diasInatividade}";
+    }
+
+    /// <summary>Tabela de mais vendidos, igual para serviço e produto.</summary>
+    private RenderFragment RenderItens(
+        List<RelatoriosDAO.LinhaItem> itens, string vazio) => @<div class="tabela fixa">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th class="al-dir">Qtd.</th>
+                    <th class="al-dir">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (itens.Count == 0)
+                {
+                    <tr><td colspan="3" class="text-center text-muted">@vazio</td></tr>
+                }
+                else
+                {
+                    @foreach (var item in itens)
+                    {
+                        <tr>
+                            <td>
+                                <strong>@item.Descricao</strong>
+                                @if (item.PeloPlano > 0)
+                                {
+                                    <span class="pelo-plano" title="Saíram cobertos por plano, sem entrar no caixa">
+                                        @item.PeloPlano pelo plano
+                                    </span>
+                                }
+                            </td>
+                            <td class="al-dir">@item.Quantidade</td>
+                            <td class="al-dir dinheiro">@item.Total.ToString("C")</td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>;
+}

@@ -109,6 +109,60 @@ namespace LucasAguiar.Services
                         StatusAgendamento.Rotulo(a.Status), a.Observacao
                     })));
 
+            // O gerencial numa planilha: uma linha por registro, com a
+            // secao na primeira coluna, para o dono poder filtrar e somar
+            // por conta propria.
+            app.MapGet("/excel/gerencial", (
+                RelatoriosDAO dao, PainelDAO painel,
+                DateTime? de, DateTime? ate, int? dias) =>
+            {
+                var inicio = de ?? DateTime.Today.AddDays(-30);
+                var fim = (ate ?? DateTime.Today).AddDays(1);
+                var semVir = Math.Clamp(dias ?? 60, 7, 730);
+
+                var resumo = painel.Resumo(inicio, fim);
+                var linhas = new List<object?[]>
+                {
+                    new object?[] { "Faturamento", "Faturamento do período", resumo.QuantidadeVendas, resumo.Receita, null },
+                    new object?[] { "Faturamento", "Ticket médio", null, resumo.TicketMedio, null },
+                    new object?[] { "Faturamento", "Comissões", null, resumo.Comissoes, null },
+                    new object?[] { "Faturamento", "Despesas", null, resumo.Despesas, null },
+                    new object?[] { "Faturamento", "Lucro", null, resumo.Lucro, null }
+                };
+
+                foreach (var p in dao.FaturamentoPorProfissional(inicio, fim))
+                    linhas.Add(new object?[] { "Por profissional", p.Nome, p.Atendimentos, p.Faturamento, p.Participacao });
+
+                foreach (var i in dao.MaisVendidos(inicio, fim, "SERVICO"))
+                    linhas.Add(new object?[] { "Serviços mais vendidos", i.Descricao, i.Quantidade, i.Total, null });
+
+                foreach (var i in dao.MaisVendidos(inicio, fim, "PRODUTO"))
+                    linhas.Add(new object?[] { "Produtos mais vendidos", i.Descricao, i.Quantidade, i.Total, null });
+
+                var faltas = dao.Faltas(inicio, fim);
+                linhas.Add(new object?[] { "Faltas", "Taxa de faltas", faltas.Encerrados, null, faltas.Taxa });
+                linhas.Add(new object?[] { "Faltas", "Faltas", faltas.Faltas, null, null });
+                linhas.Add(new object?[] { "Faltas", "Concluídos", faltas.Concluidos, null, null });
+                linhas.Add(new object?[] { "Faltas", "Cancelados", faltas.Cancelados, null, null });
+
+                foreach (var o in dao.OcupacaoDaAgenda(inicio, fim))
+                    linhas.Add(new object?[] { "Ocupação da agenda", o.Nome, o.Agendamentos, null, o.Ocupacao });
+
+                foreach (var c in dao.ClientesInativos(semVir, 200))
+                {
+                    linhas.Add(new object?[]
+                    {
+                        $"Sem vir há mais de {semVir} dias",
+                        c.Nome + (string.IsNullOrWhiteSpace(c.Telefone) ? "" : $" ({c.Telefone})"),
+                        c.Visitas, c.TotalGasto, c.DiasSemVir
+                    });
+                }
+
+                return Arquivo("gerencial", "Gerencial",
+                    new[] { "Relatório", "Item", "Quantidade", "Valor", "Percentual / dias" },
+                    linhas);
+            });
+
             // Nunca leva senha, hash nem token -- so o que a tela mostra.
             app.MapGet("/excel/equipe", (EquipeDAO dao) =>
                 Arquivo("equipe", "Equipe",

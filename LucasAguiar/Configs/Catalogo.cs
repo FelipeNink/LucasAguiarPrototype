@@ -99,6 +99,13 @@ namespace LucasAguiar.Configs
                 new[] { "/relatorio/caixa" }),
 
             // ---------- Financeiro ----------
+            // Nao tem Criar nem Editar: so le e soma o que as outras telas
+            // ja gravaram.
+            new("relatorios", "Relatórios", Financeiro,
+                Acao.Ver | Acao.Exportar,
+                new[] { "/relatorios" },
+                new[] { "/relatorio/gerencial", "/excel/gerencial" }),
+
             new("despesas", "Despesas", Financeiro,
                 Acao.Ver | Acao.Criar | Acao.Editar | Acao.Excluir | Acao.Exportar,
                 new[] { "/despesas" },

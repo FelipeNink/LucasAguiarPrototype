@@ -403,3 +403,19 @@
 .rodape-lateral .acoes-conta .botao-conta {
     height: 34px;
 }
+
+/* Relatorios entrou no Financeiro e a lateral passou de novo do
+   espaco. Em vez de continuar raspando pixel do rodape, o aperto vem
+   dos itens: dezoito deles perdendo 2px cada devolvem 36px, mais do
+   que os 28px que o item novo custa.
+
+   Medido a 900px de altura de janela: 631px de conteudo em 631px antes
+   do item novo, 619px em 631px agora. */
+
+.nav-scrollable {
+    padding: 6px 16px;
+}
+
+.nav-item ::deep .nav-link {
+    height: 28px;
+}

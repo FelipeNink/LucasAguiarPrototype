@@ -1,0 +1,142 @@
+/* Cada relatório é um bloco com título, uma linha explicando como o
+   número foi apurado, e a tabela. A explicação não é enfeite: "taxa de
+   faltas" e "ocupação" só querem dizer alguma coisa quando se sabe o
+   que entrou na conta. */
+
+.bloco-relatorio {
+    margin-bottom: 1.75rem;
+}
+
+.bloco-relatorio > header {
+    margin-bottom: 0.85rem;
+}
+
+.bloco-relatorio h2 {
+    margin: 0;
+    font-family: var(--fonte-titulo);
+    font-size: 23px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.01em;
+    line-height: 1.1;
+    color: var(--texto);
+}
+
+.bloco-relatorio > header span {
+    display: block;
+    max-width: 640px;
+    margin-top: 3px;
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--texto-fraco);
+}
+
+/* Serviços e produtos lado a lado: são a mesma pergunta feita duas
+   vezes, e comparar os dois é o ponto. */
+.par-relatorios {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 0 20px;
+}
+
+/* ---------- barra de participação e ocupação ---------- */
+
+.col-participacao {
+    width: 150px;
+}
+
+.col-participacao .barra {
+    display: block;
+    height: 7px;
+    border-radius: 999px;
+    background: var(--superficie-3);
+    overflow: hidden;
+}
+
+.col-participacao .barra i {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background: var(--marca);
+}
+
+/* Agenda quase cheia muda de cor: é o aviso de que não cabe mais
+   ninguém naquele profissional. */
+.col-participacao .barra.cheia i {
+    background: var(--ok);
+}
+
+.col-participacao .percentual {
+    display: block;
+    margin-top: 3px;
+    font-size: 11.5px;
+    font-variant-numeric: tabular-nums;
+    color: var(--texto-3);
+}
+
+/* ---------- mais vendidos ---------- */
+
+.pelo-plano {
+    display: block;
+    margin-top: 2px;
+    font-size: 11.5px;
+    color: var(--roxo-texto);
+}
+
+/* ---------- clientes inativos ---------- */
+
+.faixa-inativos {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 0.85rem;
+}
+
+.faixa-inativos label {
+    font-size: 11.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--texto-2);
+}
+
+.faixa-inativos .form-control {
+    width: 100px;
+    height: var(--altura-controle);
+}
+
+.faixa-inativos .btn {
+    height: var(--altura-controle);
+    padding: 0 18px;
+    display: inline-flex;
+    align-items: center;
+}
+
+.faixa-inativos .contagem {
+    margin-left: auto;
+    font-size: 12.5px;
+    color: var(--texto-fraco);
+}
+
+.nunca {
+    font-size: 12.5px;
+    color: var(--texto-fraco);
+}
+
+/* ---------- dinheiro nas tabelas ---------- */
+
+.dinheiro {
+    font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 760px) {
+    .col-participacao {
+        width: 96px;
+    }
+
+    .faixa-inativos .contagem {
+        margin-left: 0;
+        width: 100%;
+    }
+}
