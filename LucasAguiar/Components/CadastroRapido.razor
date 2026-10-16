@@ -1,3 +1,4 @@
+@using LucasAguiar.Configs
 @using LucasAguiar.Models
 @inject ServicoDAO servicoDAO
 @inject ProdutoDAO produtoDAO
@@ -67,7 +68,12 @@
                 else
                 {
                     <label>Telefone</label>
-                    <input class="form-control" @bind="telefone" placeholder="Opcional" />
+                    <input class="form-control" inputmode="tel" data-mascara="telefone"
+                           @bind="telefone" placeholder="(69) 99999-9999 (opcional)" />
+                    @if (Documentos.ErroTelefone(telefone) is { } erroTelefone)
+                    {
+                        <small class="erro-telefone">@erroTelefone</small>
+                    }
                 }
             </div>
 
@@ -148,13 +154,19 @@
         {
             erro = null;
 
+            if (Documentos.ErroTelefone(telefone) != null) return;
+            var fone = string.IsNullOrWhiteSpace(telefone) ? null : Documentos.FormatarTelefone(telefone);
+
             var id = Tipo switch
             {
                 TipoCadastro.Servico => servicoDAO.InserirRapido(nome, valor, comissao),
                 TipoCadastro.Produto => produtoDAO.InserirRapido(nome, valor, quantidade),
-                TipoCadastro.Funcionario => funcionarioDAO.InserirRapido(nome, telefone),
-                TipoCadastro.Fornecedor => fornecedorDAO.InserirRapido(nome, telefone),
-                TipoCadastro.Cliente => clienteDAO.InserirSomenteNome(nome),
+                TipoCadastro.Funcionario => funcionarioDAO.InserirRapido(nome, fone),
+                TipoCadastro.Fornecedor => fornecedorDAO.InserirRapido(nome, fone),
+                // O telefone aparecia aqui mas o InserirSomenteNome o descartava.
+                TipoCadastro.Cliente => string.IsNullOrWhiteSpace(nome)
+                    ? clienteDAO.InserirSomenteNome(nome)
+                    : clienteDAO.Inserir(new Cliente { NomeCliente = nome.Trim(), Telefone = fone }),
                 TipoCadastro.Plano => planoDAO.Inserir(new Plano
                 {
                     NomePlano = nome.Trim(),
