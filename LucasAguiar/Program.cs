@@ -66,6 +66,7 @@ builder.Services.AddScoped<LogDAO>();
 builder.Services.AddScoped<BancoInicializador>();
 builder.Services.AddScoped<LucasAguiar.Services.AuthenticationService>();
 builder.Services.AddScoped<RelatorioPdf>();
+builder.Services.AddHttpClient<BuscaCep>();
 
 // Autenticacao por token de sessao guardado no banco. Substitui a sessao
 // em memoria do ASP.NET Core, que sumia a cada deploy e nao permitia

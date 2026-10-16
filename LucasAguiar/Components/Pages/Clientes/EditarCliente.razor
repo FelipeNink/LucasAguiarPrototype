@@ -1,0 +1,41 @@
+@page "/cliente/{Id:int}"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = Politicas.EditarCliente)]
+
+@using LucasAguiar.Models
+@inject ClienteDAO clienteDAO
+
+<PageTitle>Editar cliente</PageTitle>
+
+@if (erro != null)
+{
+    <div class="alert alert-danger" role="alert">@erro</div>
+}
+else if (cliente == null)
+{
+    <p class="text-muted">Carregando…</p>
+}
+else
+{
+    <FormCliente Modelo="cliente" Novo="false" />
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private Cliente? cliente;
+    private string? erro;
+
+    protected override void OnParametersSet()
+    {
+        try
+        {
+            cliente = clienteDAO.BuscarPorId(Id);
+            if (cliente == null) erro = $"Cliente #{Id} não encontrado.";
+        }
+        catch (Exception ex)
+        {
+            erro = "Erro ao carregar o cliente: " + ex.Message;
+        }
+    }
+}

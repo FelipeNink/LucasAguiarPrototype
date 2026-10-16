@@ -57,6 +57,9 @@ namespace LucasAguiar.Services
 
     /// <summary>A tela de componentes do plano so existe para editar.</summary>
     public const string EditarPlano = "tela:planos:Editar";
+
+    /// <summary>Paginas de edicao dos cadastros, que sairam dos modais da listagem.</summary>
+    public const string EditarCliente = "tela:clientes:Editar";
     }
 
     /// <summary>Exige uma acao numa tela nomeada.</summary>

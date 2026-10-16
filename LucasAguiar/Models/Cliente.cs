@@ -10,6 +10,7 @@ namespace LucasAguiar.Models
         public string? CPF { get; set; }
         public DateTime? DataNascimento { get; set; }
         public string? RG { get; set; }
+        public string? Cep { get; set; }
         public string? Estado { get; set; }
         public string? Cidade { get; set; }
         public string? Bairro { get; set; }

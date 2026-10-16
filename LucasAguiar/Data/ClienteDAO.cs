@@ -26,10 +26,10 @@ namespace LucasAguiar.Data
                 using var conexao = _conexao.GetConnection();
                 using var comando = new MySqlCommand(@"
                     INSERT INTO cliente
-                        (nome_cli, telefone_cli, cpf_cli, data_nasc_cli, rg_cli,
+                        (nome_cli, telefone_cli, cpf_cli, data_nasc_cli, rg_cli, cep_cli,
                          estado_cli, cidade_cli, bairro_cli, rua_cli, numero_cli, id_plan_fk)
                     VALUES
-                        (@nome, @telefone, @cpf, @dataNasc, @rg,
+                        (@nome, @telefone, @cpf, @dataNasc, @rg, @cep,
                          @estado, @cidade, @bairro, @rua, @numero, @idPlano);
                     SELECT LAST_INSERT_ID();", conexao);
 
@@ -38,6 +38,7 @@ namespace LucasAguiar.Data
                 comando.Parameters.AddWithValue("@cpf", cliente.CPF ?? (object)DBNull.Value);
                 comando.Parameters.AddWithValue("@dataNasc", cliente.DataNascimento ?? (object)DBNull.Value);
                 comando.Parameters.AddWithValue("@rg", cliente.RG ?? (object)DBNull.Value);
+                comando.Parameters.AddWithValue("@cep", cliente.Cep ?? (object)DBNull.Value);
                 comando.Parameters.AddWithValue("@estado", cliente.Estado ?? (object)DBNull.Value);
                 comando.Parameters.AddWithValue("@cidade", cliente.Cidade ?? (object)DBNull.Value);
                 comando.Parameters.AddWithValue("@bairro", cliente.Bairro ?? (object)DBNull.Value);
@@ -171,7 +172,7 @@ namespace LucasAguiar.Data
             using var comando = new MySqlCommand(@"
                 UPDATE cliente SET
                     nome_cli = @nome, telefone_cli = @telefone, cpf_cli = @cpf,
-                    data_nasc_cli = @dataNasc, rg_cli = @rg, estado_cli = @estado,
+                    data_nasc_cli = @dataNasc, rg_cli = @rg, cep_cli = @cep, estado_cli = @estado,
                     cidade_cli = @cidade, bairro_cli = @bairro, rua_cli = @rua,
                     numero_cli = @numero, id_plan_fk = @idPlano
                 WHERE id_cli = @id", conexao);
@@ -181,6 +182,7 @@ namespace LucasAguiar.Data
             comando.Parameters.AddWithValue("@cpf", cliente.CPF ?? (object)DBNull.Value);
             comando.Parameters.AddWithValue("@dataNasc", cliente.DataNascimento ?? (object)DBNull.Value);
             comando.Parameters.AddWithValue("@rg", cliente.RG ?? (object)DBNull.Value);
+                comando.Parameters.AddWithValue("@cep", cliente.Cep ?? (object)DBNull.Value);
             comando.Parameters.AddWithValue("@estado", cliente.Estado ?? (object)DBNull.Value);
             comando.Parameters.AddWithValue("@cidade", cliente.Cidade ?? (object)DBNull.Value);
             comando.Parameters.AddWithValue("@bairro", cliente.Bairro ?? (object)DBNull.Value);
@@ -232,6 +234,7 @@ namespace LucasAguiar.Data
                 CPF = Texto("cpf_cli"),
                 DataNascimento = leitor.IsDBNull(iNasc) ? null : leitor.GetDateTime(iNasc),
                 RG = Texto("rg_cli"),
+                Cep = Texto("cep_cli"),
                 Estado = Texto("estado_cli"),
                 Cidade = Texto("cidade_cli"),
                 Bairro = Texto("bairro_cli"),

@@ -5,7 +5,7 @@
 @using LucasAguiar.Configs
 @using LucasAguiar.Models
 @inject ClienteDAO clienteDAO
-@inject PlanoDAO planoDAO
+@inject NavigationManager Navigation
 
 
 <h1>Lista de Clientes</h1>
@@ -91,6 +91,7 @@
                 <div><dt>Telefone</dt><dd>@Valor(visualizando.Telefone)</dd></div>
                 <div><dt>CPF</dt><dd>@Valor(visualizando.CPF)</dd></div>
                 <div><dt>RG</dt><dd>@Valor(visualizando.RG)</dd></div>
+                <div><dt>CEP</dt><dd>@Valor(visualizando.Cep)</dd></div>
                 <div><dt>Nascimento</dt><dd>@Valor(visualizando.DataNascimento?.ToString("dd/MM/yyyy"))</dd></div>
                 <div class="largo"><dt>Plano</dt><dd>@Valor(visualizando.NomePlano)</dd></div>
                 <div class="largo">
@@ -103,68 +104,6 @@
     <Rodape>
         <button type="button" class="btn btn-outline-secondary" @onclick="Fechar">Fechar</button>
         <button type="button" class="btn btn-primary" @onclick="() => Editar(visualizando!)">Editar</button>
-    </Rodape>
-</Janela>
-
-<Janela Visivel="@(editando != null)" Titulo="Editar cliente" Largura="640" Erro="@erroModal"
-        OnFechar="Fechar">
-    <ChildContent>
-        @if (editando != null)
-        {
-            <div class="grade-campos">
-                <div class="largo">
-                    <label class="form-label">Nome</label>
-                    <input class="form-control" @bind="editando.NomeCliente" />
-                </div>
-                <div>
-                    <label class="form-label">Telefone</label>
-                    <input class="form-control" @bind="editando.Telefone" />
-                </div>
-                <div>
-                    <label class="form-label">CPF</label>
-                    <input class="form-control" @bind="editando.CPF" />
-                </div>
-                <div>
-                    <label class="form-label">RG</label>
-                    <input class="form-control" @bind="editando.RG" />
-                </div>
-                <div>
-                    <label class="form-label">Nascimento</label>
-                    <input type="date" class="form-control" @bind="editando.DataNascimento" />
-                </div>
-                <div class="largo">
-                    <label class="form-label">Plano</label>
-                    <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesPlano"
-                             Valor="editando.IdPlano ?? 0"
-                             ValorChanged="v => editando.IdPlano = v == 0 ? null : v"
-                             TextoDe="o => o.Rotulo" ValorDe="o => o.Id" Class="mb-3" />
-                </div>
-                <div>
-                    <label class="form-label">Estado</label>
-                    <input class="form-control" @bind="editando.Estado" />
-                </div>
-                <div>
-                    <label class="form-label">Cidade</label>
-                    <input class="form-control" @bind="editando.Cidade" />
-                </div>
-                <div>
-                    <label class="form-label">Bairro</label>
-                    <input class="form-control" @bind="editando.Bairro" />
-                </div>
-                <div>
-                    <label class="form-label">Rua</label>
-                    <input class="form-control" @bind="editando.Rua" />
-                </div>
-                <div>
-                    <label class="form-label">Número</label>
-                    <input class="form-control" @bind="editando.Numero" />
-                </div>
-            </div>
-        }
-    </ChildContent>
-    <Rodape>
-        <button type="button" class="btn btn-outline-secondary" @onclick="Fechar">Cancelar</button>
-        <button type="button" class="btn btn-primary" @onclick="Salvar">Salvar</button>
     </Rodape>
 </Janela>
 
@@ -196,16 +135,9 @@
     }
 
     private List<Cliente> listaCliente = new();
-    private List<Plano> planos = new();
 
     private Cliente? visualizando;
-    private Cliente? editando;
-    private string? erroModal;
 
-    private List<OpcaoId> OpcoesPlano =>
-        new List<OpcaoId> { new(0, "Nenhum") }
-            .Concat(planos.Select(p => new OpcaoId(p.IdPlano, p.NomePlano ?? "Sem nome")))
-            .ToList();
 
     private string busca = "";
     private int idProfissional;
@@ -267,55 +199,9 @@
     private static string Valor(string? texto) =>
         string.IsNullOrWhiteSpace(texto) ? "—" : texto;
 
-    /// <summary>Edita uma copia: cancelar o modal nao pode alterar a linha da tabela.</summary>
-    private void Editar(Cliente c)
-    {
-        visualizando = null;
-        erroModal = null;
+    /// <summary>A edicao e uma pagina propria, com o mesmo formulario do cadastro.</summary>
+    private void Editar(Cliente c) => Navigation.NavigateTo($"/cliente/{c.IdCliente}");
 
-        try { if (planos.Count == 0) planos = planoDAO.ListarTodos(); }
-        catch (Exception ex) { erroModal = ex.Message; }
+    private void Fechar() => visualizando = null;
 
-        editando = new Cliente
-        {
-            IdCliente = c.IdCliente,
-            NomeCliente = c.NomeCliente,
-            Telefone = c.Telefone,
-            CPF = c.CPF,
-            DataNascimento = c.DataNascimento,
-            RG = c.RG,
-            Estado = c.Estado,
-            Cidade = c.Cidade,
-            Bairro = c.Bairro,
-            Rua = c.Rua,
-            Numero = c.Numero,
-            IdPlano = c.IdPlano
-        };
-    }
-
-    private void Fechar()
-    {
-        visualizando = null;
-        editando = null;
-        erroModal = null;
-    }
-
-    private void Salvar()
-    {
-        if (editando == null) return;
-
-        try
-        {
-            if (string.IsNullOrWhiteSpace(editando.NomeCliente))
-                throw new Exception("O nome é obrigatório.");
-
-            clienteDAO.Atualizar(editando);
-            Fechar();
-            CarregarClientes();
-        }
-        catch (Exception ex)
-        {
-            erroModal = ex.Message;
-        }
-    }
 }

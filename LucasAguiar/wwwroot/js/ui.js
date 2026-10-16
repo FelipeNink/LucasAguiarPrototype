@@ -170,3 +170,65 @@ document.addEventListener('submit', function (evento) {
     botao.disabled = true;
     botao.textContent = botao.dataset.textoEnviando;
 });
+
+// Mascara de digitacao: <input data-mascara="telefone|cpf|cnpj|cep|moeda">.
+// Delegado no document porque o Blazor cria e recria os campos o tempo
+// todo. So formata enquanto a pessoa digita; o @bind do Blazor le o valor
+// no change (ao sair do campo), ja formatado. Quem confere se o valor vale
+// e o servidor (Configs/Documentos.cs).
+(function () {
+    function digitos(texto, max) {
+        return texto.replace(/\D/g, '').slice(0, max);
+    }
+
+    const mascaras = {
+        telefone: function (v) {
+            const d = digitos(v, 11);
+            if (d.length <= 2) return d.length ? '(' + d : '';
+            const meio = d.length === 11 ? 7 : 6;
+            if (d.length <= meio) return '(' + d.slice(0, 2) + ') ' + d.slice(2);
+            return '(' + d.slice(0, 2) + ') ' + d.slice(2, meio) + '-' + d.slice(meio);
+        },
+        cpf: function (v) {
+            const d = digitos(v, 11);
+            return d.replace(/^(\d{3})(\d)/, '$1.$2')
+                    .replace(/^(\d{3})\.(\d{3})(\d)/, '$1.$2.$3')
+                    .replace(/\.(\d{3})(\d)/, '.$1-$2');
+        },
+        cnpj: function (v) {
+            const d = digitos(v, 14);
+            return d.replace(/^(\d{2})(\d)/, '$1.$2')
+                    .replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
+                    .replace(/\.(\d{3})(\d)/, '.$1/$2')
+                    .replace(/(\d{4})(\d)/, '$1-$2');
+        },
+        cep: function (v) {
+            const d = digitos(v, 8);
+            return d.length > 5 ? d.slice(0, 5) + '-' + d.slice(5) : d;
+        },
+        // Centavos a partir dos digitos: "1234" vira "12,34".
+        moeda: function (v) {
+            const d = digitos(v, 12).replace(/^0+(?=\d)/, '');
+            if (!d) return '';
+            const inteiro = (d.length > 2 ? d.slice(0, -2) : '0').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+            return inteiro + ',' + d.padStart(2, '0').slice(-2);
+        }
+    };
+
+    document.addEventListener('input', function (evento) {
+        const campo = evento.target;
+        if (!(campo instanceof HTMLInputElement)) return;
+
+        const mascara = mascaras[campo.dataset.mascara];
+        if (!mascara) return;
+
+        // Cursor no fim so quando ele ja estava no fim: editar no meio do
+        // numero nao pode jogar o cursor para longe.
+        const noFim = campo.selectionStart === campo.value.length;
+        const novo = mascara(campo.value);
+        if (novo === campo.value) return;
+
+        campo.value = novo;
+        if (noFim) campo.setSelectionRange(novo.length, novo.length);
+    });
+})();
