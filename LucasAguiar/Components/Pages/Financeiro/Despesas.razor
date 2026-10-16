@@ -6,7 +6,7 @@
 @using Microsoft.AspNetCore.WebUtilities
 @inject DespesaDAO despesaDAO
 @inject FornecedorDAO fornecedorDAO
-@inject CaixaDAO caixaDAO
+@inject NavigationManager Navigation
 
 
 <h1>Despesas</h1>
@@ -20,74 +20,9 @@
     <div class="alert alert-success">@aviso</div>
 }
 
-@* ---------- lançamento ---------- *@
-<section class="cartao lancamento">
-    <h2>Lançar despesa</h2>
-
-    <div class="grade">
-        <div class="campo campo-largo">
-            <label>Descrição <span class="obrigatorio">*</span></label>
-            <input class="form-control" placeholder="Ex.: Compra de toalhas"
-                   @bind="nova.Descricao" @bind:event="oninput" />
-        </div>
-
-        <div class="campo">
-            <label>Valor <span class="obrigatorio">*</span></label>
-            <input type="number" step="0.01" min="0" class="form-control" @bind="nova.Valor" />
-        </div>
-
-        <div class="campo">
-            <label>Data</label>
-            <input type="date" class="form-control" @bind="nova.DataDespesa" />
-        </div>
-
-        <div class="campo">
-            <label>Categoria</label>
-            <Seletor TItem="Opcao" TValor="string" Itens="OpcoesCategoria"
-                     @bind-Valor="nova.Categoria" TextoDe="o => o.Rotulo" ValorDe="o => o.Valor" />
-        </div>
-
-        <div class="campo">
-            <label>Forma de pagamento</label>
-            <Seletor TItem="Opcao" TValor="string" Itens="OpcoesForma"
-                     @bind-Valor="nova.FormaPagamentoDespesa" TextoDe="o => o.Rotulo"
-                     ValorDe="o => o.Valor" PontoDe="o => o.Cor" />
-        </div>
-
-        <div class="campo">
-            <label>Fornecedor</label>
-            <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesFornecedor"
-                     @bind-Valor="idFornecedor" TextoDe="o => o.Rotulo" ValorDe="o => o.Id" />
-        </div>
-    </div>
-
-    <div class="linha-criar">
-        <button type="button" class="btn-criar" @onclick="() => modalAberto = true">
-            + Cadastrar novo fornecedor aqui
-        </button>
-
-        <label class="marcador">
-            <input type="checkbox" @bind="nova.Pago" />
-            Já foi paga
-        </label>
-    </div>
-
-    @if (nova.AfetaGaveta && caixaAberto != null)
-    {
-        <p class="aviso-caixa">
-            Esta despesa sai da gaveta do caixa #@caixaAberto.IdCaixa e entra no fechamento.
-        </p>
-    }
-    else if (nova.AfetaGaveta && caixaAberto == null)
-    {
-        <p class="aviso-caixa alerta">
-            Não há caixa aberto. A despesa será registrada, mas não entrará em nenhum fechamento.
-            <a href="/caixa">Abrir caixa</a>.
-        </p>
-    }
-
-    <button type="button" class="btn btn-primary mt-3" @onclick="Salvar">Lançar despesa</button>
-</section>
+<div class="barra-acoes">
+    <a href="/despesa/nova" class="btn-novo">Nova despesa</a>
+</div>
 
 @* ---------- filtros ---------- *@
 <section class="filtros">
@@ -234,54 +169,7 @@
     </Rodape>
 </Janela>
 
-<Janela Visivel="@(editando != null)" Titulo="Editar despesa" Erro="@erroEdicao" OnFechar="FecharJanelas">
-    <ChildContent>
-        @if (editando != null)
-        {
-            <div class="grade-campos">
-                <div>
-                    <label class="form-label">Data</label>
-                    <input type="date" class="form-control" @bind="editando.DataDespesa" />
-                </div>
-                <div>
-                    <label class="form-label">Categoria</label>
-                    <Seletor TItem="Opcao" TValor="string" Itens="OpcoesCategoria"
-                             @bind-Valor="editando.Categoria" TextoDe="o => o.Rotulo" ValorDe="o => o.Valor" Class="mb-3" />
-                </div>
-                <div class="largo">
-                    <label class="form-label">Descrição</label>
-                    <input class="form-control" @bind="editando.Descricao" />
-                </div>
-                <div class="largo">
-                    <label class="form-label">Fornecedor</label>
-                    <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesFornecedor"
-                             Valor="editando.IdFornecedor ?? 0"
-                             ValorChanged="v => editando.IdFornecedor = v == 0 ? null : v"
-                             TextoDe="o => o.Rotulo" ValorDe="o => o.Id" Placeholder="Nenhum" Class="mb-3" />
-                </div>
-                <div class="largo">
-                    <label class="form-label">Observação</label>
-                    <input class="form-control" @bind="editando.Observacao" />
-                </div>
-            </div>
-            <p class="text-muted mb-0" style="font-size: 13px;">
-                Valor e forma de pagamento já entram no caixa: para mudá-los, exclua e lance de novo.
-            </p>
-        }
-    </ChildContent>
-    <Rodape>
-        <button type="button" class="btn btn-outline-secondary" @onclick="FecharJanelas">Cancelar</button>
-        <button type="button" class="btn btn-primary" @onclick="SalvarEdicao">Salvar</button>
-    </Rodape>
-</Janela>
-
-<CadastroRapido Visivel="modalAberto"
-                Tipo="CadastroRapido.TipoCadastro.Fornecedor"
-                OnCriado="AoCriarFornecedor"
-                OnCancelado="() => modalAberto = false" />
-
 @code {
-    private Despesa nova = new();
     private List<Despesa> despesas = new();
     private List<Fornecedor> fornecedores = new();
 
@@ -299,14 +187,7 @@
     private List<Opcao> OpcoesFormaFiltro =>
         new List<Opcao> { new("", "Todos") }.Concat(OpcoesForma).ToList();
 
-    private List<OpcaoId> OpcoesFornecedor =>
-        new List<OpcaoId> { new(0, "Nenhum") }
-            .Concat(fornecedores.Select(f => new OpcaoId(f.IdFornecedor, f.NomeFornecedor ?? "Sem nome")))
-            .ToList();
-    private Caixa? caixaAberto;
 
-    private int idFornecedor;
-    private bool modalAberto;
     private string? erro;
     private string? aviso;
 
@@ -329,8 +210,6 @@
     }
 
     private Despesa? visualizando;
-    private Despesa? editando;
-    private string? erroEdicao;
 
     private DateTime? de;
     private DateTime? ate;
@@ -410,7 +289,6 @@
         try
         {
             fornecedores = fornecedorDAO.ListarTodos() ?? new();
-            caixaAberto = caixaDAO.BuscarAberto();
         }
         catch (Exception ex)
         {
@@ -440,32 +318,6 @@
         }
     }
 
-    private void Salvar()
-    {
-        try
-        {
-            erro = null;
-            aviso = null;
-
-            nova.IdFornecedor = idFornecedor > 0 ? idFornecedor : null;
-
-            // Só amarra ao caixa se o dinheiro realmente sair da gaveta.
-            nova.IdCaixa = nova.AfetaGaveta ? caixaAberto?.IdCaixa : null;
-
-            despesaDAO.Inserir(nova);
-            aviso = $"Despesa de {nova.Valor:C} lançada.";
-
-            nova = new Despesa { Categoria = nova.Categoria };
-            idFornecedor = 0;
-
-            caixaAberto = caixaDAO.BuscarAberto();
-            Carregar();
-        }
-        catch (Exception ex)
-        {
-            erro = ex.Message;
-        }
-    }
 
     private void Excluir(int id)
     {
@@ -482,61 +334,12 @@
         }
     }
 
-    private void AoCriarFornecedor(int id)
-    {
-        try
-        {
-            fornecedores = fornecedorDAO.ListarTodos() ?? new();
-            idFornecedor = id;
-        }
-        catch (Exception ex)
-        {
-            erro = ex.Message;
-        }
-        finally
-        {
-            modalAberto = false;
-        }
-    }
 
-    /// <summary>Edita uma copia: cancelar o modal nao pode alterar a linha da tabela.</summary>
-    private void Editar(Despesa d)
-    {
-        visualizando = null;
-        erroEdicao = null;
-        editando = new Despesa
-        {
-            IdDespesa = d.IdDespesa,
-            DataDespesa = d.DataDespesa,
-            Descricao = d.Descricao,
-            Categoria = d.Categoria,
-            IdFornecedor = d.IdFornecedor,
-            Observacao = d.Observacao
-        };
-    }
+    /// <summary>A edicao e uma pagina propria, com o mesmo formulario do lancamento.</summary>
+    private void Editar(Despesa d) => Navigation.NavigateTo($"/despesa/{d.IdDespesa}");
 
-    private void FecharJanelas()
-    {
-        visualizando = null;
-        editando = null;
-        erroEdicao = null;
-    }
+    private void FecharJanelas() => visualizando = null;
 
-    private void SalvarEdicao()
-    {
-        if (editando == null) return;
-
-        try
-        {
-            despesaDAO.AtualizarDados(editando);
-            FecharJanelas();
-            Carregar();
-        }
-        catch (Exception ex)
-        {
-            erroEdicao = ex.Message;
-        }
-    }
 
     private void Limpar()
     {

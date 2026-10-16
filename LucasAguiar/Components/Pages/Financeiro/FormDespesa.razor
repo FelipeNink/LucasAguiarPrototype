@@ -1,0 +1,219 @@
+@* Formulario de despesa, o mesmo para lancar e editar. Na edicao, valor,
+   forma de pagamento e situacao ficam so para leitura: ja compoem o
+   fechamento do caixa (DespesaDAO.AtualizarDados). *@
+
+@using LucasAguiar.Models
+@inject DespesaDAO despesaDAO
+@inject FornecedorDAO fornecedorDAO
+@inject CaixaDAO caixaDAO
+@inject NavigationManager Navigation
+
+<div class="form-pagina">
+    <TopoForm Titulo="@(Novo ? "Nova despesa" : "Editar despesa")" Voltar="/despesas" RotuloVoltar="Despesas" />
+
+    @if (erro != null)
+    {
+        <div class="alert alert-danger" role="alert">@erro</div>
+    }
+
+    <form @onsubmit="Salvar" novalidate>
+        <section class="cartao secao-form">
+            <h2>Despesa</h2>
+            <div class="grade-12">
+                <Campo Rotulo="Descrição" Para="dsp-descricao" Colunas="8" Obrigatorio="true"
+                       Erro="@(tentouSalvar && string.IsNullOrWhiteSpace(Modelo.Descricao) ? "Informe a descrição." : null)">
+                    <input id="dsp-descricao" class="form-control" maxlength="200" placeholder="Ex.: Compra de toalhas"
+                           @bind="Modelo.Descricao" />
+                </Campo>
+                <Campo Rotulo="Data" Para="dsp-data" Colunas="4"
+                       Dica="Em aberto, é o vencimento; paga, o dia do pagamento.">
+                    <input id="dsp-data" type="date" class="form-control" @bind="Modelo.DataDespesa" />
+                </Campo>
+
+                <Campo Rotulo="Categoria" Colunas="4">
+                    <Seletor TItem="Opcao" TValor="string" Itens="OpcoesCategoria"
+                             @bind-Valor="Modelo.Categoria" TextoDe="o => o.Rotulo" ValorDe="o => o.Valor" />
+                </Campo>
+                <Campo Rotulo="Fornecedor" Colunas="4">
+                    <ChildContent>
+                        <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesFornecedor"
+                                 Valor="Modelo.IdFornecedor ?? 0"
+                                 ValorChanged="v => Modelo.IdFornecedor = v == 0 ? null : v"
+                                 TextoDe="o => o.Rotulo" ValorDe="o => o.Id" />
+                    </ChildContent>
+                    <Acao>
+                        <button type="button" class="acao-campo" @onclick="() => modalFornecedor = true">
+                            + Cadastrar fornecedor
+                        </button>
+                    </Acao>
+                </Campo>
+            </div>
+        </section>
+
+        <section class="cartao secao-form">
+            <h2>Pagamento</h2>
+            <div class="grade-12">
+                @if (Novo)
+                {
+                    <Campo Rotulo="Valor" Para="dsp-valor" Colunas="3" Obrigatorio="true"
+                           Erro="@(tentouSalvar && Modelo.Valor <= 0 ? "Informe o valor." : null)">
+                        <InputMoeda Id="dsp-valor" Valor="Modelo.Valor" ValorChanged="v => Modelo.Valor = v" />
+                    </Campo>
+                    <Campo Rotulo="Forma de pagamento" Colunas="4">
+                        <Seletor TItem="Opcao" TValor="string" Itens="OpcoesForma"
+                                 @bind-Valor="Modelo.FormaPagamentoDespesa" TextoDe="o => o.Rotulo"
+                                 ValorDe="o => o.Valor" PontoDe="o => o.Cor" />
+                    </Campo>
+                    <Campo Rotulo="Situação" Para="dsp-pago" Colunas="3">
+                        <div class="form-check form-switch campo-switch">
+                            <input id="dsp-pago" class="form-check-input" type="checkbox" role="switch" @bind="Modelo.Pago" />
+                            <label class="form-check-label" for="dsp-pago">@(Modelo.Pago ? "Já foi paga" : "A pagar")</label>
+                        </div>
+                    </Campo>
+                }
+                else
+                {
+                    <Campo Rotulo="Valor" Colunas="3">
+                        <input class="form-control al-dir-campo" readonly value="@Modelo.Valor.ToString("N2")" />
+                    </Campo>
+                    <Campo Rotulo="Forma de pagamento" Colunas="4">
+                        <input class="form-control" readonly value="@FormaPagamento.Rotulo(Modelo.FormaPagamentoDespesa)" />
+                    </Campo>
+                    <Campo Rotulo="Situação" Colunas="3">
+                        <input class="form-control" readonly value="@(Modelo.Pago ? "Paga" : "A pagar")" />
+                    </Campo>
+                }
+            </div>
+
+            @if (Novo && Modelo.AfetaGaveta)
+            {
+                <p class="aviso-form">
+                    @if (caixaAberto != null)
+                    {
+                        <text>Esta despesa sai da gaveta do caixa #@caixaAberto.IdCaixa e entra no fechamento.</text>
+                    }
+                    else
+                    {
+                        <text>Não há caixa aberto. A despesa será registrada, mas não entrará em nenhum fechamento.
+                        <a href="/caixa">Abrir caixa</a>.</text>
+                    }
+                </p>
+            }
+            else if (!Novo)
+            {
+                <p class="aviso-form">
+                    Valor, forma de pagamento e situação já entram no caixa. Para mudá-los,
+                    exclua a despesa e lance de novo.
+                </p>
+            }
+        </section>
+
+        <section class="cartao secao-form">
+            <h2>Observações</h2>
+            <div class="grade-12">
+                <Campo Rotulo="Observação" Para="dsp-obs" Colunas="12">
+                    <textarea id="dsp-obs" class="form-control" rows="3" maxlength="300"
+                              @bind="Modelo.Observacao"></textarea>
+                </Campo>
+            </div>
+        </section>
+
+        <RodapeForm Cancelar="/despesas" Salvando="salvando" TextoSalvar="@(Novo ? "Lançar despesa" : "Salvar")" />
+    </form>
+</div>
+
+<CadastroRapido Visivel="modalFornecedor"
+                Tipo="CadastroRapido.TipoCadastro.Fornecedor"
+                OnCriado="AoCriarFornecedor"
+                OnCancelado="() => modalFornecedor = false" />
+
+@code {
+    [Parameter, EditorRequired] public Despesa Modelo { get; set; } = new();
+    [Parameter] public bool Novo { get; set; }
+
+    private List<Fornecedor> fornecedores = new();
+    private Caixa? caixaAberto;
+    private string? erro;
+    private bool tentouSalvar;
+    private bool salvando;
+    private bool modalFornecedor;
+
+    private List<Opcao> OpcoesCategoria =>
+        CategoriaDespesa.Todas.Select(c => new Opcao(c.Valor, c.Rotulo)).ToList();
+
+    private List<Opcao> OpcoesForma =>
+        FormaPagamento.Todas.Select(f => new Opcao(f.Valor, f.Rotulo, "var(--ok)")).ToList();
+
+    private List<OpcaoId> OpcoesFornecedor =>
+        new List<OpcaoId> { new(0, "Nenhum") }
+            .Concat(fornecedores.Select(f => new OpcaoId(f.IdFornecedor, f.NomeFornecedor ?? "Sem nome")))
+            .ToList();
+
+    protected override void OnInitialized()
+    {
+        try
+        {
+            fornecedores = fornecedorDAO.ListarTodos() ?? new();
+            if (Novo) caixaAberto = caixaDAO.BuscarAberto();
+        }
+        catch (Exception ex)
+        {
+            erro = ex.Message;
+        }
+    }
+
+    private void AoCriarFornecedor(int id)
+    {
+        try
+        {
+            fornecedores = fornecedorDAO.ListarTodos() ?? new();
+            Modelo.IdFornecedor = id;
+        }
+        catch (Exception ex)
+        {
+            erro = ex.Message;
+        }
+        finally
+        {
+            modalFornecedor = false;
+        }
+    }
+
+    private void Salvar()
+    {
+        tentouSalvar = true;
+        erro = null;
+
+        if (string.IsNullOrWhiteSpace(Modelo.Descricao) || (Novo && Modelo.Valor <= 0))
+        {
+            erro = "Confira os campos destacados.";
+            return;
+        }
+
+        try
+        {
+            salvando = true;
+
+            if (Novo)
+            {
+                // Só amarra ao caixa se o dinheiro realmente sair da gaveta.
+                Modelo.IdCaixa = Modelo.AfetaGaveta ? caixaAberto?.IdCaixa : null;
+                despesaDAO.Inserir(Modelo);
+            }
+            else
+            {
+                despesaDAO.AtualizarDados(Modelo);
+            }
+
+            Navigation.NavigateTo("/despesas");
+        }
+        catch (Exception ex)
+        {
+            erro = ex.Message;
+        }
+        finally
+        {
+            salvando = false;
+        }
+    }
+}

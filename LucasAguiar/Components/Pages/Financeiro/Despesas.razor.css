@@ -6,21 +6,11 @@
     box-shadow: 0 1px 3px rgba(16, 24, 40, 0.06);
 }
 
-.lancamento {
-    margin-bottom: 1.5rem;
-}
-
 .cartao h2 {
     margin: 0 0 1rem;
     font-size: 0.95rem;
     font-weight: 600;
     color: var(--texto);
-}
-
-.grade {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 0.85rem;
 }
 
 .campo {
@@ -41,38 +31,6 @@
     text-transform: uppercase;
     letter-spacing: 0.03em;
     color: var(--texto-fraco);
-}
-
-.obrigatorio {
-    color: var(--perigo-escuro);
-}
-
-.marcador {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    font-size: 0.85rem;
-    color: var(--texto-2);
-    cursor: pointer;
-}
-
-.marcador input {
-    width: 1rem;
-    height: 1rem;
-}
-
-.aviso-caixa {
-    margin: 0.85rem 0 0;
-    padding: 0.6rem 0.8rem;
-    background: var(--fundo);
-    border-radius: 6px;
-    font-size: 0.82rem;
-    color: var(--texto-3);
-}
-
-.aviso-caixa.alerta {
-    background: var(--alerta-fundo);
-    color: var(--alerta);
 }
 
 /* ---------- filtros ---------- */
@@ -168,23 +126,6 @@
     text-align: right;
     width: 1%;
     white-space: nowrap;
-}
-
-.fornecedor {
-    display: block;
-    font-size: 0.75rem;
-    color: var(--texto-fraco);
-}
-
-.etiqueta-aberto {
-    display: inline-block;
-    margin-left: 0.4rem;
-    padding: 0.05rem 0.45rem;
-    border-radius: 10px;
-    background: var(--alerta-fundo);
-    color: var(--alerta);
-    font-size: 0.7rem;
-    font-weight: 600;
 }
 
 @media (max-width: 900px) {

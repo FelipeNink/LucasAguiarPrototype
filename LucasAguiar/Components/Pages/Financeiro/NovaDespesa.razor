@@ -1,0 +1,11 @@
+@page "/despesa/nova"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = Politicas.CriarDespesa)]
+
+<PageTitle>Nova despesa</PageTitle>
+
+<FormDespesa Modelo="despesa" Novo="true" />
+
+@code {
+    private readonly Despesa despesa = new();
+}

@@ -108,7 +108,7 @@ namespace LucasAguiar.Configs
 
             new("despesas", "Despesas", Financeiro,
                 Acao.Ver | Acao.Criar | Acao.Editar | Acao.Excluir | Acao.Exportar,
-                new[] { "/despesas" },
+                new[] { "/despesas", "/despesa" },
                 new[] { "/relatorio/despesas", "/excel/despesas" }),
 
             new("comissoes", "Comissões", Financeiro,
