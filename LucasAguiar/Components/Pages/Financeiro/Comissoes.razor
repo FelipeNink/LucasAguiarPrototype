@@ -9,7 +9,12 @@
 @inject FuncionarioDAO funcionarioDAO
 
 
-<h1>Comissões</h1>
+<h1 class="titulo-listagem">Gestão de Comissões</h1>
+
+<div class="barra-acoes barra-listagem">
+    <BotaoExportar Href="@UrlRelatorio" />
+    <BotaoExportar Tipo="BotaoExportar.Formato.Excel" Href="@UrlRelatorio.Replace("/relatorio/", "/excel/")" />
+</div>
 
 @if (!string.IsNullOrEmpty(erro))
 {
@@ -53,8 +58,6 @@
     <button type="button" class="@(atalho == 0 ? "ativo" : "")" @onclick="() => Mes(0)">Este mês</button>
     <button type="button" class="@(atalho == -1 ? "ativo" : "")" @onclick="() => Mes(-1)">Mês anterior</button>
     <span class="periodo-texto">@de.ToString("dd/MM/yyyy") a @ate.ToString("dd/MM/yyyy")</span>
-    <a href="@UrlRelatorio" class="btn-pdf" data-enhance-nav="false">Relatório PDF</a>
-    <a href="@UrlRelatorio.Replace("/relatorio/", "/excel/")" class="btn-pdf" data-enhance-nav="false">Excel</a>
 </div>
 
 @* ---------- resumo ---------- *@

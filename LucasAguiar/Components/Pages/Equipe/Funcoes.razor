@@ -12,7 +12,7 @@
 
 <PageTitle>Funções</PageTitle>
 
-<h1>Funções</h1>
+<h1 class="titulo-listagem">Gestão de Funções</h1>
 
 <p class="explica-funcoes">
     O cargo de cada membro da equipe. Renomear vale na hora para todo mundo
@@ -20,10 +20,10 @@
     copiado.
 </p>
 
-<div class="barra-acoes">
+<div class="barra-acoes barra-listagem">
     @if (permissao.Pode("funcoes", Acao.Criar))
     {
-        <button type="button" class="btn-novo" @onclick="AbrirNova">Nova função</button>
+        <button type="button" class="btn-novo btn-cadastrar" @onclick="AbrirNova">Cadastrar função</button>
     }
 </div>
 
