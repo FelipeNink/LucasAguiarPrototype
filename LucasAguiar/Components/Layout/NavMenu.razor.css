@@ -376,11 +376,11 @@
    Medido: 649px de conteudo em 617px de espaco, agora 614 em 625. */
 
 .nav-scrollable {
-    padding: 8px 16px;
+    padding: 14px 16px 8px;
 }
 
 .grupo + .grupo {
-    margin-top: 18px;
+    margin-top: 14px;
 }
 
 .grupo-rotulo {
