@@ -1,0 +1,85 @@
+@using LucasAguiar.Configs
+@using LucasAguiar.Models
+@inject ClienteDAO clienteDAO
+
+@*
+    Aniversariantes do mes no Painel, com o parabens pronto no WhatsApp.
+    Usa so a data de nascimento que o cadastro de cliente ja tem. Quem fez
+    aniversario antes de hoje aparece apagado, no fim da lista, para o dia
+    de hoje e os proximos virem primeiro.
+*@
+
+<section class="cartao aniversariantes">
+    <header class="topo-aniversariantes">
+        <div>
+            <h2>Aniversariantes</h2>
+            <span class="sub">@Cultura.TextInfo.ToTitleCase(Hoje.ToString("MMMM", Cultura)) · @clientes.Count cliente(s)</span>
+        </div>
+    </header>
+
+    @if (!string.IsNullOrEmpty(erro))
+    {
+        <div class="alert alert-danger">@erro</div>
+    }
+    else if (clientes.Count == 0)
+    {
+        <p class="vazio">
+            Ninguém faz aniversário este mês, ou a data de nascimento não está no cadastro.
+        </p>
+    }
+    else
+    {
+        <ul class="lista-aniversariantes">
+            @foreach (var cliente in Ordenados)
+            {
+                var dia = cliente.DataNascimento!.Value.Day;
+                <li class="@(dia == Hoje.Day ? "hoje" : dia < Hoje.Day ? "passou" : "")">
+                    <span class="dia">
+                        <strong>@dia.ToString("00")</strong>
+                        <small>@Hoje.ToString("MMM", Cultura).TrimEnd('.')</small>
+                    </span>
+                    <span class="quem">
+                        <strong>@cliente.NomeCliente</strong>
+                        <small>
+                            @if (dia == Hoje.Day)
+                            {
+                                <span class="selo-hoje">Hoje</span>
+                            }
+                            @Idade(cliente) anos
+                        </small>
+                    </span>
+                    <BotaoWhatsApp Telefone="@cliente.Telefone" Titulo="Mandar parabéns no WhatsApp"
+                                   Mensagem="@WhatsApp.Aniversario(cliente.NomeCliente)" />
+                </li>
+            }
+        </ul>
+    }
+</section>
+
+@code {
+    private static readonly System.Globalization.CultureInfo Cultura = new("pt-BR");
+    private static DateTime Hoje => DateTime.Today;
+
+    private List<Cliente> clientes = new();
+    private string? erro;
+
+    // Hoje e os proximos primeiro; quem ja passou vai para o fim.
+    private IEnumerable<Cliente> Ordenados => clientes
+        .OrderBy(c => c.DataNascimento!.Value.Day < Hoje.Day)
+        .ThenBy(c => c.DataNascimento!.Value.Day);
+
+    /// <summary>A idade que a pessoa completa neste aniversario.</summary>
+    private static int Idade(Cliente cliente) => Hoje.Year - cliente.DataNascimento!.Value.Year;
+
+    protected override void OnInitialized()
+    {
+        try
+        {
+            clientes = clienteDAO.AniversariantesDoMes(Hoje.Month);
+        }
+        catch (Exception ex)
+        {
+            erro = "Erro ao carregar os aniversariantes: " + ex.Message;
+        }
+    }
+}

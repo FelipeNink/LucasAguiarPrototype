@@ -98,6 +98,21 @@ namespace LucasAguiar.Data
             return leitor.Read() ? Ler(leitor) : null;
         }
 
+        /// <summary>Quem faz aniversario no mes, pela ordem do dia. So le data_nasc_cli, que ja existe.</summary>
+        public List<Cliente> AniversariantesDoMes(int mes)
+        {
+            var lista = new List<Cliente>();
+            using var conexao = _conexao.GetConnection();
+            using var comando = new MySqlCommand(SelecaoPadrao + @"
+                WHERE c.data_nasc_cli IS NOT NULL AND MONTH(c.data_nasc_cli) = @mes
+                ORDER BY DAY(c.data_nasc_cli), c.nome_cli", conexao);
+            comando.Parameters.AddWithValue("@mes", mes);
+
+            using var leitor = comando.ExecuteReader();
+            while (leitor.Read()) lista.Add(Ler(leitor));
+            return lista;
+        }
+
         public List<Cliente> ListarTodos()
         {
             var lista = new List<Cliente>();

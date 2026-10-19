@@ -1,0 +1,101 @@
+.aniversariantes {
+    margin-top: 1.25rem;
+}
+
+.topo-aniversariantes {
+    margin-bottom: 0.75rem;
+}
+
+.topo-aniversariantes h2 {
+    margin: 0;
+}
+
+.sub {
+    font-size: 13px;
+    color: var(--texto-3);
+}
+
+.vazio {
+    margin: 0;
+    font-size: 14px;
+    color: var(--texto-3);
+}
+
+.lista-aniversariantes {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 8px 16px;
+}
+
+.lista-aniversariantes li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 10px;
+    border-radius: var(--raio);
+}
+
+.lista-aniversariantes li.hoje {
+    background: var(--morno);
+    box-shadow: inset 3px 0 0 var(--marca);
+}
+
+.lista-aniversariantes li.passou {
+    opacity: 0.55;
+}
+
+.dia {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 40px;
+    flex-shrink: 0;
+    line-height: 1;
+}
+
+.dia strong {
+    font-family: var(--fonte-titulo);
+    font-size: 22px;
+    color: var(--texto);
+}
+
+.dia small {
+    font-size: 11px;
+    text-transform: uppercase;
+    color: var(--texto-3);
+}
+
+.quem {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+}
+
+.quem strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 14.5px;
+}
+
+.quem small {
+    font-size: 12.5px;
+    color: var(--texto-3);
+}
+
+.selo-hoje {
+    display: inline-block;
+    margin-right: 6px;
+    padding: 1px 6px;
+    border-radius: 999px;
+    background: var(--marca);
+    color: var(--sobre-marca);
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
