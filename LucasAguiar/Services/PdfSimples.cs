@@ -59,12 +59,13 @@ namespace LucasAguiar.Services
         }
 
         /// <summary>Texto com a base na coordenada y informada.</summary>
-        public void Texto(string texto, double x, double y, double tamanho, string cor = "#000000", bool negrito = false)
+        public void Texto(string texto, double x, double y, double tamanho, string cor = "#000000", bool negrito = false,
+            double espacamento = 0)
         {
             if (string.IsNullOrEmpty(texto)) return;
             var (r, g, b) = Cor(cor);
             var fonte = negrito ? "/F2" : "/F1";
-            _atual.Append($"BT {F(r)} {F(g)} {F(b)} rg {fonte} {F(tamanho)} Tf {F(x)} {F(AlturaPagina - y)} Td ({Escapar(texto)}) Tj ET\n");
+            _atual.Append($"BT {F(r)} {F(g)} {F(b)} rg {fonte} {F(tamanho)} Tf {F(espacamento)} Tc {F(x)} {F(AlturaPagina - y)} Td ({Escapar(texto)}) Tj ET\n");
         }
 
         public void Logo(double x, double y, double largura)
@@ -77,18 +78,20 @@ namespace LucasAguiar.Services
         // ---------- medicao ----------
 
         /// <summary>Largura aproximada do texto em pontos, para Helvetica.</summary>
-        public static double LarguraTexto(string texto, double tamanho, bool negrito = false)
+        public static double LarguraTexto(string texto, double tamanho, bool negrito = false, double espacamento = 0)
         {
             if (string.IsNullOrEmpty(texto)) return 0;
             double total = 0;
             foreach (var c in texto) total += LarguraChar(c);
             if (negrito) total *= 1.06;
-            return total * tamanho;
+            return total * tamanho + espacamento * texto.Length;
         }
 
         private static double LarguraChar(char c)
         {
             if (c == ' ') return 0.278;
+            if (c == '—') return 1.0;
+            if (c is '–' or '−') return 0.556;
             if (c is 'i' or 'j' or 'l' or 'I' or '.' or ',' or ':' or ';' or '\'' or '|' or '!') return 0.24;
             if (c is 'f' or 't' or 'r' or '(' or ')' or '[' or ']' or '/' or '-') return 0.32;
             if (c >= '0' && c <= '9') return 0.556;
@@ -204,7 +207,32 @@ namespace LucasAguiar.Services
         private static string F(double v) => v.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
 
         private static string Escapar(string texto)
-            => texto.Replace("\\", "\\\\").Replace("(", "\\(").Replace(")", "\\)").Replace("\r", "").Replace("\n", " ");
+            => ParaWinAnsi(texto.Replace("\\", "\\\\").Replace("(", "\\(").Replace(")", "\\)").Replace("\r", "").Replace("\n", " "));
+
+        // Travessao, aspas curvas e afins ficam fora do Latin1 e saiam como
+        // "?". No WinAnsiEncoding eles moram em 128-159; o char de mesmo
+        // codigo vira exatamente esse byte no Latin1. O sinal de menos nao
+        // existe na fonte base: vai como en dash, que tem a mesma largura.
+        private static string ParaWinAnsi(string texto)
+        {
+            var saida = new StringBuilder(texto.Length);
+            foreach (var c in texto)
+            {
+                saida.Append(c switch
+                {
+                    '—' => '\u0097',
+                    '–' or '−' => '\u0096',
+                    '‘' => '\u0091',
+                    '’' => '\u0092',
+                    '“' => '\u0093',
+                    '”' => '\u0094',
+                    '•' => '\u0095',
+                    '…' => '\u0085',
+                    _ => c
+                });
+            }
+            return saida.ToString();
+        }
 
         private static (double r, double g, double b) Cor(string hex)
         {

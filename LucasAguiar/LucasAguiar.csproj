@@ -17,4 +17,10 @@
          so existe o resultado do publish. -->
     <EmbeddedResource Include="Configs\banco_dados.sql" />
   </ItemGroup>
+
+  <ItemGroup>
+    <!-- O RelatorioPdf le o logo do disco. Fora do wwwroot o publish nao
+         leva o arquivo, e no container o PDF saia sem logo. -->
+    <None Update="Resources\logo-relatorio.jpg" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>
