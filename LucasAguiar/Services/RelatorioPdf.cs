@@ -18,6 +18,8 @@ namespace LucasAguiar.Services
         private const string MornoBorda = "#f7d9c0";   // --morno-borda
         private const string Perigo = "#dc2626";       // --perigo
         private const string Branco = "#ffffff";
+        private const string LateralFraco = "#7d8491"; // --lateral-fraco
+        private const string LateralLinha = "#2a2e34";  // --lateral-linha sobre o carvao
 
         private const double Margem = 40;
         private const double AlturaFaixa = 100;
@@ -34,14 +36,6 @@ namespace LucasAguiar.Services
         // TituloSecao e Destaque; a marca nunca chega a ser desenhada.
         private const char MarcaSecao = '\u0001';
         private const char MarcaDestaque = '\u0002';
-
-        private readonly byte[]? _logo;
-
-        public RelatorioPdf(IWebHostEnvironment ambiente)
-        {
-            var caminho = Path.Combine(ambiente.ContentRootPath, "Resources", "logo-relatorio.jpg");
-            if (File.Exists(caminho)) _logo = File.ReadAllBytes(caminho);
-        }
 
         /// <summary>
         /// Primeira celula de uma linha que abre secao: titulo em negrito com
@@ -74,7 +68,7 @@ namespace LucasAguiar.Services
 
         public byte[] Gerar(string titulo, Coluna[] colunas, IReadOnlyList<string[]> linhas)
         {
-            var pdf = new PdfSimples(_logo);
+            var pdf = new PdfSimples();
             var agora = DateTime.Now;
 
             double larguraUtil = PdfSimples.LarguraPagina - 2 * Margem;
@@ -178,14 +172,7 @@ namespace LucasAguiar.Services
             pdf.Retangulo(0, 0, PdfSimples.LarguraPagina, AlturaFaixa, Carvao);
             pdf.Retangulo(0, AlturaFaixa, PdfSimples.LarguraPagina, AlturaFriso, Marca);
 
-            double xTexto = Margem;
-            if (pdf.TemLogo)
-            {
-                const double larguraLogo = 80;
-                double alturaLogo = pdf.LogoAlturaPara(larguraLogo);
-                pdf.Logo(Margem, (AlturaFaixa - alturaLogo) / 2, larguraLogo);
-                xTexto = Margem + larguraLogo + 20;
-            }
+            double xTexto = DesenharMarca(pdf) + 20;
 
             // "Relatorio de Vendas — 01/10 a 19/10": o nome vai grande e o
             // periodo ou filtro numa linha propria, na cor da marca.
@@ -204,6 +191,37 @@ namespace LucasAguiar.Services
                 pdf.Texto(nome, xTexto, 50, 18, Branco, negrito: true);
                 pdf.Texto($"Gerado em {agora:dd/MM/yyyy} às {agora:HH:mm}", xTexto, 68, 8.5, TextoFraco);
             }
+        }
+
+        /// <summary>
+        /// A marca compacta da lateral (Marca.razor): BARBEARIA espacado,
+        /// LUCAS AGUIAR estreito em branco e o bigode laranja embaixo, tudo
+        /// em vetor. Devolve onde o titulo pode comecar.
+        /// </summary>
+        private static double DesenharMarca(PdfSimples pdf)
+        {
+            const string barbearia = "BARBEARIA";
+            const string nome = "LUCAS AGUIAR";
+            const double tamanhoBarbearia = 6.5, espacamentoBarbearia = 2.1;
+            const double tamanhoNome = 19, escalaNome = 78;
+            const double larguraBigode = 46;
+
+            // Barlow Condensed nao existe nas fontes base do PDF: a Helvetica
+            // negrito estreitada (Tz) chega perto do desenho da lateral.
+            double larguraNome = PdfSimples.LarguraTexto(nome, tamanhoNome, true, 0, escalaNome);
+            double larguraBarbearia = PdfSimples.LarguraTexto(barbearia, tamanhoBarbearia, true, espacamentoBarbearia)
+                                      - espacamentoBarbearia;
+            double centro = Margem + larguraNome / 2;
+
+            pdf.Texto(barbearia, centro - larguraBarbearia / 2, 36, tamanhoBarbearia, LateralFraco,
+                negrito: true, espacamento: espacamentoBarbearia);
+            pdf.Texto(nome, centro - larguraNome / 2, 56, tamanhoNome, Branco, negrito: true, escala: escalaNome);
+            pdf.Caminho(global::LucasAguiar.Components.Shared.Marca.Bigode, 467, 902, 683,
+                centro - larguraBigode / 2, 61, larguraBigode, Marca);
+
+            double divisoria = Margem + larguraNome + 20;
+            pdf.Linha(divisoria, 26, divisoria, AlturaFaixa - 26, LateralLinha, 1);
+            return divisoria;
         }
 
         // Rotulo de coluna como no thead das telas: caixa alta, pequeno,
