@@ -186,6 +186,7 @@ else
                             <th>Cliente</th>
                             <th class="opcional">Telefone</th>
                             <th class="opcional">Profissional</th>
+                            <th class="col-acoes"></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -196,6 +197,10 @@ else
                                 <td><strong>@falta.Cliente</strong></td>
                                 <td class="opcional">@(string.IsNullOrWhiteSpace(falta.Telefone) ? "—" : falta.Telefone)</td>
                                 <td class="opcional">@falta.Profissional</td>
+                                <td class="col-acoes">
+                                    <BotaoWhatsApp Telefone="@falta.Telefone" Titulo="Oferecer remarcação no WhatsApp"
+                                                   Mensagem="@WhatsApp.RemarcarFalta(falta.Cliente, falta.Quando)" />
+                                </td>
                             </tr>
                         }
                     </tbody>
@@ -282,12 +287,13 @@ else
                         <th class="al-dir">Sem vir há</th>
                         <th class="al-dir opcional">Visitas</th>
                         <th class="al-dir opcional">Já gastou</th>
+                        <th class="col-acoes"></th>
                     </tr>
                 </thead>
                 <tbody>
                     @if (inativos.Count == 0)
                     {
-                        <tr><td colspan="5" class="text-center text-muted">Nenhum cliente nessa situação.</td></tr>
+                        <tr><td colspan="6" class="text-center text-muted">Nenhum cliente nessa situação.</td></tr>
                     }
                     else
                     {
@@ -308,6 +314,10 @@ else
                                 </td>
                                 <td class="al-dir opcional">@cliente.Visitas</td>
                                 <td class="al-dir opcional dinheiro">@cliente.TotalGasto.ToString("C")</td>
+                                <td class="col-acoes">
+                                    <BotaoWhatsApp Telefone="@cliente.Telefone" Titulo="Chamar de volta no WhatsApp"
+                                                   Mensagem="@WhatsApp.ClienteInativo(cliente.Nome, cliente.DiasSemVir)" />
+                                </td>
                             </tr>
                         }
                     }

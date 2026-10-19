@@ -2,6 +2,7 @@
 @rendermode InteractiveServer
 @attribute [Authorize(Policy = Politicas.Vendas)]
 
+@using LucasAguiar.Configs
 @using LucasAguiar.Models
 @using Microsoft.AspNetCore.WebUtilities
 @inject VendaDAO vendaDAO
@@ -252,6 +253,11 @@
                     <button class="btn btn-outline-danger me-auto" @onclick="() => cancelando = true">
                         Cancelar venda
                     </button>
+                }
+                @if (detalhe.Status != StatusVenda.Cancelada)
+                {
+                    <BotaoWhatsApp Telefone="@detalhe.TelefoneCliente" Rotulo="Enviar comprovante"
+                                   Mensagem="@WhatsApp.ComprovanteVenda(detalhe)" />
                 }
                 <button class="btn btn-secondary" @onclick="Fechar">Fechar</button>
             </div>

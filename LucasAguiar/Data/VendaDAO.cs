@@ -497,7 +497,7 @@ namespace LucasAguiar.Data
 
             using var conexao = _conexao.GetConnection();
             using (var comando = new MySqlCommand(@"
-                SELECT v.*, c.nome_cli, f.nome_fun
+                SELECT v.*, c.nome_cli, c.telefone_cli, f.nome_fun
                 FROM venda v
                 LEFT JOIN cliente c ON c.id_cli = v.id_cli_fk
                 LEFT JOIN funcionario f ON f.id_fun = v.id_fun_fk
@@ -505,7 +505,11 @@ namespace LucasAguiar.Data
             {
                 comando.Parameters.AddWithValue("@id", id);
                 using var leitor = comando.ExecuteReader();
-                if (leitor.Read()) venda = Ler(leitor);
+                if (leitor.Read())
+                {
+                    venda = Ler(leitor);
+                    venda.TelefoneCliente = DAOHelper.GetString(leitor, "telefone_cli");
+                }
             }
 
             if (venda != null) venda.Itens = ListarItens(conexao, id);

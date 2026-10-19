@@ -1,0 +1,37 @@
+@using LucasAguiar.Configs
+
+@* Abre o WhatsApp de quem clicou com a mensagem pronta (WhatsApp.Link).
+   Sem telefone valido nao desenha nada: botao que so leva a erro
+   confunde. Sem Rotulo vira icone de linha, como os do AcoesLinha. *@
+
+@if (Url != null)
+{
+    <a href="@Url" target="_blank" rel="noopener"
+       class="@(Rotulo == null ? "btn-acao whatsapp" : "btn-outline-secondary btn-whatsapp")"
+       title="@Titulo" aria-label="@Titulo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            @* Icone brand-whatsapp do Tabler Icons (MIT), no traco dos demais. *@
+            <path d="M3 21l1.65-3.8a9 9 0 1 1 3.4 2.9L3 21" />
+            <path d="M9 10a.5.5 0 0 0 1 0V9a.5.5 0 0 0-1 0v1a5 5 0 0 0 5 5h1a.5.5 0 0 0 0-1h-1a.5.5 0 0 0 0 1" />
+        </svg>
+        @if (Rotulo != null)
+        {
+            <span>@Rotulo</span>
+        }
+    </a>
+}
+
+@code {
+    [Parameter] public string? Telefone { get; set; }
+
+    [Parameter, EditorRequired] public string Mensagem { get; set; } = "";
+
+    /// <summary>Texto ao lado do icone. Nulo deixa so o icone.</summary>
+    [Parameter] public string? Rotulo { get; set; }
+
+    /// <summary>Dica ao passar o mouse.</summary>
+    [Parameter] public string Titulo { get; set; } = "Enviar mensagem no WhatsApp";
+
+    private string? Url => WhatsApp.Link(Telefone, Mensagem);
+}

@@ -641,6 +641,35 @@ h1.titulo-listagem {
     letter-spacing: 0.02em;
 }
 
+/* WhatsApp (Shared/BotaoWhatsApp): o verde do estado "ok" do sistema,
+   para o icone ser reconhecido sem trazer o verde da marca deles. */
+.btn-acao.whatsapp {
+    color: var(--ok);
+}
+
+.btn-acao.whatsapp:hover {
+    background: var(--ok-fundo);
+    color: var(--ok-escuro);
+}
+
+.btn-whatsapp {
+    border-color: var(--ok-borda);
+    color: var(--ok-texto);
+}
+
+.btn-whatsapp:hover {
+    background: var(--ok-fundo);
+    border-color: var(--ok-borda);
+    color: var(--ok-texto);
+}
+
+.btn-whatsapp svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    color: var(--ok);
+}
+
 .btn-cadastrar::before {
     content: "+";
     font-size: 21px;

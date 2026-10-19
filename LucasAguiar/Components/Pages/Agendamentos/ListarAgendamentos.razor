@@ -2,6 +2,8 @@
 @rendermode InteractiveServer
 @attribute [Authorize(Policy = Politicas.Agendamentos)]
 
+@using LucasAguiar.Configs
+
 @inject AgendamentoDAO agendamentoDAO
 @inject FuncionarioDAO funcionarioDAO
 @inject ServicoDAO servicoDAO
@@ -134,6 +136,9 @@
                                             OnExcluir="() => excluindo = a">
                                     @if (a.Aberto)
                                     {
+                                        <BotaoWhatsApp Telefone="@a.TelefoneCliente"
+                                                       Titulo="Confirmar horário no WhatsApp"
+                                                       Mensagem="@WhatsApp.ConfirmacaoAgendamento(a.NomeCliente, a.DataHora, a.NomeServico, a.NomeFuncionario)" />
                                         <a href="@UrlGerarVenda(a)" class="btn-acao" title="Gerar venda" aria-label="Gerar venda">
                                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
                                                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
