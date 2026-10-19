@@ -8,11 +8,11 @@
 @inject NavigationManager Navigation
 
 
-<h1>Lista de Fornecedores</h1>
+<h1 class="titulo-listagem">Gestão de Fornecedores</h1>
 
-<div class="barra-acoes">
-    <NavLink href="/fornecedores/novo" class="btn-novo">Novo Fornecedor</NavLink>
-    <a href="/relatorio/fornecedores" class="btn-pdf" data-enhance-nav="false">Relatório PDF</a>
+<div class="barra-acoes barra-listagem">
+    <BotaoExportar Href="/relatorio/fornecedores" />
+    <NavLink href="/fornecedores/novo" class="btn-novo btn-cadastrar">Cadastrar fornecedor</NavLink>
 </div>
 
 @* ---------- filtros ---------- *@

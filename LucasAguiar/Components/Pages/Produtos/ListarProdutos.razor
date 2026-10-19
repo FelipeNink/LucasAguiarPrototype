@@ -9,12 +9,12 @@
 @inject NavigationManager Navigation
 
 
-<h1>Lista de Produtos</h1>
+<h1 class="titulo-listagem">Gestão de Produtos</h1>
 
-<div class="barra-acoes">
-    <NavLink href="/produto/novo" class="btn-novo">Novo Produto</NavLink>
-    <a href="/relatorio/produtos" class="btn-pdf" data-enhance-nav="false">Relatório PDF</a>
-    <a href="/excel/produtos" class="btn-pdf" data-enhance-nav="false">Excel</a>
+<div class="barra-acoes barra-listagem">
+    <BotaoExportar Href="/relatorio/produtos" />
+    <BotaoExportar Tipo="BotaoExportar.Formato.Excel" Href="/excel/produtos" />
+    <NavLink href="/produto/novo" class="btn-novo btn-cadastrar">Cadastrar produto</NavLink>
 </div>
 
 @* ---------- filtros ---------- *@

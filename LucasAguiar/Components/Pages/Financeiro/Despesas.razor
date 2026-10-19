@@ -9,7 +9,7 @@
 @inject NavigationManager Navigation
 
 
-<h1>Despesas</h1>
+<h1 class="titulo-listagem">Gestão de Despesas</h1>
 
 @if (!string.IsNullOrEmpty(erro))
 {
@@ -20,8 +20,10 @@
     <div class="alert alert-success">@aviso</div>
 }
 
-<div class="barra-acoes">
-    <a href="/despesa/nova" class="btn-novo">Nova despesa</a>
+<div class="barra-acoes barra-listagem">
+    <BotaoExportar Href="@UrlRelatorio" />
+    <BotaoExportar Tipo="BotaoExportar.Formato.Excel" Href="@UrlRelatorio.Replace("/relatorio/", "/excel/")" />
+    <a href="/despesa/nova" class="btn-novo btn-cadastrar">Cadastrar despesa</a>
 </div>
 
 @* ---------- filtros ---------- *@
@@ -63,8 +65,6 @@
     <div class="campo-acoes">
         <button type="button" class="btn btn-primary" @onclick="Carregar">Filtrar</button>
         <button type="button" class="btn btn-outline-secondary" @onclick="Limpar">Limpar</button>
-        <a href="@UrlRelatorio" class="btn-pdf" data-enhance-nav="false">Relatório PDF</a>
-    <a href="@UrlRelatorio.Replace("/relatorio/", "/excel/")" class="btn-pdf" data-enhance-nav="false">Excel</a>
     </div>
 </section>
 

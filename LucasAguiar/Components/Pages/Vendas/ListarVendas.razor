@@ -11,11 +11,11 @@
 @inject LucasAguiar.Services.AuthenticationService auth
 
 
-<h1>Vendas</h1>
-<div class="barra-acoes">
-    <a href="/venda/nova" class="btn-novo">Nova Venda</a>
-    <a href="@UrlRelatorio" class="btn-pdf" data-enhance-nav="false">Relatório PDF</a>
-    <a href="@UrlRelatorio.Replace("/relatorio/", "/excel/")" class="btn-pdf" data-enhance-nav="false">Excel</a>
+<h1 class="titulo-listagem">Gestão de Vendas</h1>
+<div class="barra-acoes barra-listagem">
+    <BotaoExportar Href="@UrlRelatorio" />
+    <BotaoExportar Tipo="BotaoExportar.Formato.Excel" Href="@UrlRelatorio.Replace("/relatorio/", "/excel/")" />
+    <a href="/venda/nova" class="btn-novo btn-cadastrar">Cadastrar venda</a>
 </div>
 
 @if (idNova.HasValue)

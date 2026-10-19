@@ -7,11 +7,11 @@
 @inject ServicoDAO servicoDAO
 @inject NavigationManager Navigation
 
-<h1>Agendamentos</h1>
+<h1 class="titulo-listagem">Gestão de Agendamentos</h1>
 
-<div class="barra-acoes">
-    <a href="/agendamento/novo" class="btn-novo">Novo agendamento</a>
-    <a href="/excel/agendamentos" class="btn-pdf" data-enhance-nav="false">Excel</a>
+<div class="barra-acoes barra-listagem">
+    <BotaoExportar Tipo="BotaoExportar.Formato.Excel" Href="/excel/agendamentos" />
+    <a href="/agendamento/novo" class="btn-novo btn-cadastrar">Cadastrar agendamento</a>
 </div>
 
 @if (Novo.HasValue)

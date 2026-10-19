@@ -619,6 +619,36 @@ kbd {
     margin-left: auto;
 }
 
+/* Topo das listagens: titulo sozinho na linha, um pouco mais alto, e
+   abaixo dele as acoes a direita -- exportar e, por ultimo, cadastrar. */
+h1.titulo-listagem {
+    margin-top: -0.35rem;
+    margin-bottom: 0.9rem;
+}
+
+.barra-listagem {
+    justify-content: flex-end;
+}
+
+.btn-exportar svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+
+.btn-cadastrar {
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+.btn-cadastrar::before {
+    content: "+";
+    font-size: 21px;
+    font-weight: 500;
+    line-height: 1;
+    margin-top: -2px;
+}
+
 /* ===========================================================
    CONTROLE SEGMENTADO DE PERIODO
    Substitui as pilulas soltas: o trilho mostra que as opcoes

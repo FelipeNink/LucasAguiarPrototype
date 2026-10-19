@@ -8,11 +8,11 @@
 @inject NavigationManager Navigation
 
 
-<h1>Lista de Funcionários</h1>
+<h1 class="titulo-listagem">Gestão de Funcionários</h1>
 
-<div class="barra-acoes">
-    <NavLink href="/funcionario/novo" class="btn-novo">Novo Funcionário</NavLink>
-    <a href="/relatorio/funcionarios" class="btn-pdf" data-enhance-nav="false">Relatório PDF</a>
+<div class="barra-acoes barra-listagem">
+    <BotaoExportar Href="/relatorio/funcionarios" />
+    <NavLink href="/funcionario/novo" class="btn-novo btn-cadastrar">Cadastrar funcionário</NavLink>
 </div>
 
 @* ---------- filtros ---------- *@

@@ -8,12 +8,12 @@
 @inject NavigationManager Navigation
 
 
-<h1>Lista de Clientes</h1>
+<h1 class="titulo-listagem">Gestão de Clientes</h1>
 
-<div class="barra-acoes">
-    <NavLink href="/cliente/novo" class="btn-novo">Novo Cliente</NavLink>
-    <a href="/relatorio/clientes" class="btn-pdf" data-enhance-nav="false">Relatório PDF</a>
-    <a href="/excel/clientes" class="btn-pdf" data-enhance-nav="false">Excel</a>
+<div class="barra-acoes barra-listagem">
+    <BotaoExportar Href="/relatorio/clientes" />
+    <BotaoExportar Tipo="BotaoExportar.Formato.Excel" Href="/excel/clientes" />
+    <NavLink href="/cliente/novo" class="btn-novo btn-cadastrar">Cadastrar cliente</NavLink>
 </div>
 
 @* ---------- filtros ---------- *@
