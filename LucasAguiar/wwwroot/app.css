@@ -1843,3 +1843,34 @@ form .form-check-label {
     font-size: 13.5px;
     color: var(--texto-3);
 }
+
+
+/* ===========================================================
+   LINK DE TEXTO
+   Link no meio de uma frase ou ao lado de um valor. Quatro
+   deles estavam saindo com o sublinhado azulado padrao do
+   navegador, que destoa de tudo: "ver lancamentos" no painel,
+   "Folha de Pagamento" em Comissoes, e "Ver detalhe das
+   comissoes" e "ver em Despesas" na Folha.
+
+   Mesma linguagem do .acao-campo -- laranja, sem sublinhado em
+   repouso, sublinhado so no hover -- para acao discreta ser uma
+   coisa so no sistema inteiro.
+   =========================================================== */
+
+.link-texto {
+    color: var(--marca-escura);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.link-texto:hover {
+    color: var(--marca);
+    text-decoration: underline;
+}
+
+.link-texto:focus-visible {
+    outline: 2px solid var(--marca);
+    outline-offset: 2px;
+    border-radius: 3px;
+}

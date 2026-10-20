@@ -27,7 +27,7 @@
     <button type="button" class="seta" @onclick="() => TrocarMes(1)"
             disabled="@(mesReferencia >= InicioMesAtual)" title="Próximo mês">›</button>
 
-    <a href="/comissoes" class="link-lateral">Ver detalhe das comissões</a>
+    <a href="/comissoes" class="link-lateral link-texto">Ver detalhe das comissões</a>
     @if (historico.Count > 0)
     {
         <button type="button" class="btn btn-outline-secondary btn-historico" @onclick="() => verHistorico = true">
@@ -138,7 +138,7 @@
 <p class="nota-rodape">
     O salário fixo vem do cadastro do profissional. As comissões são somadas
     das vendas do mês, já descontando as canceladas. O pagamento gera uma
-    despesa na categoria Salários — <a href="/despesas">ver em Despesas</a>.
+    despesa na categoria Salários — <a href="/despesas" class="link-texto">ver em Despesas</a>.
 </p>
 
 @* ---------- pagamentos anteriores ---------- *@
