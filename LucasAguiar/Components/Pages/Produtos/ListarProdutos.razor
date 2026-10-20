@@ -4,8 +4,10 @@
 
 @using LucasAguiar.Models
 @using LucasAguiar.Configs
+@using LucasAguiar.Services
 @inject ProdutoDAO produtoDAO
 @inject FornecedorDAO fornecedorDAO
+@inject AuthenticationService auth
 
 
 <h1>Lista de Produtos</h1>
@@ -165,8 +167,11 @@
     private List<OpcaoId> OpcoesFornecedor =>
         fornecedores.Select(f => new OpcaoId(f.IdFornecedor, f.NomeFornecedor ?? "Sem nome")).ToList();
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
+        // O nome de quem edita vai gravado no ajuste de estoque.
+        await auth.PrepararAsync();
+
         listaProdutos = produtoDAO.ListarTodos();
     }
 
@@ -210,7 +215,7 @@
             if (string.IsNullOrWhiteSpace(editando.NomeProduto))
                 throw new Exception("O nome do produto é obrigatório.");
 
-            produtoDAO.Atualizar(editando);
+            produtoDAO.Atualizar(editando, auth.GetUsuarioNome());
             Fechar();
             listaProdutos = produtoDAO.ListarTodos();
         }

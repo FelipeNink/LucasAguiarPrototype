@@ -109,6 +109,19 @@ namespace LucasAguiar.Services
                         StatusAgendamento.Rotulo(a.Status), a.Observacao
                     })));
 
+            // A planilha de estoque sai com a movimentacao, e nao so com o
+            // saldo: o saldo a pessoa ve na tela, e o que ela leva para
+            // conferir e o historico.
+            app.MapGet("/excel/estoque", (EstoqueDAO dao) =>
+                Arquivo("estoque", "Movimentação",
+                    new[] { "Quando", "Produto", "Movimento", "Quantidade", "Saldo depois", "Motivo", "Quem" },
+                    dao.Extrato(new EstoqueDAO.FiltroExtrato { Limite = 500 })
+                       .Select(m => new object?[]
+                       {
+                           m.DataHora, m.NomeProduto, m.RotuloTipo,
+                           m.Quantidade, m.SaldoApos, m.Motivo, m.Usuario
+                       })));
+
             // O gerencial numa planilha: uma linha por registro, com a
             // secao na primeira coluna, para o dono poder filtrar e somar
             // por conta propria.

@@ -274,6 +274,41 @@ namespace LucasAguiar.Services
                 return Results.File(pdf, TipoPdf, NomeArquivo($"caixa_{caixa.IdCaixa}"));
             });
 
+            // Posicao de estoque: o que tem, o minimo, a situacao e quanto
+            // vale. E a lista que se leva para conferir a prateleira.
+            app.MapGet("/relatorio/estoque", (RelatorioPdf rel, EstoqueDAO dao) =>
+            {
+                var itens = dao.Saldos();
+
+                var linhas = itens.Select((s, i) => new[]
+                {
+                    (i + 1).ToString(), s.Nome, s.Marca ?? "—",
+                    s.Saldo.ToString(),
+                    s.Minimo > 0 ? s.Minimo.ToString() : "—",
+                    s.RotuloSituacao,
+                    s.ValorEmEstoque.ToString("C")
+                }).ToList();
+
+                linhas.Add(new[] { "", "", "", "", "", "", "" });
+                linhas.Add(new[]
+                {
+                    "", "TOTAL", "", itens.Sum(s => s.Saldo).ToString(), "", "",
+                    itens.Sum(s => s.ValorEmEstoque).ToString("C")
+                });
+
+                var pdf = rel.Gerar("Posição de Estoque",
+                    new[]
+                    {
+                        new Coluna("#", 0.6), new Coluna("Produto", 3.4),
+                        new Coluna("Marca", 1.8), new Coluna("Saldo", 1, true),
+                        new Coluna("Mínimo", 1, true), new Coluna("Situação", 1.8),
+                        new Coluna("Valor", 1.6, true)
+                    },
+                    linhas);
+
+                return Results.File(pdf, TipoPdf, NomeArquivo("estoque"));
+            });
+
             // O gerencial e a tela de Relatorios inteira num arquivo so:
             // o dono leva para o contador ou para a reuniao sem ter de
             // baixar seis coisas. Secoes separadas por linha em branco,

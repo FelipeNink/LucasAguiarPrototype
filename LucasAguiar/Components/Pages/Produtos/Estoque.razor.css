@@ -1,0 +1,274 @@
+.explica-estoque {
+    max-width: 640px;
+    margin: -6px 0 1.1rem;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--texto-3);
+}
+
+/* ---------- barra ---------- */
+
+.barra-estoque {
+    align-items: center;
+}
+
+.busca-estoque {
+    position: relative;
+    flex: 1;
+    min-width: 200px;
+}
+
+.busca-estoque svg {
+    position: absolute;
+    left: 13px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 17px;
+    height: 17px;
+    color: var(--texto-fraco);
+    pointer-events: none;
+}
+
+.busca-estoque .form-control {
+    height: var(--altura-controle);
+    padding-left: 40px;
+}
+
+.so-atencao {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    margin: 0;
+    height: var(--altura-controle);
+    padding: 0 14px;
+    border: 1px solid var(--borda-2);
+    border-radius: var(--raio);
+    background: var(--superficie);
+    font-size: 13.5px;
+    color: var(--texto-2);
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.so-atencao input {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--marca);
+    cursor: pointer;
+}
+
+@media (max-width: 620px) {
+    .barra-estoque {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+
+    .busca-estoque,
+    .so-atencao {
+        grid-column: 1 / -1;
+    }
+
+    .so-atencao {
+        justify-content: center;
+    }
+}
+
+/* ---------- saldo e situacao ---------- */
+
+.marca {
+    display: block;
+    margin-top: 1px;
+    font-size: 11.5px;
+    color: var(--texto-fraco);
+}
+
+.saldo {
+    font-variant-numeric: tabular-nums;
+    font-size: 15px;
+}
+
+/* Negativo em vermelho porque e o unico que nao deveria existir: saiu
+   mais do que havia, e alguem precisa ir conferir a prateleira. */
+.saldo.negativo {
+    color: var(--perigo);
+}
+
+.saldo.zerado {
+    color: var(--texto-fraco);
+}
+
+.saldo.baixo {
+    color: var(--alerta);
+}
+
+.situacao {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12.5px;
+    color: var(--texto-2);
+    white-space: nowrap;
+}
+
+.situacao i {
+    width: 7px;
+    height: 7px;
+    flex: none;
+    border-radius: 50%;
+    background: var(--ok);
+}
+
+.situacao.baixo i {
+    background: var(--alerta);
+}
+
+.situacao.zerado i {
+    background: var(--texto-fraco);
+}
+
+.situacao.negativo i {
+    background: var(--perigo);
+}
+
+/* ---------- extrato ---------- */
+
+.bloco-extrato {
+    margin-top: 2rem;
+}
+
+.bloco-extrato > header {
+    margin-bottom: 0.85rem;
+}
+
+.bloco-extrato h2 {
+    margin: 0;
+    font-family: var(--fonte-titulo);
+    font-size: 23px;
+    font-weight: 700;
+    text-transform: uppercase;
+    line-height: 1.1;
+    color: var(--texto);
+}
+
+.bloco-extrato > header span {
+    display: block;
+    margin-top: 3px;
+    font-size: 12.5px;
+    color: var(--texto-fraco);
+}
+
+.col-quando {
+    width: 86px;
+}
+
+.quando .dia {
+    display: block;
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+}
+
+.quando .hora {
+    display: block;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    color: var(--texto-fraco);
+}
+
+.tipo-mov {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--superficie-3);
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--texto-2);
+}
+
+.tipo-mov.entrada,
+.tipo-mov.devolucao,
+.tipo-mov.abertura {
+    background: var(--ok-fundo);
+    color: var(--ok-texto);
+}
+
+.tipo-mov.consumo {
+    background: var(--info-fundo);
+    color: var(--info-texto);
+}
+
+.tipo-mov.perda {
+    background: var(--perigo-fundo);
+    color: var(--perigo-escuro);
+}
+
+.tipo-mov.ajuste {
+    background: var(--morno);
+    color: var(--morno-texto);
+}
+
+.motivo {
+    margin-top: 3px;
+    font-size: 12px;
+    line-height: 1.4;
+    color: var(--texto-3);
+    overflow-wrap: anywhere;
+}
+
+.entra {
+    color: var(--ok);
+    font-variant-numeric: tabular-nums;
+}
+
+.sai {
+    color: var(--perigo);
+    font-variant-numeric: tabular-nums;
+}
+
+/* ---------- janelas ---------- */
+
+.texto-janela {
+    margin: 0 0 14px;
+    font-size: 13.5px;
+    line-height: 1.5;
+    color: var(--texto-3);
+}
+
+.previa {
+    margin: 14px 0 0;
+    padding: 10px 12px;
+    border-radius: var(--raio);
+    background: var(--superficie-2);
+    font-size: 13.5px;
+    color: var(--texto-2);
+}
+
+.previa.sobra {
+    background: var(--ok-fundo);
+    color: var(--ok-texto);
+}
+
+.previa.falta {
+    background: var(--alerta-fundo);
+    color: var(--alerta-texto);
+}
+
+.dica {
+    display: block;
+    margin-top: 5px;
+    font-size: 12px;
+    line-height: 1.4;
+    color: var(--texto-fraco);
+}
+
+.obrigatorio {
+    color: var(--marca);
+}
+
+@media (max-width: 760px) {
+    .col-quando {
+        width: 72px;
+    }
+}

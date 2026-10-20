@@ -419,3 +419,20 @@
 .nav-item ::deep .nav-link {
     height: 28px;
 }
+
+/* Estoque entrou nos Cadastros e a lateral passou 5px. O aperto agora
+   vem dos espacos entre grupos e do respiro dos rotulos, que sobram
+   mais do que a altura dos itens -- que ja esta no limite do
+   confortavel. Medido: 636px de conteudo em 631px, agora 624 em 631. */
+
+.grupo + .grupo {
+    margin-top: 6px;
+}
+
+.grupo-rotulo {
+    padding: 0 10px 1px;
+}
+
+.area-nova-venda ::deep .botao-novo-agendamento {
+    margin-top: 5px;
+}

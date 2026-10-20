@@ -94,30 +94,66 @@ namespace LucasAguiar.Data
             }
         }
 
-        public void Atualizar(Produto produto)
+        /// <summary>
+        /// Altera o cadastro do produto.
+        ///
+        /// A quantidade digitada aqui não é mais gravada direto: a
+        /// diferença entre ela e o saldo atual vira um ajuste de
+        /// inventário no extrato do produto. Antes, quem editasse o
+        /// cadastro podia reescrever o saldo sem deixar rastro -- era um
+        /// dos motivos de o estoque nunca bater.
+        /// </summary>
+        public void Atualizar(Produto produto, string? usuario = null)
         {
-            try
-            {
-                using (var comando = _conexao.CreateCommand(
-                    "UPDATE produto SET nome_prod = @_nome, descricao_prod = @_descricao, marca_prod = @_marca," +
-                    "quantidade_prod = @_quantidade, valor_prod = @_preco, id_forn_fk = @_idForn WHERE id_prod = @_id;"))
-                {
-                    comando.Parameters.AddWithValue("@_nome", produto.NomeProduto ?? (object)DBNull.Value);
-                    comando.Parameters.AddWithValue("@_descricao", produto.Descricao ?? (object)DBNull.Value);
-                    comando.Parameters.AddWithValue("@_marca", produto.Marca ?? (object)DBNull.Value);
-                    comando.Parameters.AddWithValue("@_quantidade", produto.Quantidade);
-                    comando.Parameters.AddWithValue("@_preco", produto.Valor);
-                    comando.Parameters.AddWithValue("@_idForn",
-                        produto.IdFornecedor > 0 ? produto.IdFornecedor : (object)DBNull.Value);
-                    comando.Parameters.AddWithValue("@_id", produto.IdProduto);
+            using var conexao = _conexao.GetConnection();
+            using var transacao = conexao.BeginTransaction();
 
-                    comando.ExecuteNonQuery();
-                }
-            }
-            catch
+            int saldoAtual;
+
+            using (var leitura = new MySqlCommand(
+                "SELECT COALESCE(quantidade_prod, 0) FROM produto WHERE id_prod = @id FOR UPDATE",
+                conexao, transacao))
             {
-                throw;
+                leitura.Parameters.AddWithValue("@id", produto.IdProduto);
+
+                var valor = leitura.ExecuteScalar()
+                    ?? throw new Exception("Produto não encontrado.");
+
+                saldoAtual = Convert.ToInt32(valor);
             }
+
+            // A quantidade fica de fora do UPDATE de propósito: quem mexe
+            // nela é o EstoqueDAO, logo abaixo.
+            using (var comando = new MySqlCommand(@"
+                UPDATE produto
+                   SET nome_prod = @nome, descricao_prod = @descricao,
+                       marca_prod = @marca, valor_prod = @preco,
+                       id_forn_fk = @idForn
+                 WHERE id_prod = @id", conexao, transacao))
+            {
+                comando.Parameters.AddWithValue("@nome", produto.NomeProduto ?? (object)DBNull.Value);
+                comando.Parameters.AddWithValue("@descricao", produto.Descricao ?? (object)DBNull.Value);
+                comando.Parameters.AddWithValue("@marca", produto.Marca ?? (object)DBNull.Value);
+                comando.Parameters.AddWithValue("@preco", produto.Valor);
+                comando.Parameters.AddWithValue("@idForn",
+                    produto.IdFornecedor > 0 ? produto.IdFornecedor : (object)DBNull.Value);
+                comando.Parameters.AddWithValue("@id", produto.IdProduto);
+
+                comando.ExecuteNonQuery();
+            }
+
+            var diferenca = produto.Quantidade - saldoAtual;
+
+            if (diferenca != 0)
+            {
+                EstoqueDAO.RegistrarNaTransacao(
+                    conexao, transacao, produto.IdProduto,
+                    TipoMovimentoEstoque.Ajuste, diferenca,
+                    $"Quantidade alterada na edição do produto: {saldoAtual} → {produto.Quantidade}",
+                    null, usuario);
+            }
+
+            transacao.Commit();
         }
 
         public void Excluir(int id)

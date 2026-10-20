@@ -254,8 +254,77 @@ namespace LucasAguiar.Data
                   PRIMARY KEY (`chave`)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci");
 
+            MigrarEstoque(conexao);
+
             PromoverPrimeiroAdmin(conexao);
             SincronizarPermissoes(conexao);
+        }
+
+        /// <summary>
+        /// Movimentacao de estoque.
+        ///
+        /// Ate aqui o sistema so guardava o saldo em produto.quantidade_prod
+        /// e o alterava em quatro lugares -- compra, venda, cancelamento de
+        /// venda e edicao do produto -- sem registrar nada. Quando o numero
+        /// nao batia com a prateleira, nao havia como descobrir onde tinha
+        /// se perdido.
+        ///
+        /// O saldo continua em produto, porque e ele que as telas de venda
+        /// e de produto leem; o que muda e que toda alteracao passa a
+        /// deixar uma linha aqui, com o saldo que ficou depois dela.
+        /// </summary>
+        private void MigrarEstoque(MySqlConnection conexao)
+        {
+            GarantirColuna(conexao, "produto", "estoque_min_prod",
+                "int NOT NULL DEFAULT 0");
+
+            CriarTabela(conexao, "movimento_estoque", @"
+                CREATE TABLE IF NOT EXISTS `movimento_estoque` (
+                  `id_mov_est` int NOT NULL AUTO_INCREMENT,
+                  `id_prod_fk` int NOT NULL,
+                  `data_hora` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                  `tipo` varchar(12) NOT NULL,
+                  `quantidade` int NOT NULL,
+                  `saldo_apos` int NOT NULL,
+                  `motivo` varchar(200) DEFAULT NULL,
+                  `id_ref` int DEFAULT NULL,
+                  `usuario` varchar(100) DEFAULT NULL,
+                  PRIMARY KEY (`id_mov_est`),
+                  KEY `idx_mov_est_produto` (`id_prod_fk`,`data_hora`),
+                  KEY `idx_mov_est_data` (`data_hora`),
+                  CONSTRAINT `fk_mov_est_produto` FOREIGN KEY (`id_prod_fk`)
+                      REFERENCES `produto` (`id_prod`) ON DELETE CASCADE
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci");
+
+            AbrirSaldoInicial(conexao);
+        }
+
+        /// <summary>
+        /// Primeira linha de cada produto: o saldo que ele ja tinha quando
+        /// a movimentacao passou a existir.
+        ///
+        /// Sem isto o extrato comecaria do nada e o saldo de hoje pareceria
+        /// ter surgido sozinho. So roda uma vez por produto -- quem ja tem
+        /// movimento nao recebe outro.
+        /// </summary>
+        private void AbrirSaldoInicial(MySqlConnection conexao)
+        {
+            using var comando = new MySqlCommand(@"
+                INSERT INTO movimento_estoque
+                    (id_prod_fk, data_hora, tipo, quantidade, saldo_apos, motivo, usuario)
+                SELECT p.id_prod, NOW(), 'ABERTURA',
+                       COALESCE(p.quantidade_prod, 0), COALESCE(p.quantidade_prod, 0),
+                       'Saldo existente quando a movimentação passou a ser registrada',
+                       'Sistema'
+                  FROM produto p
+                 WHERE NOT EXISTS (
+                       SELECT 1 FROM movimento_estoque m
+                        WHERE m.id_prod_fk = p.id_prod)", conexao);
+
+            var criados = comando.ExecuteNonQuery();
+
+            if (criados > 0)
+                _log.LogWarning("Estoque: saldo de abertura criado para {Quantos} produto(s).", criados);
         }
 
         /// <summary>

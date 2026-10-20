@@ -1,0 +1,576 @@
+@page "/estoque"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = Politicas.Estoque)]
+
+@using LucasAguiar.Configs
+@using LucasAguiar.Models
+@using LucasAguiar.Services
+@inject EstoqueDAO estoqueDAO
+@inject Autorizacao permissao
+@inject AuthenticationService auth
+
+<PageTitle>Estoque</PageTitle>
+
+<h1>Estoque</h1>
+
+<p class="explica-estoque">
+    O saldo de cada produto e tudo o que o alterou. Compra e venda entram
+    sozinhas; consumo interno, perda e inventário são lançados aqui.
+</p>
+
+<div class="barra-acoes barra-estoque">
+    @if (podeExportar)
+    {
+        <a href="/relatorio/estoque" class="btn-pdf" data-enhance-nav="false">Relatório PDF</a>
+        <a href="/excel/estoque" class="btn-pdf" data-enhance-nav="false">Excel</a>
+    }
+
+    <div class="busca-estoque">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.3-4.3" />
+        </svg>
+        <input class="form-control" type="search" placeholder="Buscar produto ou marca"
+               aria-label="Buscar produto" value="@busca" @oninput="AoBuscar" />
+    </div>
+
+    <label class="so-atencao">
+        <input type="checkbox" @bind="somenteAtencao" @bind:after="Carregar" />
+        <span>Só o que pede atenção</span>
+    </label>
+</div>
+
+@if (!string.IsNullOrEmpty(aviso))
+{
+    <div class="alert alert-success" role="status">@aviso</div>
+}
+@if (!string.IsNullOrEmpty(erro))
+{
+    <div class="alert alert-danger" role="alert">@erro</div>
+}
+
+<div class="indicadores">
+    <div class="indicador @(Negativos > 0 ? "prejuizo" : "")">
+        <span class="rotulo">Saldo negativo</span>
+        <strong class="valor">@Negativos</strong>
+        <span class="detalhe">saiu mais do que havia</span>
+    </div>
+    <div class="indicador @(Zerados > 0 ? "despesa" : "")">
+        <span class="rotulo">Zerados</span>
+        <strong class="valor">@Zerados</strong>
+        <span class="detalhe">acabaram</span>
+    </div>
+    <div class="indicador @(Baixos > 0 ? "comissao" : "")">
+        <span class="rotulo">Abaixo do mínimo</span>
+        <strong class="valor">@Baixos</strong>
+        <span class="detalhe">hora de repor</span>
+    </div>
+    <div class="indicador receita">
+        <span class="rotulo">Valor em estoque</span>
+        <strong class="valor">@ValorTotal.ToString("C")</strong>
+        <span class="detalhe">@saldos.Count produto(s)</span>
+    </div>
+</div>
+
+<div class="tabela fixa">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Produto</th>
+                <th class="al-dir">Saldo</th>
+                <th class="al-dir opcional">Mínimo</th>
+                <th>Situação</th>
+                <th class="al-dir opcional">Valor</th>
+                <th class="col-acoes quatro">Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (carregando)
+            {
+                <tr><td colspan="6" class="text-center text-muted">Carregando…</td></tr>
+            }
+            else if (saldos.Count == 0)
+            {
+                <tr>
+                    <td colspan="6" class="text-center text-muted">
+                        @(somenteAtencao
+                            ? "Nenhum produto pedindo atenção."
+                            : "Nenhum produto encontrado.")
+                    </td>
+                </tr>
+            }
+            else
+            {
+                @foreach (var item in saldos)
+                {
+                    <tr>
+                        <td>
+                            <strong>@item.Nome</strong>
+                            @if (!string.IsNullOrWhiteSpace(item.Marca))
+                            {
+                                <span class="marca">@item.Marca</span>
+                            }
+                        </td>
+                        <td class="al-dir">
+                            <strong class="saldo @item.Situacao">@item.Saldo</strong>
+                        </td>
+                        <td class="al-dir opcional">@(item.Minimo > 0 ? item.Minimo.ToString() : "—")</td>
+                        <td>
+                            <span class="situacao @item.Situacao">
+                                <i aria-hidden="true"></i>@item.RotuloSituacao
+                            </span>
+                        </td>
+                        <td class="al-dir opcional">@item.ValorEmEstoque.ToString("C")</td>
+                        <td class="col-acoes">
+                            <span class="acoes">
+                                <button type="button" class="btn-acao" title="Extrato deste produto"
+                                        aria-label="Ver o extrato de @item.Nome"
+                                        @onclick="() => VerExtrato(item)">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                                         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
+                                    </svg>
+                                </button>
+
+                                @if (podeLancar)
+                                {
+                                    <button type="button" class="btn-acao" title="Consumo interno"
+                                            aria-label="Lançar consumo interno de @item.Nome"
+                                            @onclick="() => AbrirLancamento(item, TipoMovimentoEstoque.Consumo)">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                                             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                            <path d="M12 3v12M7 10l5 5 5-5M5 21h14" />
+                                        </svg>
+                                    </button>
+
+                                    <button type="button" class="btn-acao perigo" title="Perda"
+                                            aria-label="Registrar perda de @item.Nome"
+                                            @onclick="() => AbrirLancamento(item, TipoMovimentoEstoque.Perda)">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                                             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                            <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6" />
+                                        </svg>
+                                    </button>
+                                }
+
+                                @if (podeInventariar)
+                                {
+                                    <button type="button" class="btn-acao" title="Inventário"
+                                            aria-label="Inventariar @item.Nome"
+                                            @onclick="() => AbrirInventario(item)">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                                             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                            <path d="M9 11l3 3 7-7M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9" />
+                                        </svg>
+                                    </button>
+                                }
+                            </span>
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+</div>
+
+@* ---------- extrato ---------- *@
+<section class="bloco-extrato">
+    <header>
+        <h2>Movimentação</h2>
+        <span>
+            @(produtoDoExtrato == null
+                ? "Tudo o que entrou e saiu, do mais recente para o mais antigo."
+                : $"Extrato de {produtoDoExtrato.Nome}.")
+        </span>
+    </header>
+
+    <div class="filtros">
+        <div class="campo">
+            <label>Tipo</label>
+            <Seletor TItem="Opcao" TValor="string"
+                     Itens="OpcoesTipo"
+                     @bind-Valor="tipoFiltro"
+                     TextoDe="o => o.Rotulo"
+                     ValorDe="o => o.Valor" />
+        </div>
+
+        <div class="campo-acoes">
+            <button type="button" class="btn btn-primary" @onclick="CarregarExtrato">Filtrar</button>
+            <button type="button" class="btn btn-outline-secondary" @onclick="LimparExtrato">
+                @(produtoDoExtrato == null ? "Limpar" : "Ver todos os produtos")
+            </button>
+        </div>
+    </div>
+
+    <div class="tabela fixa">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th class="col-quando">Quando</th>
+                    @if (produtoDoExtrato == null)
+                    {
+                        <th>Produto</th>
+                    }
+                    <th>Movimento</th>
+                    <th class="al-dir">Qtd.</th>
+                    <th class="al-dir">Saldo</th>
+                    <th class="opcional">Quem</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (extrato.Count == 0)
+                {
+                    <tr>
+                        <td colspan="@(produtoDoExtrato == null ? 6 : 5)" class="text-center text-muted">
+                            Nenhuma movimentação encontrada.
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var mov in extrato)
+                    {
+                        <tr>
+                            <td class="quando">
+                                <span class="dia">@mov.DataHora.ToString("dd/MM/yy")</span>
+                                <span class="hora">@mov.DataHora.ToString("HH:mm")</span>
+                            </td>
+                            @if (produtoDoExtrato == null)
+                            {
+                                <td>@mov.NomeProduto</td>
+                            }
+                            <td>
+                                <span class="tipo-mov @mov.Tipo.ToLowerInvariant()">@mov.RotuloTipo</span>
+                                @if (!string.IsNullOrWhiteSpace(mov.Motivo))
+                                {
+                                    <div class="motivo">@mov.Motivo</div>
+                                }
+                            </td>
+                            <td class="al-dir">
+                                <strong class="@(mov.Entra ? "entra" : "sai")">@mov.QuantidadeComSinal</strong>
+                            </td>
+                            <td class="al-dir">@mov.SaldoApos</td>
+                            <td class="opcional">@(string.IsNullOrWhiteSpace(mov.Usuario) ? "—" : mov.Usuario)</td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</section>
+
+@* ---------- lançamento de consumo / perda ---------- *@
+<Janela Visivel="@(lancando != null)" Erro="@erroModal"
+        Titulo="@(tipoLancamento == TipoMovimentoEstoque.Perda ? "Registrar perda" : "Consumo interno")"
+        OnFechar="Fechar">
+    <ChildContent>
+        <p class="texto-janela">
+            @if (tipoLancamento == TipoMovimentoEstoque.Perda)
+            {
+                <text>
+                    Produto que quebrou, venceu ou sumiu. Sai do estoque e não
+                    é venda nem consumo de atendimento.
+                </text>
+            }
+            else
+            {
+                <text>
+                    Produto usado no atendimento — pomada, lâmina, química.
+                    Sai do estoque sem virar venda.
+                </text>
+            }
+        </p>
+
+        <div class="grade-campos">
+            <div class="largo">
+                <label class="form-label">Produto</label>
+                <input class="form-control" value="@lancando?.Nome" disabled />
+            </div>
+            <div>
+                <label class="form-label">Saldo atual</label>
+                <input class="form-control" value="@lancando?.Saldo" disabled />
+            </div>
+            <div>
+                <label class="form-label">Quantidade</label>
+                <input type="number" class="form-control" min="1" step="1" @bind="quantidade" />
+            </div>
+            <div class="largo">
+                <label class="form-label">
+                    Motivo
+                    @if (tipoLancamento == TipoMovimentoEstoque.Perda)
+                    {
+                        <span class="obrigatorio">*</span>
+                    }
+                </label>
+                <input class="form-control" maxlength="200" @bind="motivo"
+                       placeholder="@(tipoLancamento == TipoMovimentoEstoque.Perda
+                           ? "Frasco quebrou, produto venceu…"
+                           : "Usado nos cortes do dia, troca de lâmina…")" />
+            </div>
+        </div>
+
+        @if (lancando != null && quantidade > 0)
+        {
+            <p class="previa">
+                Saldo depois: <strong>@(lancando.Saldo - quantidade)</strong>
+            </p>
+        }
+    </ChildContent>
+    <Rodape>
+        <button type="button" class="btn btn-outline-secondary" @onclick="Fechar">Cancelar</button>
+        <button type="button" class="btn btn-primary" @onclick="ConfirmarLancamento">Lançar</button>
+    </Rodape>
+</Janela>
+
+@* ---------- inventário ---------- *@
+<Janela Visivel="@(inventariando != null)" Titulo="Inventário" Erro="@erroModal"
+        OnFechar="Fechar">
+    <ChildContent>
+        <p class="texto-janela">
+            Conte o que está na prateleira e informe o número. O sistema grava
+            a diferença como ajuste, com o seu nome — é a diferença que conta
+            a história, não o número contado.
+        </p>
+
+        <div class="grade-campos">
+            <div class="largo">
+                <label class="form-label">Produto</label>
+                <input class="form-control" value="@inventariando?.Nome" disabled />
+            </div>
+            <div>
+                <label class="form-label">O sistema tem</label>
+                <input class="form-control" value="@inventariando?.Saldo" disabled />
+            </div>
+            <div>
+                <label class="form-label">Você contou</label>
+                <input type="number" class="form-control" min="0" step="1" @bind="contado" />
+            </div>
+            <div class="largo">
+                <label class="form-label">Observação</label>
+                <input class="form-control" maxlength="150" @bind="motivo"
+                       placeholder="Opcional: o que explica a diferença" />
+            </div>
+            <div class="largo">
+                <label class="form-label">Estoque mínimo</label>
+                <input type="number" class="form-control" min="0" step="1" @bind="minimo" />
+                <small class="dica">
+                    Abaixo disso o produto aparece como "hora de repor". Zero
+                    desliga o aviso.
+                </small>
+            </div>
+        </div>
+
+        @if (inventariando != null)
+        {
+            var diferenca = contado - inventariando.Saldo;
+
+            <p class="previa @(diferenca == 0 ? "" : diferenca > 0 ? "sobra" : "falta")">
+                @if (diferenca == 0)
+                {
+                    <text>A contagem bate com o sistema. Nenhum ajuste será gravado.</text>
+                }
+                else if (diferenca > 0)
+                {
+                    <text>Sobraram <strong>@diferenca</strong> a mais do que o sistema tinha.</text>
+                }
+                else
+                {
+                    <text>Faltam <strong>@Math.Abs(diferenca)</strong> em relação ao sistema.</text>
+                }
+            </p>
+        }
+    </ChildContent>
+    <Rodape>
+        <button type="button" class="btn btn-outline-secondary" @onclick="Fechar">Cancelar</button>
+        <button type="button" class="btn btn-primary" @onclick="ConfirmarInventario">Salvar</button>
+    </Rodape>
+</Janela>
+
+@code {
+    private List<SaldoEstoque> saldos = new();
+    private List<MovimentoEstoque> extrato = new();
+
+    private string busca = "";
+    private bool somenteAtencao;
+    private bool carregando = true;
+
+    private SaldoEstoque? lancando;
+    private SaldoEstoque? inventariando;
+    private SaldoEstoque? produtoDoExtrato;
+
+    private string tipoLancamento = TipoMovimentoEstoque.Consumo;
+    private string tipoFiltro = "";
+    private int quantidade = 1;
+    private int contado;
+    private int minimo;
+    private string motivo = "";
+
+    private bool podeLancar;
+    private bool podeInventariar;
+    private bool podeExportar;
+
+    private string? erro;
+    private string? erroModal;
+    private string? aviso;
+
+    private int Negativos => saldos.Count(s => s.Situacao == "negativo");
+    private int Zerados => saldos.Count(s => s.Situacao == "zerado");
+    private int Baixos => saldos.Count(s => s.Situacao == "baixo");
+    private decimal ValorTotal => saldos.Sum(s => s.ValorEmEstoque);
+
+    private static readonly List<Opcao> OpcoesTipo = new List<Opcao> { new("", "Todos", null, null) }
+        .Concat(TipoMovimentoEstoque.Todos.Select(t => new Opcao(t.Valor, t.Rotulo, null, null)))
+        .ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await auth.PrepararAsync();
+        await permissao.CarregarAsync();
+
+        podeLancar = permissao.Pode("estoque", Acao.Criar);
+        podeInventariar = permissao.Pode("estoque", Acao.Editar);
+        podeExportar = permissao.Pode("estoque", Acao.Exportar);
+
+        Carregar();
+        CarregarExtrato();
+    }
+
+    private void Carregar()
+    {
+        carregando = true;
+        erro = null;
+
+        try
+        {
+            saldos = estoqueDAO.Saldos(busca, somenteAtencao);
+        }
+        catch (Exception ex)
+        {
+            erro = "Não foi possível carregar o estoque: " + ex.Message;
+            saldos = new();
+        }
+        finally
+        {
+            carregando = false;
+        }
+    }
+
+    private void AoBuscar(ChangeEventArgs e)
+    {
+        busca = e.Value?.ToString() ?? "";
+        Carregar();
+    }
+
+    private void CarregarExtrato()
+    {
+        try
+        {
+            extrato = estoqueDAO.Extrato(new EstoqueDAO.FiltroExtrato
+            {
+                IdProduto = produtoDoExtrato?.IdProduto,
+                Tipo = string.IsNullOrWhiteSpace(tipoFiltro) ? null : tipoFiltro,
+                Limite = produtoDoExtrato == null ? 60 : 200
+            });
+        }
+        catch (Exception ex)
+        {
+            erro = "Não foi possível carregar a movimentação: " + ex.Message;
+            extrato = new();
+        }
+    }
+
+    private void VerExtrato(SaldoEstoque item)
+    {
+        produtoDoExtrato = item;
+        CarregarExtrato();
+    }
+
+    private void LimparExtrato()
+    {
+        produtoDoExtrato = null;
+        tipoFiltro = "";
+        CarregarExtrato();
+    }
+
+    private void AbrirLancamento(SaldoEstoque item, string tipo)
+    {
+        lancando = item;
+        tipoLancamento = tipo;
+        quantidade = 1;
+        motivo = "";
+        erroModal = null;
+    }
+
+    private void AbrirInventario(SaldoEstoque item)
+    {
+        inventariando = item;
+        contado = Math.Max(0, item.Saldo);
+        minimo = item.Minimo;
+        motivo = "";
+        erroModal = null;
+    }
+
+    private void Fechar()
+    {
+        lancando = null;
+        inventariando = null;
+        erroModal = null;
+    }
+
+    private void ConfirmarLancamento()
+    {
+        if (lancando == null) return;
+
+        var alvo = lancando;
+
+        try
+        {
+            var saldo = tipoLancamento == TipoMovimentoEstoque.Perda
+                ? estoqueDAO.RegistrarPerda(alvo.IdProduto, quantidade, motivo, auth.GetUsuarioNome())
+                : estoqueDAO.Consumir(alvo.IdProduto, quantidade, motivo, auth.GetUsuarioNome());
+
+            Fechar();
+
+            aviso = tipoLancamento == TipoMovimentoEstoque.Perda
+                ? $"Perda de {quantidade} registrada em {alvo.Nome}. Saldo agora: {saldo}."
+                : $"Consumo de {quantidade} lançado em {alvo.Nome}. Saldo agora: {saldo}.";
+
+            Carregar();
+            CarregarExtrato();
+        }
+        catch (Exception ex)
+        {
+            erroModal = ex.Message;
+        }
+    }
+
+    private void ConfirmarInventario()
+    {
+        if (inventariando == null) return;
+
+        var alvo = inventariando;
+        var diferenca = contado - alvo.Saldo;
+
+        try
+        {
+            if (minimo != alvo.Minimo)
+                estoqueDAO.DefinirMinimo(alvo.IdProduto, minimo);
+
+            var saldo = estoqueDAO.Inventariar(
+                alvo.IdProduto, contado, motivo, auth.GetUsuarioNome());
+
+            Fechar();
+
+            aviso = diferenca == 0
+                ? $"{alvo.Nome}: a contagem bate com o sistema."
+                : $"{alvo.Nome} ajustado de {alvo.Saldo} para {saldo}.";
+
+            Carregar();
+            CarregarExtrato();
+        }
+        catch (Exception ex)
+        {
+            erroModal = ex.Message;
+        }
+    }
+}

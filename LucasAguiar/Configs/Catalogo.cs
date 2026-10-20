@@ -140,6 +140,15 @@ namespace LucasAguiar.Configs
                 new[] { "/produto", "/produto/novo" },
                 new[] { "/relatorio/produtos", "/excel/produtos" }),
 
+            // Criar = lancar consumo e perda. Editar = inventariar, que e
+            // corrigir o saldo e por isso pede permissao propria. Nao tem
+            // Excluir: movimento registrado nao se apaga, senao o extrato
+            // nao serve para conferir nada.
+            new("estoque", "Estoque", Cadastros,
+                Acao.Ver | Acao.Criar | Acao.Editar | Acao.Exportar,
+                new[] { "/estoque" },
+                new[] { "/relatorio/estoque", "/excel/estoque" }),
+
             new("planos", "Planos", Cadastros, Cadastro,
                 new[] { "/plano", "/plano/novo" },
                 new[] { "/relatorio/planos" }),

@@ -1510,3 +1510,60 @@ form .form-check-label {
 .filtros .form-select {
     height: var(--altura-controle);
 }
+
+
+/* ===========================================================
+   AVISO DE REPOSICAO
+   Faixa no painel quando algum produto esta no minimo, zerado
+   ou negativo. Mesma forma da faixa de caixa, para o painel
+   nao virar uma colecao de avisos cada um de um jeito.
+   =========================================================== */
+
+.aviso-reposicao {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 1.25rem;
+    padding: 14px 18px;
+    border: 1px solid var(--alerta-borda);
+    border-radius: var(--raio-cartao);
+    background: var(--alerta-fundo);
+}
+
+.aviso-reposicao svg {
+    width: 22px;
+    height: 22px;
+    flex: none;
+    color: var(--alerta);
+}
+
+.aviso-reposicao > div {
+    flex: 1;
+    min-width: 0;
+}
+
+.aviso-reposicao strong {
+    display: block;
+    font-size: 14.5px;
+    color: var(--alerta-texto);
+}
+
+.aviso-reposicao span {
+    display: block;
+    margin-top: 2px;
+    font-size: 12.5px;
+    color: var(--alerta-texto);
+    opacity: 0.85;
+    overflow-wrap: anywhere;
+}
+
+@media (max-width: 620px) {
+    .aviso-reposicao {
+        flex-wrap: wrap;
+    }
+
+    .aviso-reposicao .link-caixa {
+        width: 100%;
+        text-align: center;
+    }
+}

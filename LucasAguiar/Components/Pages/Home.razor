@@ -9,6 +9,7 @@
 @using System.Text.Json
 @inject PainelDAO painelDAO
 @inject CaixaDAO caixaDAO
+@inject EstoqueDAO estoqueDAO
 @inject Autorizacao permissao
 
 
@@ -73,6 +74,32 @@
     }
 </div>
 
+
+@* ---------- reposicao ----------
+   O aviso so aparece quando ha o que repor, e so para quem pode abrir
+   o estoque. Produto acabando e coisa que se resolve no mesmo dia, e
+   ninguem vai conferir a tela de estoque todo dia por via das duvidas. *@
+@if (reposicao.Count > 0)
+{
+    <div class="aviso-reposicao">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 9h18v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1zM3 9l2-5h14l2 5M12 12v5M9.5 14.5h5" />
+        </svg>
+
+        <div>
+            <strong>
+                @reposicao.Count produto(s) pedindo reposição
+            </strong>
+            <span>
+                @string.Join(" · ", reposicao.Take(4).Select(p =>
+                    $"{p.Nome}: {p.Saldo}"))@(reposicao.Count > 4 ? " · …" : "")
+            </span>
+        </div>
+
+        <a href="/estoque" class="link-caixa">Ver estoque</a>
+    </div>
+}
 
 @* ---------- indicadores ----------
    Faturamento, despesa, comissao e lucro so para quem tem "Ver valores".
@@ -208,6 +235,7 @@ else
 
     private bool podeVerValores;
     private bool podeVerCaixa;
+    private List<SaldoEstoque> reposicao = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -215,6 +243,18 @@ else
 
         podeVerValores = permissao.Pode("painel", Acao.VerValores);
         podeVerCaixa = permissao.PodeVer("caixa");
+
+        if (permissao.PodeVer("estoque"))
+        {
+            try
+            {
+                reposicao = estoqueDAO.PedindoAtencao(10);
+            }
+            catch
+            {
+                // Aviso de reposicao nao pode derrubar o painel inteiro.
+            }
+        }
 
         Carregar();
     }

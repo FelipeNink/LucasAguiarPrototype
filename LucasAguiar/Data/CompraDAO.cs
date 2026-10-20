@@ -92,14 +92,12 @@ namespace LucasAguiar.Data
                 // Compra de produto dá entrada no estoque.
                 if (compra.IdProduto > 0)
                 {
-                    using var cmdEstoque = new MySqlCommand(@"
-                        UPDATE produto
-                        SET quantidade_prod = COALESCE(quantidade_prod, 0) + @quantidade
-                        WHERE id_prod = @idProduto", conexao, transacao);
-
-                    cmdEstoque.Parameters.AddWithValue("@quantidade", compra.Quantidade);
-                    cmdEstoque.Parameters.AddWithValue("@idProduto", compra.IdProduto);
-                    cmdEstoque.ExecuteNonQuery();
+                    MoverEstoque(
+                        compra.IdProduto, compra.Quantidade, conexao, transacao,
+                        $"Compra #{idCompra}"
+                        + (string.IsNullOrWhiteSpace(compra.NomeFornecedor)
+                            ? "" : $" — {compra.NomeFornecedor}"),
+                        idCompra);
                 }
 
                 transacao.Commit();
@@ -279,18 +277,25 @@ namespace LucasAguiar.Data
             return comando.ExecuteScalar() is string status && status == "FECHADO";
         }
 
-        private static void MoverEstoque(int idProduto, int quantidade, MySqlConnection conexao, MySqlTransaction transacao)
+        /// <summary>
+        /// Entrada e correcao de entrada pela compra.
+        ///
+        /// Era um UPDATE direto no saldo. Passou pelo EstoqueDAO para a
+        /// linha ficar no extrato: sem ela, o produto aparecia na
+        /// prateleira sem que nada dissesse de onde veio.
+        /// </summary>
+        private static void MoverEstoque(
+            int idProduto, int quantidade,
+            MySqlConnection conexao, MySqlTransaction transacao,
+            string? motivo = null, int? idCompra = null, string? usuario = null)
         {
             if (idProduto <= 0 || quantidade == 0) return;
 
-            using var comando = new MySqlCommand(@"
-                UPDATE produto
-                SET quantidade_prod = COALESCE(quantidade_prod, 0) + @quantidade
-                WHERE id_prod = @idProduto", conexao, transacao);
-
-            comando.Parameters.AddWithValue("@quantidade", quantidade);
-            comando.Parameters.AddWithValue("@idProduto", idProduto);
-            comando.ExecuteNonQuery();
+            EstoqueDAO.RegistrarNaTransacao(
+                conexao, transacao, idProduto,
+                quantidade > 0 ? TipoMovimentoEstoque.Entrada : TipoMovimentoEstoque.Ajuste,
+                quantidade,
+                motivo ?? "Compra recebida", idCompra, usuario);
         }
 
         public List<Compra> ListarTodos(DateTime? de = null, DateTime? ate = null)

@@ -58,6 +58,12 @@ namespace LucasAguiar.Models
         public List<VendaItem> Itens { get; set; } = new();
 
         /// <summary>
+        /// Quem lancou a venda. Nao vai para a tabela venda -- vai para o
+        /// movimento de estoque, que precisa dizer quem deu a baixa.
+        /// </summary>
+        public string? Usuario { get; set; }
+
+        /// <summary>
         /// Preenchido quando esta venda comercializa um plano: ao confirmar,
         /// cria a assinatura com os créditos correspondentes.
         /// </summary>

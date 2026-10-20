@@ -57,6 +57,7 @@ builder.Services.AddScoped<CaixaDAO>();
 builder.Services.AddScoped<DespesaDAO>();
 builder.Services.AddScoped<PainelDAO>();
 builder.Services.AddScoped<RelatoriosDAO>();
+builder.Services.AddScoped<EstoqueDAO>();
 builder.Services.AddScoped<ComissaoDAO>();
 builder.Services.AddScoped<FolhaDAO>();
 builder.Services.AddScoped<UsuarioDAO>();

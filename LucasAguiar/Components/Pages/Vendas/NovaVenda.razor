@@ -1052,6 +1052,10 @@
                 };
             }
 
+            venda.Usuario = auth.GetUsuarioNome();
+
+
+
             var id = vendaDAO.Inserir(venda);
 
             // A venda ja foi gravada: se marcar o agendamento falhar, nao

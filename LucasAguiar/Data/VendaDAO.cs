@@ -120,16 +120,19 @@ namespace LucasAguiar.Data
                         AssinaturaDAO.ConsumirNaTransacao(conexao, transacao, item.IdSaldo.Value, item.Quantidade);
 
                     // Produto vendido sai do estoque. Servico nao tem estoque.
+                    //
+                    // A baixa era um UPDATE com GREATEST(0, saldo - qtd):
+                    // vender cinco tendo dois deixava o saldo em zero em vez
+                    // de -3, e a diferenca sumia. Agora o saldo vai a
+                    // negativo e o movimento fica registrado -- a venda no
+                    // balcao nunca e barrada por causa do estoque, mas o
+                    // numero passa a dizer a verdade.
                     if (item.TipoItem == TipoItem.Produto && item.IdReferencia.HasValue)
                     {
-                        using var baixa = new MySqlCommand(@"
-                            UPDATE produto
-                            SET quantidade_prod = GREATEST(0, COALESCE(quantidade_prod, 0) - @qtd)
-                            WHERE id_prod = @idProduto", conexao, transacao);
-
-                        baixa.Parameters.AddWithValue("@qtd", item.Quantidade);
-                        baixa.Parameters.AddWithValue("@idProduto", item.IdReferencia.Value);
-                        baixa.ExecuteNonQuery();
+                        EstoqueDAO.RegistrarNaTransacao(
+                            conexao, transacao, item.IdReferencia.Value,
+                            TipoMovimentoEstoque.Saida, -item.Quantidade,
+                            $"Venda de {item.Descricao}", idVenda, venda.Usuario);
                     }
                 }
 
@@ -199,14 +202,36 @@ namespace LucasAguiar.Data
                 }
 
                 // Devolve ao estoque os produtos que a venda tinha baixado.
+                //
+                // Produto a produto, e nao num UPDATE com JOIN: cada
+                // devolucao precisa da sua linha no movimento, senao o
+                // extrato mostra a saida da venda e nunca a volta.
+                var devolver = new List<(int Produto, int Quantidade, string Descricao)>();
+
                 using (var comando = new MySqlCommand(@"
-                    UPDATE produto p
-                    JOIN venda_item vi ON vi.id_ref = p.id_prod
-                    SET p.quantidade_prod = COALESCE(p.quantidade_prod, 0) + vi.quantidade
-                    WHERE vi.id_vend_fk = @id AND vi.tipo_item = 'PRODUTO'", conexao, transacao))
+                    SELECT vi.id_ref, vi.quantidade, vi.descricao
+                      FROM venda_item vi
+                     WHERE vi.id_vend_fk = @id AND vi.tipo_item = 'PRODUTO'
+                       AND vi.id_ref IS NOT NULL", conexao, transacao))
                 {
                     comando.Parameters.AddWithValue("@id", idVenda);
-                    comando.ExecuteNonQuery();
+
+                    using var leitor = comando.ExecuteReader();
+                    while (leitor.Read())
+                    {
+                        devolver.Add((
+                            leitor.GetInt32("id_ref"),
+                            leitor.GetInt32("quantidade"),
+                            DAOHelper.GetString(leitor, "descricao")));
+                    }
+                }
+
+                foreach (var (produto, quantidade, descricao) in devolver)
+                {
+                    EstoqueDAO.RegistrarNaTransacao(
+                        conexao, transacao, produto,
+                        TipoMovimentoEstoque.Devolucao, quantidade,
+                        $"Venda #{idVenda} cancelada: {descricao}", idVenda, usuario);
                 }
 
                 // Venda que criou uma assinatura: encerra a assinatura junto.
