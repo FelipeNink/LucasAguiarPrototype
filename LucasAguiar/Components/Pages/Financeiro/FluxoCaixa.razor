@@ -1,0 +1,426 @@
+@page "/fluxo-caixa"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = Politicas.FluxoCaixa)]
+
+@using LucasAguiar.Configs
+@using LucasAguiar.Models
+@using LucasAguiar.Services
+@inject FluxoCaixaDAO fluxoDAO
+@inject Autorizacao permissao
+@inject AuthenticationService auth
+
+<PageTitle>Fluxo de caixa</PageTitle>
+
+<h1 class="titulo-listagem">Fluxo de caixa</h1>
+
+<div class="barra-acoes barra-listagem">
+    <button type="button" class="btn btn-outline-secondary" @onclick="AbrirTaxas">Taxas e prazos</button>
+</div>
+
+@if (!string.IsNullOrEmpty(erro))
+{
+    <div class="alert alert-danger">@erro</div>
+}
+@if (!string.IsNullOrEmpty(aviso))
+{
+    <div class="alert alert-success">@aviso</div>
+}
+
+<div class="abas-fluxo" role="tablist">
+    <button type="button" role="tab" class="@(aba == Aba.Fluxo ? "ativa" : "")" @onclick="() => aba = Aba.Fluxo">
+        Entradas e saídas
+    </button>
+    <button type="button" role="tab" class="@(aba == Aba.Dre ? "ativa" : "")" @onclick="() => aba = Aba.Dre">
+        Resultado (DRE)
+    </button>
+</div>
+
+@* ---------- filtros ---------- *@
+<section class="filtros">
+    <div class="campo">
+        <label>De</label>
+        <input type="date" class="form-control" @bind="de" />
+    </div>
+    <div class="campo">
+        <label>Até</label>
+        <input type="date" class="form-control" @bind="ate" />
+    </div>
+    <div class="campo-acoes">
+        <button type="button" class="btn btn-primary" @onclick="Aplicar">Filtrar</button>
+    </div>
+</section>
+
+<div class="atalhos-periodo">
+    <button type="button" class="@(atalho == Atalho.EsteMes ? "ativo" : "")" @onclick="() => Periodo(Atalho.EsteMes)">Este mês</button>
+    <button type="button" class="@(atalho == Atalho.MesAnterior ? "ativo" : "")" @onclick="() => Periodo(Atalho.MesAnterior)">Mês anterior</button>
+    <button type="button" class="@(atalho == Atalho.Proximos30 ? "ativo" : "")" @onclick="() => Periodo(Atalho.Proximos30)">Próximos 30 dias</button>
+    <button type="button" class="@(atalho == Atalho.Proximos90 ? "ativo" : "")" @onclick="() => Periodo(Atalho.Proximos90)">Próximos 90 dias</button>
+</div>
+
+@if (aba == Aba.Fluxo)
+{
+    @* ---------- resumo ---------- *@
+    <div class="resumo">
+        <div class="cartao-resumo">
+            <span class="rotulo">Recebido</span>
+            <strong class="valor positivo">@Soma(true, true).ToString("C")</strong>
+        </div>
+        <div class="cartao-resumo">
+            <span class="rotulo">A receber</span>
+            <strong class="valor">@Soma(true, false).ToString("C")</strong>
+        </div>
+        <div class="cartao-resumo">
+            <span class="rotulo">Pago</span>
+            <strong class="valor negativo">@Soma(false, true).ToString("C")</strong>
+        </div>
+        <div class="cartao-resumo">
+            <span class="rotulo">A pagar</span>
+            <strong class="valor">@Soma(false, false).ToString("C")</strong>
+        </div>
+        <div class="cartao-resumo @(SaldoRealizado < 0 ? "prejuizo" : "")">
+            <span class="rotulo">Saldo realizado</span>
+            <strong class="valor">@SaldoRealizado.ToString("C")</strong>
+        </div>
+        <div class="cartao-resumo total @(SaldoPrevisto < 0 ? "prejuizo" : "")">
+            <span class="rotulo">Saldo previsto</span>
+            <strong class="valor">@SaldoPrevisto.ToString("C")</strong>
+        </div>
+    </div>
+
+    <p class="nota-fluxo">
+        Entrada é o pagamento da venda no dia em que o dinheiro cai, já sem a taxa da maquininha
+        (veja <em>Taxas e prazos</em>). Saída é a despesa: paga no dia do pagamento, em aberto no
+        vencimento — compras e folha já entram por aqui. O saldo é só do período escolhido.
+    </p>
+
+    <div class="tabela">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Lançamento</th>
+                    <th class="opcional">Detalhe</th>
+                    <th>Situação</th>
+                    <th class="col-num">Entrada</th>
+                    <th class="col-num">Saída</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (lancamentos.Count > 0)
+                {
+                    var acumulado = 0m;
+                    @foreach (var dia in lancamentos.GroupBy(l => l.Data))
+                    {
+                        var saldoDia = dia.Sum(l => l.ValorComSinal);
+                        acumulado += saldoDia;
+                        <tr class="grupo-dia">
+                            <td colspan="5">
+                                <span class="grupo-dia-titulo">@RotuloDoDia(dia.Key)</span>
+                                <span class="grupo-dia-resumo">
+                                    dia @Sinal(saldoDia) · acumulado @Sinal(acumulado)
+                                </span>
+                            </td>
+                        </tr>
+
+                        @foreach (var l in dia)
+                        {
+                            <tr class="@(l.Realizado ? "" : "previsto")">
+                                <td>
+                                    @if (l.IdVenda.HasValue)
+                                    {
+                                        <a href="/vendas" class="link-texto">@l.Descricao</a>
+                                    }
+                                    else if (l.IdDespesa.HasValue)
+                                    {
+                                        <a href="/despesa/@l.IdDespesa" class="link-texto">@l.Descricao</a>
+                                    }
+                                    else
+                                    {
+                                        @l.Descricao
+                                    }
+                                </td>
+                                <td class="opcional"><span class="descritivo">@(string.IsNullOrWhiteSpace(l.Detalhe) ? "—" : l.Detalhe)</span></td>
+                                <td><span class="status @ClasseSituacao(l)"><i></i>@RotuloSituacao(l)</span></td>
+                                <td class="col-num entrada">@(l.Entrada ? l.Valor.ToString("C") : "")</td>
+                                <td class="col-num saida">@(l.Entrada ? "" : l.Valor.ToString("C"))</td>
+                            </tr>
+                        }
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="5" class="vazio">Nenhuma entrada ou saída neste período.</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+else if (dre != null)
+{
+    @* ---------- DRE ---------- *@
+    <div class="resumo">
+        <div class="cartao-resumo">
+            <span class="rotulo">Receita</span>
+            <strong class="valor">@dre.Receita.ToString("C")</strong>
+        </div>
+        <div class="cartao-resumo">
+            <span class="rotulo">Margem de contribuição</span>
+            <strong class="valor">@dre.Margem.ToString("C")</strong>
+        </div>
+        <div class="cartao-resumo total @(dre.Resultado < 0 ? "prejuizo" : "")">
+            <span class="rotulo">Resultado</span>
+            <strong class="valor">@dre.Resultado.ToString("C")</strong>
+        </div>
+        <div class="cartao-resumo">
+            <span class="rotulo">Margem líquida</span>
+            <strong class="valor">@dre.Percentual(dre.Resultado).ToString("0.#")%</strong>
+        </div>
+    </div>
+
+    <div class="tabela">
+        <table class="table tabela-dre">
+            <thead>
+                <tr>
+                    <th>Conta</th>
+                    <th class="col-num">Valor</th>
+                    <th class="col-num">% da receita</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr class="conta-forte">
+                    <td>Receita das vendas</td>
+                    <td class="col-num">@dre.Receita.ToString("C")</td>
+                    <td class="col-num">100%</td>
+                </tr>
+                @LinhaDre("(−) Taxas da maquininha", dre.Taxas)
+                <tr class="subtotal">
+                    <td>= Receita líquida</td>
+                    <td class="col-num">@dre.ReceitaLiquida.ToString("C")</td>
+                    <td class="col-num">@dre.Percentual(dre.ReceitaLiquida).ToString("0.#")%</td>
+                </tr>
+                @LinhaDre("(−) Custo dos produtos vendidos", dre.CustoProdutos)
+                @LinhaDre("(−) Comissões", dre.Comissoes)
+                <tr class="subtotal">
+                    <td>= Margem de contribuição</td>
+                    <td class="col-num">@dre.Margem.ToString("C")</td>
+                    <td class="col-num">@dre.Percentual(dre.Margem).ToString("0.#")%</td>
+                </tr>
+                @LinhaDre("(−) Salários fixos", dre.SalariosFixos)
+                @foreach (var d in dre.Despesas)
+                {
+                    @LinhaDre($"(−) {d.Categoria}", d.Valor)
+                }
+                <tr class="resultado @(dre.Resultado < 0 ? "negativo" : "positivo")">
+                    <td>= Resultado do período</td>
+                    <td class="col-num">@dre.Resultado.ToString("C")</td>
+                    <td class="col-num">@dre.Percentual(dre.Resultado).ToString("0.#")%</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <ul class="nota-fluxo notas-dre">
+        <li>Por competência: a venda conta no dia em que foi feita, mesmo que o cartão pague depois.</li>
+        <li>Custo dos produtos pelo preço de custo atual do cadastro (o da última compra).</li>
+        <li>Salário fixo proporcional aos dias do período: o da folha paga daquele mês ou, sem folha, o do cadastro.</li>
+        <li>Despesas pela data (pagamento, ou vencimento se em aberto). Ficam fora as geradas pela folha
+            e pelas compras: já entram em comissões, salários e custo dos produtos.</li>
+    </ul>
+}
+
+@* ---------- taxas e prazos ---------- *@
+<Janela Visivel="taxasAbertas" Titulo="Taxas e prazos por forma de pagamento" OnFechar="() => taxasAbertas = false">
+    <ChildContent>
+        <p class="nota-fluxo">
+            A taxa sai do valor recebido e o prazo diz em quantos dias o dinheiro cai.
+            No crédito parcelado, o prazo é o da 1ª parcela; as outras vêm a cada 30 dias.
+        </p>
+        @if (!string.IsNullOrEmpty(erroTaxas))
+        {
+            <div class="alert alert-danger">@erroTaxas</div>
+        }
+        <table class="table tabela-taxas">
+            <thead>
+                <tr>
+                    <th>Forma</th>
+                    <th class="col-num">Taxa (%)</th>
+                    <th class="col-num">Prazo (dias)</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var t in edicaoTaxas)
+                {
+                    <tr>
+                        <td>@t.Rotulo</td>
+                        <td class="col-num">
+                            <input type="number" step="0.01" min="0" max="100" class="form-control"
+                                   disabled="@(!podeEditar)" @bind="t.Taxa" />
+                        </td>
+                        <td class="col-num">
+                            <input type="number" step="1" min="0" max="365" class="form-control"
+                                   disabled="@(!podeEditar)" @bind="t.Dias" />
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </ChildContent>
+    <Rodape>
+        <button type="button" class="btn btn-outline-secondary" @onclick="() => taxasAbertas = false">Fechar</button>
+        @if (podeEditar)
+        {
+            <button type="button" class="btn btn-primary" @onclick="SalvarTaxas">Salvar</button>
+        }
+    </Rodape>
+</Janela>
+
+@code {
+    private enum Aba { Fluxo, Dre }
+    private enum Atalho { EsteMes, MesAnterior, Proximos30, Proximos90 }
+
+    private Aba aba = Aba.Fluxo;
+
+    /// <summary>Atalho em uso; nulo quando as datas foram digitadas.</summary>
+    private Atalho? atalho = Atalho.EsteMes;
+    private DateTime de;
+    private DateTime ate;
+
+    private List<LancamentoFluxo> lancamentos = new();
+    private Dre? dre;
+    private string? erro;
+    private string? aviso;
+
+    private bool podeEditar;
+    private bool taxasAbertas;
+    private string? erroTaxas;
+    private List<TaxaPagamento> edicaoTaxas = new();
+
+    private decimal Soma(bool entrada, bool realizado) =>
+        lancamentos.Where(l => l.Entrada == entrada && l.Realizado == realizado).Sum(l => l.Valor);
+
+    private decimal SaldoRealizado => lancamentos.Where(l => l.Realizado).Sum(l => l.ValorComSinal);
+    private decimal SaldoPrevisto => lancamentos.Sum(l => l.ValorComSinal);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await auth.PrepararAsync();
+        await permissao.CarregarAsync();
+        podeEditar = permissao.Pode("fluxo", Acao.Editar);
+
+        Periodo(Atalho.EsteMes);
+    }
+
+    private void Periodo(Atalho novo)
+    {
+        var hoje = DateTime.Today;
+        var primeiroDoMes = new DateTime(hoje.Year, hoje.Month, 1);
+
+        (de, ate) = novo switch
+        {
+            Atalho.MesAnterior => (primeiroDoMes.AddMonths(-1), primeiroDoMes.AddDays(-1)),
+            Atalho.Proximos30 => (hoje, hoje.AddDays(30)),
+            Atalho.Proximos90 => (hoje, hoje.AddDays(90)),
+            _ => (primeiroDoMes, primeiroDoMes.AddMonths(1).AddDays(-1))
+        };
+
+        atalho = novo;
+        Carregar();
+    }
+
+    private void Aplicar()
+    {
+        atalho = null;
+        Carregar();
+    }
+
+    private void Carregar()
+    {
+        try
+        {
+            erro = null;
+
+            if (ate < de)
+            {
+                erro = "A data final é anterior à inicial.";
+                return;
+            }
+
+            lancamentos = fluxoDAO.Lancamentos(de, ate);
+            dre = fluxoDAO.MontarDre(de, ate);
+        }
+        catch (Exception ex)
+        {
+            erro = "Erro ao montar o fluxo de caixa: " + ex.Message;
+            lancamentos = new();
+            dre = null;
+        }
+    }
+
+    private void AbrirTaxas()
+    {
+        try
+        {
+            erroTaxas = null;
+            aviso = null;
+            edicaoTaxas = fluxoDAO.ListarTaxas().Values
+                .OrderBy(t => Array.FindIndex(TaxaPagamento.Todas, x => x.Forma == t.Forma))
+                .ToList();
+            taxasAbertas = true;
+        }
+        catch (Exception ex)
+        {
+            erro = "Erro ao carregar as taxas: " + ex.Message;
+        }
+    }
+
+    private void SalvarTaxas()
+    {
+        try
+        {
+            erroTaxas = null;
+            fluxoDAO.SalvarTaxas(edicaoTaxas);
+            taxasAbertas = false;
+            aviso = "Taxas e prazos salvos.";
+            Carregar();
+        }
+        catch (Exception ex)
+        {
+            erroTaxas = ex.Message;
+        }
+    }
+
+    private RenderFragment LinhaDre(string conta, decimal valor) => __builder =>
+    {
+        <tr>
+            <td class="conta-recuo">@conta</td>
+            <td class="col-num">@valor.ToString("C")</td>
+            <td class="col-num suave">@dre!.Percentual(valor).ToString("0.#")%</td>
+        </tr>
+    };
+
+    /// <summary>Despesa em aberto com vencimento passado é atraso, não previsão.</summary>
+    private static bool Atrasada(LancamentoFluxo l) => !l.Entrada && !l.Realizado && l.Data < DateTime.Today;
+
+    private static string RotuloSituacao(LancamentoFluxo l) =>
+        l.Entrada
+            ? (l.Realizado ? "Recebido" : "A receber")
+            : (l.Realizado ? "Pago" : Atrasada(l) ? "Vencida" : "A pagar");
+
+    private static string ClasseSituacao(LancamentoFluxo l) =>
+        l.Realizado ? "pago" : Atrasada(l) ? "erro" : "pendente";
+
+    private static string Sinal(decimal valor) =>
+        valor < 0 ? $"− {Math.Abs(valor):C}" : valor.ToString("C");
+
+    private static string RotuloDoDia(DateTime dia)
+    {
+        var cultura = new System.Globalization.CultureInfo("pt-BR");
+        var semana = cultura.DateTimeFormat.GetDayName(dia.DayOfWeek);
+        var corpo = $"{semana}, {dia:dd/MM}".ToUpper(cultura);
+
+        if (dia == DateTime.Today) return $"HOJE · {corpo}";
+        if (dia == DateTime.Today.AddDays(1)) return $"AMANHÃ · {corpo}";
+        return corpo;
+    }
+}

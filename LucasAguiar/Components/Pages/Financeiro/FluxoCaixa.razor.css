@@ -1,0 +1,95 @@
+/* Abas da tela: o fluxo (caixa) e o DRE (competencia). */
+.abas-fluxo {
+    display: inline-flex;
+    gap: 0.2rem;
+    margin-bottom: 1rem;
+    padding: 0.22rem;
+    background: var(--superficie-3);
+    border-radius: 9px;
+}
+
+.abas-fluxo button {
+    padding: 0.4rem 0.95rem;
+    background: none;
+    border: none;
+    border-radius: 7px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--texto-3);
+    cursor: pointer;
+}
+
+.abas-fluxo button.ativa {
+    background: var(--superficie);
+    color: var(--marca-escura);
+    box-shadow: var(--sombra);
+}
+
+.valor.positivo,
+.entrada {
+    color: var(--ok-escuro);
+}
+
+.valor.negativo,
+.saida {
+    color: var(--perigo);
+}
+
+/* O previsto fica um tom abaixo do que ja aconteceu. */
+tr.previsto td {
+    color: var(--texto-3);
+}
+
+.nota-fluxo {
+    margin: 0 0 1rem;
+    font-size: 0.8rem;
+    color: var(--texto-fraco);
+}
+
+.notas-dre {
+    margin-top: 1rem;
+    padding-left: 1.1rem;
+}
+
+.tabela-dre td {
+    font-variant-numeric: tabular-nums;
+}
+
+.conta-recuo {
+    padding-left: 1.6rem !important;
+    color: var(--texto-2);
+}
+
+.tabela-dre .conta-forte td,
+.tabela-dre .subtotal td {
+    font-weight: 700;
+}
+
+.tabela-dre .subtotal td {
+    background: var(--superficie-2);
+}
+
+.tabela-dre .resultado td {
+    font-family: var(--fonte-titulo);
+    font-size: 1.25rem;
+    font-weight: 700;
+    border-top: 2px solid var(--borda-2);
+}
+
+.tabela-dre .resultado.positivo td {
+    color: var(--ok-escuro);
+}
+
+.tabela-dre .resultado.negativo td {
+    color: var(--perigo);
+}
+
+.suave {
+    color: var(--texto-fraco);
+}
+
+.tabela-taxas .form-control {
+    width: 6.5rem;
+    margin-left: auto;
+    text-align: right;
+}

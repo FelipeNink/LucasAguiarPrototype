@@ -712,6 +712,21 @@ namespace LucasAguiar.Data
                   JOIN despesa d ON d.id_desp = c.id_desp_fk
                    SET c.forma_pagamento = d.forma_pagamento
                  WHERE c.forma_pagamento IS NULL");
+
+            // ---------- fluxo de caixa: taxa e prazo por forma ----------
+            CriarTabela(conexao, "taxa_pagamento", @"
+                CREATE TABLE IF NOT EXISTS `taxa_pagamento` (
+                  `forma` varchar(30) NOT NULL,
+                  `taxa` decimal(5,2) NOT NULL DEFAULT 0,
+                  `dias` int NOT NULL DEFAULT 0,
+                  PRIMARY KEY (`forma`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci");
+
+            // Sem taxa ate o dono configurar; prazos usuais da maquininha.
+            Executar(conexao, "taxa_pagamento preenchida", @"
+                INSERT IGNORE INTO taxa_pagamento (forma, taxa, dias) VALUES
+                    ('DINHEIRO', 0, 0), ('PIX', 0, 0), ('DEBITO', 0, 1),
+                    ('CREDITO', 0, 30), ('CREDITO_PARCELADO', 0, 30)");
         }
 
         // ---------- apoio das migracoes ----------

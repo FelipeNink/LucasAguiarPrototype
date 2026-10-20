@@ -28,6 +28,7 @@ namespace LucasAguiar.Services
         public const string Agendamentos = "tela:agendamentos:Ver";
         public const string Caixa = "tela:caixa:Ver";
         public const string Relatorios = "tela:relatorios:Ver";
+        public const string FluxoCaixa = "tela:fluxo:Ver";
         public const string Despesas = "tela:despesas:Ver";
         public const string Comissoes = "tela:comissoes:Ver";
         public const string Folha = "tela:folha:Ver";
