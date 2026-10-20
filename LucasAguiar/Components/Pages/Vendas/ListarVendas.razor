@@ -191,10 +191,26 @@
                     <div>
                         <dt>Pagamento</dt>
                         <dd>
-                            @FormaPagamento.Rotulo(detalhe.FormaPagamentoVenda)
-                            @if (detalhe.QuantidadeParcelas > 1)
+                            @if (detalhe.Pagamentos.Count > 1)
                             {
-                                <text> em @detalhe.QuantidadeParcelas×</text>
+                                @foreach (var p in detalhe.Pagamentos)
+                                {
+                                    <div>
+                                        @FormaPagamento.Rotulo(p.Forma) @p.Valor.ToString("C")
+                                        @if (p.Parcelas > 1)
+                                        {
+                                            <text> em @p.Parcelas×</text>
+                                        }
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                @FormaPagamento.Rotulo(detalhe.FormaPagamentoVenda)
+                                @if (detalhe.QuantidadeParcelas > 1)
+                                {
+                                    <text> em @detalhe.QuantidadeParcelas×</text>
+                                }
                             }
                         </dd>
                     </div>
@@ -220,7 +236,17 @@
                         @foreach (var i in detalhe.Itens)
                         {
                             <tr>
-                                <td>@i.Descricao <span class="tipo">@i.RotuloTipo</span></td>
+                                <td>
+                                    @i.Descricao <span class="tipo">@i.RotuloTipo</span>
+                                    @if (!string.IsNullOrWhiteSpace(i.NomeFuncionario) && i.NomeFuncionario != detalhe.NomeFuncionario)
+                                    {
+                                        <span class="tipo">· @i.NomeFuncionario</span>
+                                    }
+                                    @if (i.Desconto > 0)
+                                    {
+                                        <span class="tipo">· desc. @i.Desconto.ToString("C")</span>
+                                    }
+                                </td>
                                 <td class="dir">@i.Quantidade</td>
                                 <td class="dir">@i.ValorUnitario.ToString("C")</td>
                                 <td class="dir">@i.ValorTotal.ToString("C")</td>
@@ -240,7 +266,7 @@
                     @if (detalhe.Comissao > 0)
                     {
                         <div class="linha-comissao">
-                            <span>Comissão de @detalhe.NomeFuncionario</span>
+                            <span>@(detalhe.Itens.Select(i => i.IdFuncionario).Distinct().Count() > 1 ? "Comissões" : $"Comissão de {detalhe.NomeFuncionario}")</span>
                             <span>@detalhe.Comissao.ToString("C")</span>
                         </div>
                     }

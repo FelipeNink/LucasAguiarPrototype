@@ -42,13 +42,18 @@ namespace LucasAguiar.Data
 
         public void Inserir(Produto produto)
         {
+            Validar(produto);
+
             try
             {
                 using (var comando = _conexao.CreateCommand(@"
-                    INSERT INTO produto (nome_prod, quantidade_prod, valor_prod, descricao_prod, marca_prod, id_forn_fk)
-                    VALUES (@_nome, @_quantidade, @_valor, @_descricao, @_marca, @_idForn)
+                    INSERT INTO produto (nome_prod, quantidade_prod, valor_prod, descricao_prod, marca_prod, id_forn_fk,
+                        id_cat_prod_fk, codigo_barras, sku, unidade, preco_custo, comissao_prod, ativo_prod)
+                    VALUES (@_nome, @_quantidade, @_valor, @_descricao, @_marca, @_idForn,
+                        @idCategoria, @codigoBarras, @sku, @unidade, @custo, @comissao, @ativo)
                 "))
                 {
+                    PreencherNovos(comando, produto);
                     comando.Parameters.AddWithValue("@_nome", produto.NomeProduto ?? (object)DBNull.Value);
                     comando.Parameters.AddWithValue("@_quantidade", produto.Quantidade);
                     comando.Parameters.AddWithValue("@_valor", produto.Valor);
@@ -68,41 +73,30 @@ namespace LucasAguiar.Data
 
         public Produto? BuscarPorId(int id)
         {
-            using (var comando = _conexao.CreateCommand("SELECT * FROM produto WHERE id_prod = @id;"))
+            using (var comando = _conexao.CreateCommand(SelecaoPadrao + " WHERE p.id_prod = @id;"))
             {
                 comando.Parameters.AddWithValue("@id", id);
 
                 using (var leitor = comando.ExecuteReader())
                 {
-                    if (leitor.Read())
-                    {
-                        var produto = new Produto();
-                        produto.IdProduto = leitor.GetInt32("id_prod");
-                        produto.NomeProduto = DAOHelper.GetString(leitor, "nome_prod");
-                        produto.Descricao = DAOHelper.GetString(leitor, "descricao_prod");
-                        produto.Marca = DAOHelper.GetString(leitor, "marca_prod");
-                        produto.Quantidade = leitor.GetInt32("quantidade_prod");
-                        produto.Valor = leitor.GetFloat("valor_prod");
-                        produto.IdFornecedor = DAOHelper.IsNull(leitor, "id_forn_fk") ? 0 : leitor.GetInt32("id_forn_fk");
-
-                        return produto;
-                    }
-                    else
-                    {
-                        return null;
-                    }
+                    return leitor.Read() ? Ler(leitor) : null;
                 }
             }
         }
 
         public void Atualizar(Produto produto)
         {
+            Validar(produto);
+
             try
             {
                 using (var comando = _conexao.CreateCommand(
                     "UPDATE produto SET nome_prod = @_nome, descricao_prod = @_descricao, marca_prod = @_marca," +
-                    "quantidade_prod = @_quantidade, valor_prod = @_preco, id_forn_fk = @_idForn WHERE id_prod = @_id;"))
+                    "quantidade_prod = @_quantidade, valor_prod = @_preco, id_forn_fk = @_idForn," +
+                    "id_cat_prod_fk = @idCategoria, codigo_barras = @codigoBarras, sku = @sku, unidade = @unidade," +
+                    "preco_custo = @custo, comissao_prod = @comissao, ativo_prod = @ativo WHERE id_prod = @_id;"))
                 {
+                    PreencherNovos(comando, produto);
                     comando.Parameters.AddWithValue("@_nome", produto.NomeProduto ?? (object)DBNull.Value);
                     comando.Parameters.AddWithValue("@_descricao", produto.Descricao ?? (object)DBNull.Value);
                     comando.Parameters.AddWithValue("@_marca", produto.Marca ?? (object)DBNull.Value);
@@ -141,48 +135,65 @@ namespace LucasAguiar.Data
         public List<Produto> ListarTodos()
         {
             var lista = new List<Produto>();
-            using (var comando = _conexao.CreateCommand(@"
-                SELECT p.*, f.nome_forn
-                FROM produto p
-                LEFT JOIN fornecedor f ON p.id_forn_fk = f.id_forn
-                ORDER BY p.nome_prod
-            "))
+            using (var comando = _conexao.CreateCommand(SelecaoPadrao + " ORDER BY p.nome_prod"))
             using (var leitor = comando.ExecuteReader())
             {
-                while (leitor.Read())
-                {
-                    var produto = new Produto
-                    {
-                        IdProduto = leitor.IsDBNull(leitor.GetOrdinal("id_prod"))
-                            ? 0 : leitor.GetInt32("id_prod"),
-
-                        NomeProduto = leitor.IsDBNull(leitor.GetOrdinal("nome_prod"))
-                            ? "" : leitor.GetString("nome_prod"),
-
-                        Quantidade = leitor.IsDBNull(leitor.GetOrdinal("quantidade_prod"))
-                            ? 0 : leitor.GetInt32("quantidade_prod"),
-
-                        Valor = leitor.IsDBNull(leitor.GetOrdinal("valor_prod"))
-                            ? 0 : leitor.GetFloat("valor_prod"),
-
-                        Descricao = leitor.IsDBNull(leitor.GetOrdinal("descricao_prod"))
-                            ? "" : leitor.GetString("descricao_prod"),
-
-                        Marca = leitor.IsDBNull(leitor.GetOrdinal("marca_prod"))
-                            ? "" : leitor.GetString("marca_prod"),
-
-                        IdFornecedor = leitor.IsDBNull(leitor.GetOrdinal("id_forn_fk"))
-                            ? 0 : leitor.GetInt32("id_forn_fk"),
-
-                        NomeFornecedor = leitor.IsDBNull(leitor.GetOrdinal("nome_forn"))
-                            ? "" : leitor.GetString("nome_forn")
-                    };
-
-                    lista.Add(produto);
-                }
+                while (leitor.Read()) lista.Add(Ler(leitor));
             }
 
             return lista;
+        }
+
+        private const string SelecaoPadrao = @"
+            SELECT p.*, f.nome_forn, cp.nome_cat
+            FROM produto p
+            LEFT JOIN fornecedor f ON p.id_forn_fk = f.id_forn
+            LEFT JOIN categoria_produto cp ON cp.id_cat_prod = p.id_cat_prod_fk";
+
+        private static void Validar(Produto produto)
+        {
+            if (produto.PrecoCusto < 0) throw new Exception("O preço de custo não pode ser negativo.");
+            if (produto.Comissao is < 0 or > 100) throw new Exception("A comissão deve ficar entre 0% e 100%.");
+        }
+
+        private static void PreencherNovos(MySqlCommand comando, Produto produto)
+        {
+            object Texto(string? valor) => string.IsNullOrWhiteSpace(valor) ? DBNull.Value : valor.Trim();
+
+            comando.Parameters.AddWithValue("@idCategoria",
+                produto.IdCategoria is > 0 ? produto.IdCategoria.Value : (object)DBNull.Value);
+            comando.Parameters.AddWithValue("@codigoBarras", Texto(produto.CodigoBarras));
+            comando.Parameters.AddWithValue("@sku", Texto(produto.Sku));
+            comando.Parameters.AddWithValue("@unidade", string.IsNullOrWhiteSpace(produto.Unidade) ? "UN" : produto.Unidade);
+            comando.Parameters.AddWithValue("@custo", produto.PrecoCusto ?? (object)DBNull.Value);
+            comando.Parameters.AddWithValue("@comissao", produto.Comissao ?? (object)DBNull.Value);
+            comando.Parameters.AddWithValue("@ativo", produto.Ativo ? 1 : 0);
+        }
+
+        private static Produto Ler(MySqlDataReader leitor)
+        {
+            string? TextoOuNulo(string coluna) => DAOHelper.IsNull(leitor, coluna) ? null : leitor.GetString(coluna);
+            decimal? DecimalOuNulo(string coluna) => DAOHelper.IsNull(leitor, coluna) ? null : leitor.GetDecimal(coluna);
+
+            return new Produto
+            {
+                IdProduto = leitor.GetInt32("id_prod"),
+                NomeProduto = DAOHelper.GetString(leitor, "nome_prod"),
+                Quantidade = DAOHelper.IsNull(leitor, "quantidade_prod") ? 0 : leitor.GetInt32("quantidade_prod"),
+                Valor = DAOHelper.IsNull(leitor, "valor_prod") ? 0 : leitor.GetFloat("valor_prod"),
+                Descricao = DAOHelper.GetString(leitor, "descricao_prod"),
+                Marca = DAOHelper.GetString(leitor, "marca_prod"),
+                IdFornecedor = DAOHelper.IsNull(leitor, "id_forn_fk") ? 0 : leitor.GetInt32("id_forn_fk"),
+                NomeFornecedor = DAOHelper.GetString(leitor, "nome_forn"),
+                IdCategoria = DAOHelper.IsNull(leitor, "id_cat_prod_fk") ? null : leitor.GetInt32("id_cat_prod_fk"),
+                NomeCategoria = TextoOuNulo("nome_cat"),
+                CodigoBarras = TextoOuNulo("codigo_barras"),
+                Sku = TextoOuNulo("sku"),
+                Unidade = leitor.GetString("unidade"),
+                PrecoCusto = DecimalOuNulo("preco_custo"),
+                Comissao = DecimalOuNulo("comissao_prod"),
+                Ativo = leitor.GetBoolean("ativo_prod")
+            };
         }
         }
 }

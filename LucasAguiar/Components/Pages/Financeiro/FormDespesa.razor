@@ -5,6 +5,8 @@
 @using LucasAguiar.Models
 @inject DespesaDAO despesaDAO
 @inject FornecedorDAO fornecedorDAO
+@inject FuncionarioDAO funcionarioDAO
+@inject CategoriaDAO categoriaDAO
 @inject CaixaDAO caixaDAO
 @inject NavigationManager Navigation
 
@@ -25,14 +27,21 @@
                     <input id="dsp-descricao" class="form-control" maxlength="200" placeholder="Ex.: Compra de toalhas"
                            @bind="Modelo.Descricao" />
                 </Campo>
-                <Campo Rotulo="Data" Para="dsp-data" Colunas="4"
-                       Dica="Em aberto, é o vencimento; paga, o dia do pagamento.">
-                    <input id="dsp-data" type="date" class="form-control" @bind="Modelo.DataDespesa" />
+                <Campo Rotulo="Vencimento" Para="dsp-vencimento" Colunas="4"
+                       Erro="@(tentouSalvar && Modelo.DataVencimento == null ? "Informe o vencimento." : null)">
+                    <input id="dsp-vencimento" type="date" class="form-control" @bind="Modelo.DataVencimento" />
                 </Campo>
 
                 <Campo Rotulo="Categoria" Colunas="4">
-                    <Seletor TItem="Opcao" TValor="string" Itens="OpcoesCategoria"
-                             @bind-Valor="Modelo.Categoria" TextoDe="o => o.Rotulo" ValorDe="o => o.Valor" />
+                    <ChildContent>
+                        <Seletor TItem="Opcao" TValor="string" Itens="OpcoesCategoria"
+                                 @bind-Valor="Modelo.Categoria" TextoDe="o => o.Rotulo" ValorDe="o => o.Valor" />
+                    </ChildContent>
+                    <Acao>
+                        <button type="button" class="acao-campo" @onclick="() => modalAberto = CadastroRapido.TipoCadastro.CategoriaDespesa">
+                            + Cadastrar categoria
+                        </button>
+                    </Acao>
                 </Campo>
                 <Campo Rotulo="Fornecedor" Colunas="4">
                     <ChildContent>
@@ -42,10 +51,22 @@
                                  TextoDe="o => o.Rotulo" ValorDe="o => o.Id" />
                     </ChildContent>
                     <Acao>
-                        <button type="button" class="acao-campo" @onclick="() => modalFornecedor = true">
+                        <button type="button" class="acao-campo" @onclick="() => modalAberto = CadastroRapido.TipoCadastro.Fornecedor">
                             + Cadastrar fornecedor
                         </button>
                     </Acao>
+                </Campo>
+                <Campo Rotulo="Funcionário" Colunas="4" Dica="Vale, adiantamento ou gasto ligado a alguém da equipe.">
+                    <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesFuncionario"
+                             Valor="Modelo.IdFuncionario ?? 0"
+                             ValorChanged="v => Modelo.IdFuncionario = v == 0 ? null : v"
+                             TextoDe="o => o.Rotulo" ValorDe="o => o.Id" ComAvatar="true" />
+                </Campo>
+                <Campo Rotulo="Recorrente" Para="dsp-recorrente" Colunas="4">
+                    <div class="form-check form-switch campo-switch">
+                        <input id="dsp-recorrente" class="form-check-input" type="checkbox" role="switch" @bind="Modelo.Recorrente" />
+                        <label class="form-check-label" for="dsp-recorrente">@(Modelo.Recorrente ? "Repete todo mês" : "Avulsa")</label>
+                    </div>
                 </Campo>
             </div>
         </section>
@@ -70,6 +91,16 @@
                             <label class="form-check-label" for="dsp-pago">@(Modelo.Pago ? "Já foi paga" : "A pagar")</label>
                         </div>
                     </Campo>
+                    <Campo Rotulo="Parcelas" Para="dsp-parcelas" Colunas="2"
+                           Erro="@(Modelo.Parcelas is < 1 or > 120 ? "De 1 a 120." : null)">
+                        <input id="dsp-parcelas" type="number" min="1" max="120" class="form-control" @bind="Modelo.Parcelas" />
+                    </Campo>
+                    @if (Modelo.Pago)
+                    {
+                        <Campo Rotulo="Data de pagamento" Para="dsp-pagamento" Colunas="4">
+                            <input id="dsp-pagamento" type="date" class="form-control" @bind="Modelo.DataPagamento" />
+                        </Campo>
+                    }
                 }
                 else
                 {
@@ -82,6 +113,15 @@
                     <Campo Rotulo="Situação" Colunas="3">
                         <input class="form-control" readonly value="@(Modelo.Pago ? "Paga" : "A pagar")" />
                     </Campo>
+                    <Campo Rotulo="Parcelas" Colunas="2">
+                        <input class="form-control" readonly value="@Modelo.Parcelas" />
+                    </Campo>
+                    @if (Modelo.Pago)
+                    {
+                        <Campo Rotulo="Data de pagamento" Colunas="4">
+                            <input class="form-control" readonly value="@(Modelo.DataPagamento?.ToString("dd/MM/yyyy") ?? "—")" />
+                        </Campo>
+                    }
                 }
             </div>
 
@@ -118,35 +158,82 @@
             </div>
         </section>
 
+        <section class="cartao secao-form">
+            <h2>Anexos</h2>
+            <div class="grade-12">
+                <Campo Rotulo="Comprovante ou nota" Colunas="6" Dica="PDF ou imagem, até 5 MB cada." Erro="@erroAnexo">
+                    <InputFile class="form-control" accept="application/pdf,image/*" multiple OnChange="EscolherAnexos" />
+                </Campo>
+            </div>
+
+            @if (anexos.Count > 0 || novosAnexos.Count > 0)
+            {
+                <ul class="lista-anexos">
+                    @foreach (var a in anexos)
+                    {
+                        <li>
+                            <a href="@($"/despesa/anexo/{a.IdAnexo}")" target="_blank" rel="noopener">@a.Nome</a>
+                            <span class="suave">@Tamanho(a.Tamanho)</span>
+                            <button type="button" class="btn btn-link btn-sm" @onclick="() => RemoverAnexo(a)">Remover</button>
+                        </li>
+                    }
+                    @foreach (var a in novosAnexos)
+                    {
+                        <li>
+                            <span>@a.Nome</span>
+                            <span class="suave">@Tamanho(a.Tamanho) · enviado ao salvar</span>
+                            <button type="button" class="btn btn-link btn-sm" @onclick="() => novosAnexos.Remove(a)">Remover</button>
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
+
         <RodapeForm Cancelar="/despesas" Salvando="salvando" TextoSalvar="@(Novo ? "Lançar despesa" : "Salvar")" />
     </form>
 </div>
 
-<CadastroRapido Visivel="modalFornecedor"
-                Tipo="CadastroRapido.TipoCadastro.Fornecedor"
-                OnCriado="AoCriarFornecedor"
-                OnCancelado="() => modalFornecedor = false" />
+<CadastroRapido Visivel="@(modalAberto != null)"
+                Tipo="@(modalAberto ?? CadastroRapido.TipoCadastro.Fornecedor)"
+                OnCriado="AoCriarRegistro"
+                OnCancelado="() => modalAberto = null" />
 
 @code {
     [Parameter, EditorRequired] public Despesa Modelo { get; set; } = new();
     [Parameter] public bool Novo { get; set; }
 
     private List<Fornecedor> fornecedores = new();
+    private List<Funcionario> funcionarios = new();
+    private List<Categoria> categorias = new();
     private Caixa? caixaAberto;
     private string? erro;
     private bool tentouSalvar;
     private bool salvando;
-    private bool modalFornecedor;
+    private CadastroRapido.TipoCadastro? modalAberto;
+
+    private List<DespesaAnexo> anexos = new();
+    private List<DespesaAnexo> novosAnexos = new();
+    private string? erroAnexo;
 
     private List<Opcao> OpcoesCategoria =>
-        CategoriaDespesa.Todas.Select(c => new Opcao(c.Valor, c.Rotulo)).ToList();
+        categorias.Where(c => c.Ativo || c.Codigo == Modelo.Categoria)
+            .Select(c => new Opcao(c.Codigo!, c.Nome)).ToList();
 
     private List<Opcao> OpcoesForma =>
         FormaPagamento.Todas.Select(f => new Opcao(f.Valor, f.Rotulo, "var(--ok)")).ToList();
 
     private List<OpcaoId> OpcoesFornecedor =>
         new List<OpcaoId> { new(0, "Nenhum") }
-            .Concat(fornecedores.Select(f => new OpcaoId(f.IdFornecedor, f.NomeFornecedor ?? "Sem nome")))
+            .Concat(fornecedores
+                .Where(f => f.Ativo || f.IdFornecedor == Modelo.IdFornecedor)
+                .Select(f => new OpcaoId(f.IdFornecedor, f.NomeFornecedor ?? "Sem nome")))
+            .ToList();
+
+    private List<OpcaoId> OpcoesFuncionario =>
+        new List<OpcaoId> { new(0, "Nenhum") }
+            .Concat(funcionarios
+                .Where(f => f.Ativo || f.IdFuncionario == Modelo.IdFuncionario)
+                .Select(f => new OpcaoId(f.IdFuncionario, f.NomeFuncionario ?? "Sem nome")))
             .ToList();
 
     protected override void OnInitialized()
@@ -154,7 +241,10 @@
         try
         {
             fornecedores = fornecedorDAO.ListarTodos() ?? new();
+            funcionarios = funcionarioDAO.ListarTodos() ?? new();
+            categorias = categoriaDAO.Listar(TipoCategoria.Despesa);
             if (Novo) caixaAberto = caixaDAO.BuscarAberto();
+            else anexos = despesaDAO.ListarAnexos(Modelo.IdDespesa);
         }
         catch (Exception ex)
         {
@@ -162,12 +252,20 @@
         }
     }
 
-    private void AoCriarFornecedor(int id)
+    private void AoCriarRegistro(int id)
     {
         try
         {
-            fornecedores = fornecedorDAO.ListarTodos() ?? new();
-            Modelo.IdFornecedor = id;
+            if (modalAberto == CadastroRapido.TipoCadastro.CategoriaDespesa)
+            {
+                categorias = categoriaDAO.Listar(TipoCategoria.Despesa);
+                Modelo.Categoria = categorias.FirstOrDefault(c => c.Id == id)?.Codigo ?? Modelo.Categoria;
+            }
+            else
+            {
+                fornecedores = fornecedorDAO.ListarTodos() ?? new();
+                Modelo.IdFornecedor = id;
+            }
         }
         catch (Exception ex)
         {
@@ -175,16 +273,58 @@
         }
         finally
         {
-            modalFornecedor = false;
+            modalAberto = null;
         }
     }
+
+    private async Task EscolherAnexos(InputFileChangeEventArgs e)
+    {
+        erroAnexo = null;
+
+        foreach (var arquivo in e.GetMultipleFiles(10))
+        {
+            if (arquivo.Size > DespesaDAO.TamanhoMaximoAnexo)
+            {
+                erroAnexo = $"{arquivo.Name} passa de 5 MB.";
+                continue;
+            }
+
+            using var memoria = new MemoryStream();
+            await arquivo.OpenReadStream(DespesaDAO.TamanhoMaximoAnexo).CopyToAsync(memoria);
+
+            novosAnexos.Add(new DespesaAnexo
+            {
+                Nome = arquivo.Name,
+                Tipo = arquivo.ContentType,
+                Tamanho = (int)arquivo.Size,
+                Conteudo = memoria.ToArray()
+            });
+        }
+    }
+
+    private void RemoverAnexo(DespesaAnexo anexo)
+    {
+        try
+        {
+            despesaDAO.RemoverAnexo(anexo.IdAnexo);
+            anexos.Remove(anexo);
+        }
+        catch (Exception ex)
+        {
+            erroAnexo = ex.Message;
+        }
+    }
+
+    private static string Tamanho(int bytes) =>
+        bytes >= 1024 * 1024 ? $"{bytes / 1024d / 1024d:0.0} MB" : $"{Math.Max(1, bytes / 1024)} KB";
 
     private void Salvar()
     {
         tentouSalvar = true;
         erro = null;
 
-        if (string.IsNullOrWhiteSpace(Modelo.Descricao) || (Novo && Modelo.Valor <= 0))
+        if (string.IsNullOrWhiteSpace(Modelo.Descricao) || (Novo && Modelo.Valor <= 0)
+            || Modelo.DataVencimento == null || (Novo && Modelo.Parcelas is < 1 or > 120))
         {
             erro = "Confira os campos destacados.";
             return;
@@ -194,16 +334,20 @@
         {
             salvando = true;
 
+            var id = Modelo.IdDespesa;
             if (Novo)
             {
                 // Só amarra ao caixa se o dinheiro realmente sair da gaveta.
                 Modelo.IdCaixa = Modelo.AfetaGaveta ? caixaAberto?.IdCaixa : null;
-                despesaDAO.Inserir(Modelo);
+                id = despesaDAO.Inserir(Modelo);
             }
             else
             {
                 despesaDAO.AtualizarDados(Modelo);
             }
+
+            foreach (var anexo in novosAnexos)
+                despesaDAO.AdicionarAnexo(id, anexo.Nome, anexo.Tipo, anexo.Conteudo!);
 
             Navigation.NavigateTo("/despesas");
         }

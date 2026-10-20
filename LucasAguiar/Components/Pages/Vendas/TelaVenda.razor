@@ -221,7 +221,7 @@ else
                         </span>
 
                         <div class="grade-planos">
-                            @foreach (var p in planos)
+                            @foreach (var p in planos.Where(p => p.Ativo))
                             {
                                 <button type="button" class="cartao-plano"
                                         disabled="@PlanoJaNaVenda"
@@ -272,7 +272,7 @@ else
                         {
                             <button type="button" class="cartao-item" @onclick="() => AdicionarServico(s)">
                                 <span class="item-titulo">@s.NomeServico</span>
-                                <span class="item-preco">@s.PrecoServico.ToString("C")</span>
+                                <span class="item-preco">@PrecoDe(s, idFuncionario).ToString("C")</span>
                                 @if (QuantidadeNaNota(TipoItem.Servico, s.IdServico) > 0)
                                 {
                                     <span class="item-badge">@QuantidadeNaNota(TipoItem.Servico, s.IdServico)</span>
@@ -342,39 +342,89 @@ else
             }
             else
             {
-                <label class="rotulo">Forma de pagamento</label>
+                <label class="rotulo">@(dividido ? "Adicionar forma de pagamento" : "Forma de pagamento")</label>
                 <div class="formas">
                     @foreach (var f in FormaPagamento.Todas)
                     {
-                        <button type="button" class="forma @(formaPagamento == f.Valor ? "ativa" : "")"
+                        <button type="button" class="forma @(pagamentos.Any(p => p.Forma == f.Valor) ? "ativa" : "")"
                                 @onclick="() => EscolherForma(f.Valor)">
                             @f.Rotulo
                         </button>
                     }
                 </div>
+
+                @if (dividido)
+                {
+                    <ul class="pagamentos">
+                        @foreach (var p in pagamentos)
+                        {
+                            <li>
+                                <span class="pagamento-forma">@FormaPagamento.Rotulo(p.Forma)</span>
+                                <InputMoeda Valor="p.Valor" ValorChanged="v => p.Valor = v" />
+                                @if (p.Forma == FormaPagamento.Credito)
+                                {
+                                    <div class="contador pequeno">
+                                        <button type="button" @onclick="() => AjustarParcelas(p, -1)" disabled="@(p.Parcelas <= 1)">−</button>
+                                        <span>@(p.Parcelas ?? 1)×</span>
+                                        <button type="button" @onclick="() => AjustarParcelas(p, 1)" disabled="@(p.Parcelas >= 12)">+</button>
+                                    </div>
+                                }
+                                <button type="button" class="remover" title="Remover" @onclick="() => RemoverPagamento(p)">×</button>
+                            </li>
+                        }
+                    </ul>
+
+                    <div class="pagamentos-resumo @(Falta == 0 ? "fechado" : "aberto")">
+                        @if (Falta > 0)
+                        {
+                            <span>Falta @Falta.ToString("C")</span>
+                            @if (pagamentos.Count > 0)
+                            {
+                                <button type="button" class="acao-campo" @onclick="Completar">Completar na última forma</button>
+                            }
+                        }
+                        else if (Falta < 0)
+                        {
+                            <span>Passou @Math.Abs(Falta).ToString("C") do total</span>
+                        }
+                        else
+                        {
+                            <span>Pagamento fechado</span>
+                        }
+                    </div>
+                }
+                else
+                {
+                    @if (pagamentos.Count == 1 && pagamentos[0].Forma == FormaPagamento.Credito)
+                    {
+                        var credito = pagamentos[0];
+                        <div class="campo-parcelas">
+                            <label class="rotulo">Parcelas</label>
+                            <div class="contador">
+                                <button type="button" @onclick="() => AjustarParcelas(credito, -1)" disabled="@(credito.Parcelas <= 1)">−</button>
+                                <span>@(credito.Parcelas ?? 1)×</span>
+                                <button type="button" @onclick="() => AjustarParcelas(credito, 1)" disabled="@(credito.Parcelas >= 12)">+</button>
+                            </div>
+                            @if (itens.Count > 0 && credito.Parcelas > 1)
+                            {
+                                <span class="valor-parcela">@((Total / credito.Parcelas.Value).ToString("C")) cada</span>
+                            }
+                        </div>
+                    }
+
+                    @if (pagamentos.Count == 1 && Total > 0)
+                    {
+                        <button type="button" class="acao-campo" @onclick="Dividir">+ Dividir em mais de uma forma</button>
+                    }
+                }
             }
 
-            @if (formaPagamento == FormaPagamento.Credito)
-            {
-                <div class="campo-parcelas">
-                    <label class="rotulo">Parcelas</label>
-                    <div class="contador">
-                        <button type="button" @onclick="() => AjustarParcelas(-1)" disabled="@(parcelas <= 1)">−</button>
-                        <span>@parcelas×</span>
-                        <button type="button" @onclick="() => AjustarParcelas(1)" disabled="@(parcelas >= 12)">+</button>
-                    </div>
-                    @if (itens.Count > 0 && parcelas > 1)
-                    {
-                        <span class="valor-parcela">@((Total / parcelas).ToString("C")) cada</span>
-                    }
-                </div>
-            }
             <div class="grade-final">
                 <div>
                     <label class="rotulo">Profissional <span class="obrigatorio">*</span></label>
                     <Seletor TItem="Funcionario" TValor="int"
-                             Itens="funcionarios"
-                             @bind-Valor="idFuncionario"
+                             Itens="ProfissionaisDisponiveis"
+                             Valor="idFuncionario" ValorChanged="EscolherProfissional"
                              TextoDe="@(f => f.NomeFuncionario ?? "Sem nome")"
                              ValorDe="@(f => f.IdFuncionario)"
                              ComAvatar="true"
@@ -468,6 +518,32 @@ else
                                 @(item.CobertoPlano ? "grátis" : item.ValorTotal.ToString("C"))
                             </span>
                         </div>
+
+                        @if (item.TipoItem != TipoItem.Plano)
+                        {
+                            <div class="linha-ajustes">
+                                <select class="form-select form-select-sm" aria-label="Profissional do item"
+                                        @onchange="e => TrocarProfissionalDoItem(item, e)">
+                                    <option value="0" selected="@(item.IdFuncionario is not > 0)">Profissional da venda</option>
+                                    @foreach (var f in ProfissionaisDisponiveis)
+                                    {
+                                        <option value="@f.IdFuncionario" selected="@(item.IdFuncionario == f.IdFuncionario)">@f.NomeFuncionario</option>
+                                    }
+                                </select>
+
+                                @if (!item.CobertoPlano)
+                                {
+                                    <label class="ajuste">
+                                        <span>Unit.</span>
+                                        <InputMoeda Valor="item.ValorUnitario" ValorChanged="v => AlterarPreco(item, v)" />
+                                    </label>
+                                    <label class="ajuste">
+                                        <span>Desc.</span>
+                                        <InputMoeda Valor="item.Desconto" ValorChanged="v => AlterarDesconto(item, v)" />
+                                    </label>
+                                }
+                            </div>
+                        }
                     </li>
                 }
             </ul>
@@ -583,22 +659,42 @@ else
 
     // Venda
     private List<VendaItem> itens = new();
-    private string formaPagamento = "";
-    private int parcelas = 1;
     private decimal desconto;
     private int idFuncionario;
 
+    /// <summary>Formas e valores. Com uma linha so, ela vale o total da venda.</summary>
+    private List<VendaPagamento> pagamentos = new();
+
+    /// <summary>Mais de uma forma: cada linha tem o seu valor e precisa fechar o total.</summary>
+    private bool dividido;
+
+    /// <summary>Preco e comissao proprios de cada profissional por servico.</summary>
+    private Dictionary<(int IdFuncionario, int IdServico), FuncionarioServico> precosProprios = new();
+
+    /// <summary>Itens cujo preco o operador digitou: trocar o profissional nao o sobrescreve.</summary>
+    private readonly HashSet<VendaItem> precoEditado = new();
+
+    // Inativos somem do catalogo; o que ja esta na nota continua resolvendo.
     private List<Servico> ServicosFiltrados =>
-        string.IsNullOrWhiteSpace(filtroCatalogo)
-            ? servicos
-            : servicos.Where(s => (s.NomeServico ?? "")
-                .Contains(filtroCatalogo.Trim(), StringComparison.OrdinalIgnoreCase)).ToList();
+        servicos.Where(s => s.Ativo)
+            .Where(s => string.IsNullOrWhiteSpace(filtroCatalogo)
+                        || (s.NomeServico ?? "").Contains(filtroCatalogo.Trim(), StringComparison.OrdinalIgnoreCase))
+            .ToList();
 
     private List<Produto> ProdutosFiltrados =>
-        string.IsNullOrWhiteSpace(filtroCatalogo)
-            ? produtos
-            : produtos.Where(p => (p.NomeProduto ?? "")
-                .Contains(filtroCatalogo.Trim(), StringComparison.OrdinalIgnoreCase)).ToList();
+        produtos.Where(p => p.Ativo)
+            .Where(p => string.IsNullOrWhiteSpace(filtroCatalogo)
+                        || (p.NomeProduto ?? "").Contains(filtroCatalogo.Trim(), StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+    private List<Funcionario> ProfissionaisDisponiveis =>
+        funcionarios.Where(f => f.Ativo
+                                || f.IdFuncionario == idFuncionario
+                                || itens.Any(i => i.IdFuncionario == f.IdFuncionario))
+            .ToList();
+
+    private decimal Pago => dividido ? pagamentos.Sum(p => p.Valor) : (pagamentos.Count > 0 ? Total : 0);
+    private decimal Falta => Total - Pago;
 
     private decimal Subtotal => itens.Sum(i => i.ValorTotal);
     private decimal DescontoAplicado => Math.Min(Math.Max(0, desconto), Subtotal);
@@ -616,11 +712,9 @@ else
     /// </summary>
     private bool TudoPeloPlano => itens.Count > 0 && Total == 0 && itens.All(i => i.CobertoPlano);
 
-    private string FormaEfetiva =>
-        TudoPeloPlano ? FormaPagamento.Plano : formaPagamento;
+    private bool TemPagamento => TudoPeloPlano || (pagamentos.Count > 0 && (!dividido || Falta == 0));
 
-    private bool PagamentoPronto =>
-        !string.IsNullOrEmpty(FormaEfetiva) && idFuncionario > 0;
+    private bool PagamentoPronto => TemPagamento && idFuncionario > 0;
 
     /// <summary>O que ainda falta, listado para o operador não ficar adivinhando.</summary>
     private List<string> Pendencias
@@ -631,7 +725,8 @@ else
             // Na edicao a venda continua no caixa em que foi feita.
             if (caixaAberto == null && !Editando) lista.Add("Abrir o caixa");
             if (itens.Count == 0) lista.Add("Adicionar ao menos um item");
-            if (string.IsNullOrEmpty(FormaEfetiva)) lista.Add("Escolher a forma de pagamento");
+            if (!TudoPeloPlano && pagamentos.Count == 0) lista.Add("Escolher a forma de pagamento");
+            else if (!TudoPeloPlano && dividido && Falta != 0) lista.Add("Fechar os pagamentos no total da venda");
             if (idFuncionario <= 0) lista.Add("Informar o profissional");
             return lista;
         }
@@ -650,6 +745,7 @@ else
             produtos = produtoDAO.ListarTodos() ?? new();
             funcionarios = funcionarioDAO.ListarTodos() ?? new();
             planos = planoDAO.ListarTodos() ?? new();
+            precosProprios = funcionarioDAO.MapaServicos();
             caixaAberto = caixaDAO.BuscarAberto();
         }
         catch (Exception ex)
@@ -693,8 +789,8 @@ else
                 if (saldo != null) saldo.QuantidadeUsada = Math.Max(0, saldo.QuantidadeUsada - item.Quantidade);
             }
 
-            formaPagamento = venda.FormaPagamentoVenda == FormaPagamento.Plano ? "" : venda.FormaPagamentoVenda ?? "";
-            parcelas = venda.QuantidadeParcelas ?? 1;
+            pagamentos = venda.Pagamentos.Where(p => p.Forma != FormaPagamento.Plano).ToList();
+            dividido = pagamentos.Count > 1;
             desconto = venda.Desconto;
             idFuncionario = venda.IdFuncionario ?? 0;
         }
@@ -722,8 +818,11 @@ else
             if (agendamento.IdCliente > 0) SelecionarCliente(agendamento.IdCliente);
             idFuncionario = agendamento.IdFuncionario;
 
-            var servico = servicos.FirstOrDefault(s => s.IdServico == agendamento.IdServico);
-            if (servico != null) AdicionarServico(servico);
+            foreach (var idServico in agendamento.IdsServicos)
+            {
+                var servico = servicos.FirstOrDefault(s => s.IdServico == idServico);
+                if (servico != null) AdicionarServico(servico);
+            }
         }
         catch (Exception ex)
         {
@@ -777,7 +876,7 @@ else
 
                 case CadastroRapido.TipoCadastro.Funcionario:
                     funcionarios = funcionarioDAO.ListarTodos() ?? new();
-                    idFuncionario = id;
+                    EscolherProfissional(id);
                     break;
             }
         }
@@ -892,28 +991,31 @@ else
     private void AdicionarServico(Servico s)
     {
         erro = null;
-        Somar(new VendaItem
+        var item = new VendaItem
         {
             TipoItem = TipoItem.Servico,
             IdReferencia = s.IdServico,
             Descricao = s.NomeServico ?? "Serviço",
             Quantidade = 1,
-            ValorUnitario = (decimal)s.PrecoServico,
-            ComissaoUnitaria = (decimal)s.ComissaoServico
-        });
+            ValorUnitario = PrecoDe(s, idFuncionario)
+        };
+        Recalcular(item);
+        Somar(item);
     }
 
     private void AdicionarProduto(Produto p)
     {
         erro = null;
-        Somar(new VendaItem
+        var item = new VendaItem
         {
             TipoItem = TipoItem.Produto,
             IdReferencia = p.IdProduto,
             Descricao = p.NomeProduto ?? "Produto",
             Quantidade = 1,
             ValorUnitario = (decimal)p.Valor
-        });
+        };
+        Recalcular(item);
+        Somar(item);
     }
 
     /// <summary>Soma na linha existente em vez de duplicar o item.</summary>
@@ -924,10 +1026,108 @@ else
             i.IdReferencia == novo.IdReferencia &&
             i.CobertoPlano == novo.CobertoPlano &&
             i.IdSaldo == novo.IdSaldo &&
-            i.ValorUnitario == novo.ValorUnitario);
+            i.ValorUnitario == novo.ValorUnitario &&
+            i.IdFuncionario == novo.IdFuncionario &&
+            i.Desconto == 0);
 
         if (existente != null) existente.Quantidade += novo.Quantidade;
         else itens.Add(novo);
+    }
+
+    // ---------- profissional, preco e comissao por item ----------
+
+    private int ProfissionalDo(VendaItem item) => item.IdFuncionario is > 0 ? item.IdFuncionario.Value : idFuncionario;
+
+    /// <summary>Preco proprio do profissional para o servico, ou o do cadastro.</summary>
+    private decimal PrecoDe(Servico s, int idProfissional) =>
+        precosProprios.TryGetValue((idProfissional, s.IdServico), out var proprio) && proprio.Preco is decimal preco
+            ? preco
+            : (decimal)s.PrecoServico;
+
+    /// <summary>
+    /// Congela no item a comissao pela regra atual (RegraComissao). O
+    /// credito de plano paga a comissao sobre o preco de referencia, a nao
+    /// ser que o plano diga que o assinante nao gera comissao.
+    /// </summary>
+    private void Recalcular(VendaItem item)
+    {
+        var idProfissional = ProfissionalDo(item);
+        var profissional = funcionarios.FirstOrDefault(f => f.IdFuncionario == idProfissional);
+
+        if (item.TipoItem == TipoItem.Servico)
+        {
+            var servico = servicos.FirstOrDefault(s => s.IdServico == item.IdReferencia);
+            if (servico == null) return;
+
+            if (item.CobertoPlano && PlanoSemComissao(item))
+            {
+                item.ComissaoUnitaria = 0;
+                return;
+            }
+
+            precosProprios.TryGetValue((idProfissional, servico.IdServico), out var proprio);
+            var baseUnitaria = item.CobertoPlano ? item.ValorReferencia : item.ValorUnitarioLiquido;
+            item.ComissaoUnitaria = RegraComissao.Servico(servico, profissional, proprio, baseUnitaria);
+        }
+        else if (item.TipoItem == TipoItem.Produto)
+        {
+            var produto = produtos.FirstOrDefault(p => p.IdProduto == item.IdReferencia);
+            if (produto == null) return;
+
+            item.ComissaoUnitaria = item.CobertoPlano
+                ? 0
+                : RegraComissao.Produto(produto, profissional, item.ValorUnitarioLiquido);
+        }
+    }
+
+    private bool PlanoSemComissao(VendaItem item)
+    {
+        var assinatura = assinaturas.FirstOrDefault(a => a.Saldos.Any(s => s.IdSaldo == item.IdSaldo));
+        var plano = planos.FirstOrDefault(p => p.IdPlano == assinatura?.IdPlano);
+        return plano?.RegraComissaoAssinante == RegraComissaoAssinante.SemComissao;
+    }
+
+    /// <summary>
+    /// Troca o profissional da venda. Os itens que seguem a venda passam a
+    /// ser dele: preco proprio (se o operador nao digitou outro) e comissao.
+    /// </summary>
+    private void EscolherProfissional(int id)
+    {
+        idFuncionario = id;
+
+        foreach (var item in itens.Where(i => i.IdFuncionario is not > 0))
+            AplicarProfissional(item);
+    }
+
+    private void TrocarProfissionalDoItem(VendaItem item, ChangeEventArgs e)
+    {
+        item.IdFuncionario = int.TryParse(e.Value?.ToString(), out var id) && id > 0 ? id : null;
+        AplicarProfissional(item);
+    }
+
+    private void AplicarProfissional(VendaItem item)
+    {
+        if (item.TipoItem == TipoItem.Servico && !item.CobertoPlano && !precoEditado.Contains(item))
+        {
+            var servico = servicos.FirstOrDefault(s => s.IdServico == item.IdReferencia);
+            if (servico != null) item.ValorUnitario = PrecoDe(servico, ProfissionalDo(item));
+        }
+
+        Recalcular(item);
+    }
+
+    private void AlterarPreco(VendaItem item, decimal valor)
+    {
+        precoEditado.Add(item);
+        item.ValorUnitario = Math.Max(0, valor);
+        item.Desconto = Math.Min(item.Desconto, Math.Round(item.ValorUnitario * item.Quantidade, 2));
+        Recalcular(item);
+    }
+
+    private void AlterarDesconto(VendaItem item, decimal valor)
+    {
+        item.Desconto = Math.Clamp(valor, 0, Math.Round(item.ValorUnitario * item.Quantidade, 2));
+        Recalcular(item);
     }
 
     /// <summary>Ajusta a quantidade direto na nota; zero remove a linha.</summary>
@@ -956,20 +1156,69 @@ else
         }
 
         item.Quantidade = nova;
+
+        // Com desconto em R$ na linha, o unitario liquido muda com a quantidade.
+        if (item.Desconto > 0)
+        {
+            item.Desconto = Math.Min(item.Desconto, Math.Round(item.ValorUnitario * item.Quantidade, 2));
+            Recalcular(item);
+        }
     }
 
-    private void RemoverItem(VendaItem item) => itens.Remove(item);
+    private void RemoverItem(VendaItem item)
+    {
+        itens.Remove(item);
+        precoEditado.Remove(item);
+    }
 
     // ---------- pagamento ----------
 
-    private void EscolherForma(string valor)
+    /// <summary>
+    /// Sem dividir, escolher a forma troca a unica linha (que vale o total).
+    /// Dividido, cada forma nova entra com o que ainda falta.
+    /// </summary>
+    private void EscolherForma(string forma)
     {
-        formaPagamento = valor;
-        if (valor != FormaPagamento.Credito) parcelas = 1;
+        if (!dividido)
+        {
+            pagamentos = new()
+            {
+                new VendaPagamento { Forma = forma, Valor = Total, Parcelas = forma == FormaPagamento.Credito ? 1 : null }
+            };
+            return;
+        }
+
+        if (pagamentos.Any(p => p.Forma == forma)) return;
+
+        pagamentos.Add(new VendaPagamento
+        {
+            Forma = forma,
+            Valor = Math.Max(0, Falta),
+            Parcelas = forma == FormaPagamento.Credito ? 1 : null
+        });
     }
 
-    private void AjustarParcelas(int delta) =>
-        parcelas = Math.Clamp(parcelas + delta, 1, 12);
+    private void Dividir()
+    {
+        dividido = true;
+        if (pagamentos.Count == 1) pagamentos[0].Valor = Total;
+    }
+
+    private void RemoverPagamento(VendaPagamento pagamento)
+    {
+        pagamentos.Remove(pagamento);
+        if (pagamentos.Count <= 1) dividido = false;
+    }
+
+    /// <summary>Joga o que falta (ou sobra) na ultima linha.</summary>
+    private void Completar()
+    {
+        var ultima = pagamentos.LastOrDefault();
+        if (ultima != null) ultima.Valor = Math.Max(0, ultima.Valor + Falta);
+    }
+
+    private void AjustarParcelas(VendaPagamento pagamento, int delta) =>
+        pagamento.Parcelas = Math.Clamp((pagamento.Parcelas ?? 1) + delta, 1, 12);
 
     // ---------- credito do plano ----------
 
@@ -995,30 +1244,21 @@ else
             return;
         }
 
-        Somar(new VendaItem
+        // O plano zera o preco, nao a comissao: o profissional executou o
+        // servico (Recalcular aplica a regra do plano).
+        var item = new VendaItem
         {
             TipoItem = saldo.TipoItem,
             IdReferencia = saldo.IdReferencia,
             Descricao = saldo.Descricao,
             Quantidade = 1,
             ValorUnitario = 0,
-            ComissaoUnitaria = ComissaoDe(saldo),
             CobertoPlano = true,
             IdSaldo = saldo.IdSaldo,
             ValorReferencia = saldo.ValorReferencia
-        });
-    }
-
-    /// <summary>
-    /// O plano zera o preço, não a comissão: o profissional executou o
-    /// serviço, então ela vem da tabela atual do serviço.
-    /// </summary>
-    private decimal ComissaoDe(AssinaturaSaldo saldo)
-    {
-        if (saldo.TipoItem != TipoItem.Servico) return 0;
-
-        var servico = servicos.FirstOrDefault(s => s.IdServico == saldo.IdReferencia);
-        return servico == null ? 0 : (decimal)servico.ComissaoServico;
+        };
+        Recalcular(item);
+        Somar(item);
     }
 
     // ---------- plano ----------
@@ -1084,6 +1324,17 @@ else
                 return;
             }
 
+            // Copia: o DAO completa a lista, e um erro nao pode deixar a tela
+            // com linhas que o operador nao pos.
+            var pagos = TudoPeloPlano
+                ? new List<VendaPagamento> { new() { Forma = FormaPagamento.Plano, Valor = 0 } }
+                : pagamentos.Select(p => new VendaPagamento
+                  {
+                      Forma = p.Forma,
+                      Valor = dividido ? p.Valor : Total,
+                      Parcelas = p.Parcelas
+                  }).ToList();
+
             if (Editando)
             {
                 vendaDAO.Atualizar(new Venda
@@ -1091,8 +1342,7 @@ else
                     IdVenda = IdVendaEdicao!.Value,
                     IdCliente = clienteSelecionado?.IdCliente,
                     IdFuncionario = idFuncionario,
-                    FormaPagamentoVenda = FormaEfetiva,
-                    QuantidadeParcelas = FormaEfetiva == FormaPagamento.Credito ? parcelas : null,
+                    Pagamentos = pagos,
                     Desconto = DescontoAplicado,
                     Itens = itens
                 });
@@ -1107,8 +1357,7 @@ else
                 IdCliente = clienteSelecionado?.IdCliente,
                 IdFuncionario = idFuncionario,
                 IdCaixa = caixaAberto?.IdCaixa,
-                FormaPagamentoVenda = FormaEfetiva,
-                QuantidadeParcelas = FormaEfetiva == FormaPagamento.Credito ? parcelas : null,
+                Pagamentos = pagos,
                 Desconto = DescontoAplicado,
                 Status = StatusVenda.Confirmada,
                 Itens = itens
@@ -1119,11 +1368,13 @@ else
             var itemPlano = itens.FirstOrDefault(i => i.TipoItem == TipoItem.Plano);
             if (itemPlano != null && clienteSelecionado != null)
             {
+                var plano = planos.FirstOrDefault(p => p.IdPlano == itemPlano.IdReferencia);
                 venda.PlanoVendido = new Venda.PlanoParaAssinar
                 {
                     IdPlano = itemPlano.IdReferencia!.Value,
                     ValorPago = itemPlano.ValorTotal,
-                    Componentes = itensDoPlanoVendido
+                    Componentes = itensDoPlanoVendido,
+                    ValidadeDias = Periodicidade.Dias(plano?.Periodicidade)
                 };
             }
 

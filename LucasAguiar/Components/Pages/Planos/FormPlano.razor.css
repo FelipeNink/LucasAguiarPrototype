@@ -152,7 +152,7 @@
 
 .itens li {
     display: grid;
-    grid-template-columns: 1fr auto auto auto;
+    grid-template-columns: 1fr auto auto auto auto;
     gap: 1rem;
     align-items: center;
     padding: 0.7rem 0.9rem;
@@ -168,6 +168,15 @@
 
 .item-info {
     min-width: 0;
+}
+
+.item-ilimitado {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.8rem;
+    color: var(--texto-3);
+    cursor: pointer;
 }
 
 .item-nome {

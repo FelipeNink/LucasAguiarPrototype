@@ -1,0 +1,23 @@
+.grade-itens td {
+    vertical-align: middle;
+}
+
+.grade-itens .col-qtd {
+    width: 6rem;
+}
+
+.grade-itens .col-valor {
+    width: 9rem;
+}
+
+.acoes-itens {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin: 0.5rem 0 1rem;
+}
+
+.totais-compra {
+    border-top: 1px dashed var(--borda-2);
+    padding-top: 1rem;
+}

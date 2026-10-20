@@ -72,11 +72,11 @@ namespace LucasAguiar.Data
                        COALESCE(SUM(CASE WHEN vi.tipo_item = 'PRODUTO' THEN vi.quantidade ELSE 0 END), 0) produtos,
                        COALESCE(SUM(CASE WHEN vi.tipo_item = 'PRODUTO' THEN vi.valor_total ELSE 0 END), 0) valor_produtos,
                        COALESCE(SUM(CASE WHEN vi.tipo_item <> 'PRODUTO' THEN vi.quantidade ELSE 0 END), 0) servicos
-                FROM funcionario f
-                JOIN venda v ON v.id_fun_fk = f.id_fun
-                             AND v.data_vend >= @de AND v.data_vend < @ate
-                             AND v.status_vend <> 'CANCELADA'
+                FROM venda v
                 JOIN venda_item vi ON vi.id_vend_fk = v.id_vend
+                JOIN funcionario f ON f.id_fun = COALESCE(vi.id_fun_fk, v.id_fun_fk)
+                WHERE v.data_vend >= @de AND v.data_vend < @ate
+                  AND v.status_vend <> 'CANCELADA'
                 GROUP BY f.id_fun, f.nome_fun
                 HAVING comissao > 0 OR atendimentos > 0
                 ORDER BY comissao DESC", conexao))
@@ -118,7 +118,7 @@ namespace LucasAguiar.Data
                 FROM venda v
                 JOIN venda_item vi ON vi.id_vend_fk = v.id_vend
                 LEFT JOIN cliente c ON c.id_cli = v.id_cli_fk
-                WHERE v.id_fun_fk = @id
+                WHERE COALESCE(vi.id_fun_fk, v.id_fun_fk) = @id
                   AND v.data_vend >= @de AND v.data_vend < @ate
                   AND v.status_vend <> 'CANCELADA'
                   AND vi.comissao > 0
@@ -164,16 +164,16 @@ namespace LucasAguiar.Data
                        vi.tipo_item, vi.descricao, vi.quantidade, vi.valor_total,
                        (vi.comissao * vi.quantidade) comissao, vi.coberto_plano,
                        EXISTS (SELECT 1 FROM folha_pagamento fp
-                                WHERE fp.id_fun_fk = v.id_fun_fk
+                                WHERE fp.id_fun_fk = f.id_fun
                                   AND fp.competencia = DATE_FORMAT(v.data_vend, '%Y-%m')) paga
                 FROM venda v
                 JOIN venda_item vi ON vi.id_vend_fk = v.id_vend
-                JOIN funcionario f ON f.id_fun = v.id_fun_fk
+                JOIN funcionario f ON f.id_fun = COALESCE(vi.id_fun_fk, v.id_fun_fk)
                 LEFT JOIN cliente c ON c.id_cli = v.id_cli_fk
                 WHERE v.data_vend >= @de AND v.data_vend < @ate
                   AND v.status_vend <> 'CANCELADA'
                   AND vi.comissao > 0
-                  {(idFuncionario.HasValue ? "AND v.id_fun_fk = @id" : "")}
+                  {(idFuncionario.HasValue ? "AND f.id_fun = @id" : "")}
                 ORDER BY v.data_vend DESC, vi.id_vend_item", conexao);
 
             comando.Parameters.AddWithValue("@de", de);

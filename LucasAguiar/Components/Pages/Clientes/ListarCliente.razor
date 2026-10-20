@@ -52,7 +52,13 @@
             foreach (var cliente in Filtrados)
             {
                 <tr>
-                    <td>@cliente.NomeCliente</td>
+                    <td>
+                        @cliente.NomeCliente
+                        @if (!cliente.Ativo)
+                        {
+                            <span class="status cancelada"><i></i>inativo</span>
+                        }
+                    </td>
                     <td>@Valor(cliente.Telefone)</td>
                     <td class="opcional">@Valor(cliente.NomeProfissionalPreferido)</td>
                     <td class="opcional"><span class="data">@Valor(cliente.UltimaVisita?.ToString("dd/MM/yyyy"))</span></td>
@@ -93,11 +99,15 @@
                 <div><dt>RG</dt><dd>@Valor(visualizando.RG)</dd></div>
                 <div><dt>CEP</dt><dd>@Valor(visualizando.Cep)</dd></div>
                 <div><dt>Nascimento</dt><dd>@Valor(visualizando.DataNascimento?.ToString("dd/MM/yyyy"))</dd></div>
+                <div><dt>E-mail</dt><dd>@Valor(visualizando.Email)</dd></div>
+                <div><dt>Como conheceu</dt><dd>@Valor(visualizando.Origem == null ? null : OrigemCliente.Rotulo(visualizando.Origem))</dd></div>
+                <div><dt>Situação</dt><dd>@(visualizando.Ativo ? "Ativo" : "Inativo")</dd></div>
                 <div class="largo"><dt>Plano</dt><dd>@Valor(visualizando.NomePlano)</dd></div>
                 <div class="largo">
                     <dt>Endereço</dt>
                     <dd>@Valor(string.Join(", ", new[] { visualizando.Rua, visualizando.Numero, visualizando.Bairro, visualizando.Cidade, visualizando.Estado }.Where(p => !string.IsNullOrWhiteSpace(p))))</dd>
                 </div>
+                <div class="largo"><dt>Observações</dt><dd>@Valor(visualizando.Observacoes)</dd></div>
             </dl>
         }
     </ChildContent>

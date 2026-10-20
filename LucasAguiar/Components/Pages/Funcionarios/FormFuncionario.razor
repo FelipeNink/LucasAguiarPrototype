@@ -3,6 +3,7 @@
 @using LucasAguiar.Configs
 @using LucasAguiar.Models
 @inject FuncionarioDAO funcionarioDAO
+@inject ServicoDAO servicoDAO
 @inject NavigationManager Navigation
 
 <div class="form-pagina">
@@ -55,12 +56,141 @@
         <CamposEndereco Modelo="Modelo" Prefixo="fun" />
 
         <section class="cartao secao-form">
+            <h2>Contrato</h2>
+            <div class="grade-12">
+                <Campo Rotulo="Cargo" Colunas="3">
+                    <Seletor TItem="Opcao" TValor="string" Itens="OpcoesCargo"
+                             Valor="@(Modelo.Cargo ?? string.Empty)"
+                             ValorChanged="@(v => Modelo.Cargo = string.IsNullOrEmpty(v) ? null : v)"
+                             TextoDe="o => o.Rotulo" ValorDe="o => o.Valor" />
+                </Campo>
+                <Campo Rotulo="Admissão" Para="fun-admissao" Colunas="3">
+                    <input id="fun-admissao" type="date" class="form-control" @bind="Modelo.DataAdmissao" />
+                </Campo>
+                <Campo Rotulo="Desligamento" Para="fun-desligamento" Colunas="3"
+                       Erro="@(Modelo.DataDesligamento < Modelo.DataAdmissao ? "Antes da admissão." : null)">
+                    <input id="fun-desligamento" type="date" class="form-control" @bind="Modelo.DataDesligamento" />
+                </Campo>
+                <Campo Rotulo="Situação" Para="fun-ativo" Colunas="3"
+                       Dica="Inativo some da venda e da agenda.">
+                    <div class="form-check form-switch campo-switch">
+                        <input id="fun-ativo" class="form-check-input" type="checkbox" role="switch" @bind="Modelo.Ativo" />
+                        <label class="form-check-label" for="fun-ativo">@(Modelo.Ativo ? "Ativo" : "Inativo")</label>
+                    </div>
+                </Campo>
+                <Campo Rotulo="Acesso ao sistema" Colunas="6"
+                       Dica="O login é ligado ao profissional na tela Equipe.">
+                    <input class="form-control" readonly value="@(Modelo.LoginVinculado ?? "Sem login vinculado")" />
+                </Campo>
+                <Campo Rotulo="Cor na agenda" Para="fun-cor" Colunas="2">
+                    <input id="fun-cor" type="color" class="form-control form-control-color"
+                           value="@(Modelo.CorAgenda ?? "#6c757d")" @onchange="e => Modelo.CorAgenda = e.Value?.ToString()" />
+                </Campo>
+            </div>
+        </section>
+
+        <section class="cartao secao-form">
             <h2>Remuneração</h2>
             <div class="grade-12">
                 <Campo Rotulo="Salário fixo mensal" Para="fun-salario" Colunas="3"
                        Dica="Somado às comissões na folha. Zero para quem trabalha só por comissão.">
                     <InputMoeda Id="fun-salario" @bind-Valor="Modelo.SalarioFixo" />
                 </Campo>
+                <Campo Rotulo="Comissão padrão em serviços (%)" Para="fun-com-serv" Colunas="3"
+                       Dica="Vale para serviço sem comissão definida."
+                       Erro="@(Modelo.ComissaoServicoPadrao > 100 ? "No máximo 100%." : null)">
+                    <InputMoeda Id="fun-com-serv" @bind-Valor="Modelo.ComissaoServicoPadrao" />
+                </Campo>
+                <Campo Rotulo="Comissão padrão em produtos (%)" Para="fun-com-prod" Colunas="3"
+                       Dica="Vale para produto sem comissão definida."
+                       Erro="@(Modelo.ComissaoProdutoPadrao > 100 ? "No máximo 100%." : null)">
+                    <InputMoeda Id="fun-com-prod" @bind-Valor="Modelo.ComissaoProdutoPadrao" />
+                </Campo>
+                <Campo Rotulo="Chave PIX" Para="fun-pix" Colunas="4">
+                    <input id="fun-pix" class="form-control" maxlength="100" @bind="Modelo.ChavePix" />
+                </Campo>
+                <Campo Rotulo="Dados bancários" Para="fun-banco" Colunas="8">
+                    <input id="fun-banco" class="form-control" maxlength="300"
+                           placeholder="Banco, agência e conta" @bind="Modelo.DadosBancarios" />
+                </Campo>
+            </div>
+        </section>
+
+        <section class="cartao secao-form">
+            <h2>Serviços que realiza</h2>
+            <p class="explicacao">
+                Marque o que este profissional faz. Comissão e preço próprios são opcionais:
+                em branco, vale o do cadastro do serviço.
+            </p>
+
+            @if (servicos.Count == 0)
+            {
+                <p class="suave">Nenhum serviço cadastrado.</p>
+            }
+            else
+            {
+                <div class="tabela">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th></th>
+                                <th>Serviço</th>
+                                <th class="al-dir">Preço do serviço</th>
+                                <th>Comissão própria</th>
+                                <th>Preço próprio</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var s in servicos.Where(s => s.Ativo || realiza.ContainsKey(s.IdServico)))
+                            {
+                                var marcado = realiza.TryGetValue(s.IdServico, out var proprio);
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" class="form-check-input" checked="@marcado"
+                                               aria-label="@($"Realiza {s.NomeServico}")"
+                                               @onchange="e => Marcar(s.IdServico, e.Value is true)" />
+                                    </td>
+                                    <td>@s.NomeServico</td>
+                                    <td class="al-dir">@s.PrecoServico.ToString("C")</td>
+                                    <td>
+                                        @if (marcado)
+                                        {
+                                            <div class="d-flex align-items-center gap-1">
+                                                <InputMoeda Valor="proprio!.Comissao ?? 0"
+                                                            ValorChanged="v => proprio!.Comissao = v == 0 ? null : v" />
+                                                <span class="suave">@(s.ComissaoPercentual ? "%" : "R$")</span>
+                                            </div>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (marcado)
+                                        {
+                                            <InputMoeda Valor="proprio!.Preco ?? 0"
+                                                        ValorChanged="v => proprio!.Preco = v == 0 ? null : v" />
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </section>
+
+        <section class="cartao secao-form">
+            <h2>Foto</h2>
+            <div class="grade-12">
+                <Campo Rotulo="Foto do profissional" Colunas="6" Dica="JPG, PNG ou WebP, até 1 MB." Erro="@erroFoto">
+                    <InputFile class="form-control" accept="image/jpeg,image/png,image/webp" OnChange="EscolherFoto" />
+                </Campo>
+                <div class="c-6">
+                    @if (fotoDataUrl != null)
+                    {
+                        <img src="@fotoDataUrl" alt="Foto de @Modelo.NomeFuncionario"
+                             style="max-height: 120px; border-radius: 8px;" />
+                        <button type="button" class="btn btn-link" @onclick="TirarFoto">Remover foto</button>
+                    }
+                </div>
             </div>
         </section>
 
@@ -76,6 +206,80 @@
     private bool tentouSalvar;
     private bool salvando;
 
+    private List<Servico> servicos = new();
+
+    /// <summary>Servicos marcados, por id, com a comissao e o preco proprios.</summary>
+    private Dictionary<int, FuncionarioServico> realiza = new();
+
+    // Foto: so vai para o banco no Salvar, junto com o resto.
+    private string? fotoDataUrl;
+    private (string Tipo, byte[] Conteudo)? fotoNova;
+    private bool removerFoto;
+    private string? erroFoto;
+
+    private static List<Opcao> OpcoesCargo =>
+        new List<Opcao> { new("", "Não informado") }
+            .Concat(CargoFuncionario.Todos.Select(c => new Opcao(c.Valor, c.Rotulo)))
+            .ToList();
+
+    protected override void OnInitialized()
+    {
+        try
+        {
+            servicos = servicoDAO.ListarTodos().OrderBy(s => s.NomeServico).ToList();
+
+            if (!Novo)
+            {
+                realiza = funcionarioDAO.ListarServicos(Modelo.IdFuncionario).ToDictionary(s => s.IdServico);
+
+                if (Modelo.TemFoto && funcionarioDAO.BuscarFoto(Modelo.IdFuncionario) is { } foto)
+                    fotoDataUrl = $"data:{foto.Tipo};base64,{Convert.ToBase64String(foto.Conteudo)}";
+            }
+        }
+        catch (Exception ex)
+        {
+            erro = "Erro ao carregar os dados do profissional: " + ex.Message;
+        }
+    }
+
+    private void Marcar(int idServico, bool marcado)
+    {
+        if (marcado) realiza.TryAdd(idServico, new FuncionarioServico { IdServico = idServico });
+        else realiza.Remove(idServico);
+    }
+
+    private async Task EscolherFoto(InputFileChangeEventArgs e)
+    {
+        erroFoto = null;
+        var arquivo = e.File;
+
+        if (!arquivo.ContentType.StartsWith("image/"))
+        {
+            erroFoto = "Escolha uma imagem.";
+            return;
+        }
+
+        if (arquivo.Size > FuncionarioDAO.TamanhoMaximoFoto)
+        {
+            erroFoto = "A foto pode ter no máximo 1 MB.";
+            return;
+        }
+
+        using var memoria = new MemoryStream();
+        await arquivo.OpenReadStream(FuncionarioDAO.TamanhoMaximoFoto).CopyToAsync(memoria);
+
+        fotoNova = (arquivo.ContentType, memoria.ToArray());
+        removerFoto = false;
+        fotoDataUrl = $"data:{arquivo.ContentType};base64,{Convert.ToBase64String(fotoNova.Value.Conteudo)}";
+    }
+
+    private void TirarFoto()
+    {
+        fotoNova = null;
+        fotoDataUrl = null;
+        removerFoto = true;
+    }
+
     private void Salvar()
     {
         tentouSalvar = true;
@@ -86,7 +290,10 @@
             || Documentos.ErroCpf(Modelo.CPF) != null
             || Documentos.ErroTelefone(Modelo.Telefone) != null
             || Documentos.ErroEmail(Modelo.Email) != null
-            || Documentos.ErroCep(Modelo.Cep) != null;
+            || Documentos.ErroCep(Modelo.Cep) != null
+            || Modelo.ComissaoServicoPadrao > 100
+            || Modelo.ComissaoProdutoPadrao > 100
+            || Modelo.DataDesligamento < Modelo.DataAdmissao;
 
         if (temErro)
         {
@@ -103,9 +310,17 @@
             Modelo.Telefone = Vazio(Documentos.FormatarTelefone(Modelo.Telefone));
             Modelo.Email = Vazio(Modelo.Email);
             Modelo.Cep = Vazio(Documentos.FormatarCep(Modelo.Cep));
+            Modelo.ChavePix = Vazio(Modelo.ChavePix);
+            Modelo.DadosBancarios = Vazio(Modelo.DadosBancarios);
 
-            if (Novo) funcionarioDAO.Inserir(Modelo);
+            var id = Modelo.IdFuncionario;
+            if (Novo) id = funcionarioDAO.Inserir(Modelo);
             else funcionarioDAO.Atualizar(Modelo);
+
+            funcionarioDAO.SalvarServicos(id, realiza.Values);
+
+            if (fotoNova is { } foto) funcionarioDAO.SalvarFoto(id, foto.Tipo, foto.Conteudo);
+            else if (removerFoto) funcionarioDAO.RemoverFoto(id);
 
             Navigation.NavigateTo("/funcionario");
         }

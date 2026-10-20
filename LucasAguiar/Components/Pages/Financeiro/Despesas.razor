@@ -6,6 +6,7 @@
 @using Microsoft.AspNetCore.WebUtilities
 @inject DespesaDAO despesaDAO
 @inject FornecedorDAO fornecedorDAO
+@inject CategoriaDAO categoriaDAO
 @inject NavigationManager Navigation
 
 
@@ -118,7 +119,7 @@
                     <td>@d.DataDespesa.ToString("dd/MM/yyyy")</td>
                     <td>@d.Descricao</td>
                     <td>@d.RotuloCategoria</td>
-                    <td>@(string.IsNullOrWhiteSpace(d.NomeFornecedor) ? "—" : d.NomeFornecedor)</td>
+                    <td>@(!string.IsNullOrWhiteSpace(d.NomeFornecedor) ? d.NomeFornecedor : d.NomeFuncionario ?? "—")</td>
                     <td>@FormaPagamento.Rotulo(d.FormaPagamentoDespesa)</td>
                     <td class="dir">@d.Valor.ToString("C")</td>
                     <td>
@@ -153,11 +154,15 @@
         @if (visualizando != null)
         {
             <dl class="ficha">
-                <div><dt>Data</dt><dd>@visualizando.DataDespesa.ToString("dd/MM/yyyy")</dd></div>
-                <div><dt>Valor</dt><dd>@visualizando.Valor.ToString("C")</dd></div>
+                <div><dt>Vencimento</dt><dd>@(visualizando.DataVencimento?.ToString("dd/MM/yyyy") ?? "—")</dd></div>
+                <div><dt>Pago em</dt><dd>@(visualizando.Pago ? visualizando.DataPagamento?.ToString("dd/MM/yyyy") ?? "—" : "em aberto")</dd></div>
+                <div><dt>Valor</dt><dd>@visualizando.Valor.ToString("C")@(visualizando.Parcelas > 1 ? $" em {visualizando.Parcelas}×" : "")</dd></div>
                 <div><dt>Categoria</dt><dd>@visualizando.RotuloCategoria</dd></div>
                 <div><dt>Pagamento</dt><dd>@FormaPagamento.Rotulo(visualizando.FormaPagamentoDespesa)@(visualizando.Pago ? "" : " (em aberto)")</dd></div>
                 <div><dt>Fornecedor</dt><dd>@(visualizando.NomeFornecedor ?? "—")</dd></div>
+                <div><dt>Funcionário</dt><dd>@(visualizando.NomeFuncionario ?? "—")</dd></div>
+                <div><dt>Recorrente</dt><dd>@(visualizando.Recorrente ? "Sim, todo mês" : "Não")</dd></div>
+                <div><dt>Anexos</dt><dd>@(visualizando.QuantidadeAnexos > 0 ? $"{visualizando.QuantidadeAnexos} arquivo(s) — veja em Editar" : "—")</dd></div>
                 <div><dt>Caixa</dt><dd>@(visualizando.IdCaixa.HasValue ? $"#{visualizando.IdCaixa}" : "—")</dd></div>
                 <div class="largo"><dt>Observação</dt><dd>@(string.IsNullOrWhiteSpace(visualizando.Observacao) ? "—" : visualizando.Observacao)</dd></div>
             </dl>
@@ -175,8 +180,10 @@
 
     // Opcoes dos seletores. O "Todas"/"Nenhum" entra como item da lista,
     // porque o Seletor nao tem <option> solta como o select nativo.
+    private List<Categoria> categorias = new();
+
     private List<Opcao> OpcoesCategoria =>
-        CategoriaDespesa.Todas.Select(c => new Opcao(c.Valor, c.Rotulo)).ToList();
+        categorias.Select(c => new Opcao(c.Codigo!, c.Nome)).ToList();
 
     private List<Opcao> OpcoesCategoriaFiltro =>
         new List<Opcao> { new("", "Todas") }.Concat(OpcoesCategoria).ToList();
@@ -289,6 +296,7 @@
         try
         {
             fornecedores = fornecedorDAO.ListarTodos() ?? new();
+            categorias = categoriaDAO.Listar(TipoCategoria.Despesa);
         }
         catch (Exception ex)
         {

@@ -80,7 +80,13 @@
             {
                 <tr>
                     <td>@produto.IdProduto</td>
-                    <td>@produto.NomeProduto</td>
+                    <td>
+                        @produto.NomeProduto
+                        @if (!produto.Ativo)
+                        {
+                            <span class="status cancelada"><i></i>inativo</span>
+                        }
+                    </td>
                     <td class="opcional">@Valor(produto.Marca)</td>
                     <td class="al-dir">
                         @if (produto.Quantidade <= 0)
@@ -128,6 +134,13 @@
                 <div><dt>Estoque</dt><dd>@visualizando.Quantidade</dd></div>
                 <div><dt>Marca</dt><dd>@Valor(visualizando.Marca)</dd></div>
                 <div><dt>Fornecedor</dt><dd>@Valor(visualizando.NomeFornecedor)</dd></div>
+                <div><dt>Categoria</dt><dd>@Valor(visualizando.NomeCategoria)</dd></div>
+                <div><dt>Unidade</dt><dd>@visualizando.Unidade</dd></div>
+                <div><dt>Preço de custo</dt><dd>@(visualizando.PrecoCusto?.ToString("C") ?? "—")</dd></div>
+                <div><dt>Comissão</dt><dd>@(visualizando.Comissao.HasValue ? $"{visualizando.Comissao:0.##}%" : "Padrão do profissional")</dd></div>
+                <div><dt>Código de barras</dt><dd>@Valor(visualizando.CodigoBarras)</dd></div>
+                <div><dt>SKU</dt><dd>@Valor(visualizando.Sku)</dd></div>
+                <div><dt>Situação</dt><dd>@(visualizando.Ativo ? "Ativo" : "Inativo")</dd></div>
                 <div class="largo"><dt>Descrição</dt><dd>@Valor(visualizando.Descricao)</dd></div>
             </dl>
         }

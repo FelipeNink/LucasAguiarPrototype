@@ -23,6 +23,9 @@ namespace LucasAguiar.Models
         public int? IdVenda { get; set; }
         public string Status { get; set; } = StatusAssinatura.Ativa;
 
+        /// <summary>Dia do mês da cobrança. DataFim é o vencimento.</summary>
+        public int? DiaCobranca { get; set; }
+
         public List<AssinaturaSaldo> Saldos { get; set; } = new();
 
         // Preenchidos por join
@@ -34,7 +37,8 @@ namespace LucasAguiar.Models
         public bool Utilizavel =>
             Status == StatusAssinatura.Ativa && !Vencida && Saldos.Any(s => s.Restante > 0);
 
-        public int TotalRestante => Saldos.Sum(s => s.Restante);
+        /// <summary>Créditos contáveis; item ilimitado fica fora da soma.</summary>
+        public int TotalRestante => Saldos.Where(s => !s.Ilimitado).Sum(s => s.Restante);
 
         public string ValidadeTexto =>
             DataFim.HasValue
@@ -55,10 +59,14 @@ namespace LucasAguiar.Models
         /// <summary>Preço avulso na época da compra, guardado para relatório.</summary>
         public decimal ValorReferencia { get; set; }
 
-        public int QuantidadeTotal { get; set; }
+        /// <summary>Nulo é ilimitado.</summary>
+        public int? QuantidadeTotal { get; set; }
         public int QuantidadeUsada { get; set; }
 
-        public int Restante => Math.Max(0, QuantidadeTotal - QuantidadeUsada);
+        public bool Ilimitado => !QuantidadeTotal.HasValue;
+
+        /// <summary>Ilimitado nunca esgota.</summary>
+        public int Restante => Ilimitado ? int.MaxValue : Math.Max(0, QuantidadeTotal!.Value - QuantidadeUsada);
 
         public string RotuloTipo => TipoItem == Models.TipoItem.Produto ? "Produto" : "Serviço";
     }

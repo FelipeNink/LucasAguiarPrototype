@@ -95,7 +95,7 @@ namespace LucasAguiar.Data
                       COUNT(DISTINCT v.id_vend) atendimentos
                     FROM venda v
                     JOIN venda_item vi ON vi.id_vend_fk = v.id_vend
-                    WHERE v.id_fun_fk = @id
+                    WHERE COALESCE(vi.id_fun_fk, v.id_fun_fk) = @id
                       AND v.data_vend >= @inicio AND v.data_vend < @fim
                       AND v.status_vend <> 'CANCELADA'", conexao))
                 {
@@ -167,13 +167,16 @@ namespace LucasAguiar.Data
                 using var cmdDespesa = new MySqlCommand(@"
                     INSERT INTO despesa
                         (data_desp, descricao, categoria, valor, forma_pagamento,
-                         pago, id_caixa_fk, observacao)
+                         pago, id_caixa_fk, observacao,
+                         data_vencimento, data_pagamento, id_fun_fk)
                     VALUES
                         (@data, @descricao, 'SALARIO', @valor, @forma,
-                         1, @idCaixa, 'Gerada pela folha de pagamento');
+                         1, @idCaixa, 'Gerada pela folha de pagamento',
+                         @data, @data, @idFuncionario);
                     SELECT LAST_INSERT_ID();", conexao, transacao);
 
                 cmdDespesa.Parameters.AddWithValue("@data", DateTime.Today);
+                cmdDespesa.Parameters.AddWithValue("@idFuncionario", linha.IdFuncionario);
                 cmdDespesa.Parameters.AddWithValue("@descricao", descricao);
                 cmdDespesa.Parameters.AddWithValue("@valor", linha.TotalAReceber);
                 cmdDespesa.Parameters.AddWithValue("@forma", formaPagamento);

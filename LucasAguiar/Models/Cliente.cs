@@ -2,6 +2,23 @@
 namespace LucasAguiar.Models
 
 {
+    /// <summary>Como o cliente conheceu a barbearia.</summary>
+    public static class OrigemCliente
+    {
+        public static readonly (string Valor, string Rotulo)[] Todas =
+        {
+            ("INDICACAO", "Indicação"),
+            ("INSTAGRAM", "Instagram"),
+            ("FACEBOOK", "Facebook"),
+            ("GOOGLE", "Google"),
+            ("FACHADA", "Passou em frente"),
+            ("OUTRO", "Outro")
+        };
+
+        public static string Rotulo(string? valor) =>
+            Todas.FirstOrDefault(o => o.Valor == valor).Rotulo ?? (valor ?? "—");
+    }
+
     public class Cliente : IEndereco
     {
         public int IdCliente{ get; set; }
@@ -19,6 +36,15 @@ namespace LucasAguiar.Models
 
         public int? IdPlano { get; set; }
 
+        public string? Email { get; set; }
+        public string? Origem { get; set; }
+        public string? Observacoes { get; set; }
+
+        /// <summary>Profissional preferido escolhido no cadastro (cliente.id_fun_pref_fk).</summary>
+        public int? IdProfissionalPreferidoCadastro { get; set; }
+
+        public bool Ativo { get; set; } = true;
+
         // Preenchidos por join, para exibicao
         public string? NomePlano { get; set; }
         public decimal ValorPlano { get; set; }
@@ -28,7 +54,7 @@ namespace LucasAguiar.Models
         public int Visitas { get; set; }
         public decimal TotalGasto { get; set; }
 
-        /// <summary>Quem mais atendeu o cliente, ate existir o campo no cadastro.</summary>
+        /// <summary>O do cadastro; sem ele, quem mais atendeu o cliente.</summary>
         public int? IdProfissionalPreferido { get; set; }
         public string? NomeProfissionalPreferido { get; set; }
 

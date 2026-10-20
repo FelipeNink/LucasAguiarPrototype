@@ -43,7 +43,13 @@
             foreach (var plano in Filtrados)
             {
                 <tr>
-                    <td>@plano.NomePlano</td>
+                    <td>
+                        @plano.NomePlano
+                        @if (!plano.Ativo)
+                        {
+                            <span class="status cancelada"><i></i>inativo</span>
+                        }
+                    </td>
                     <td class="al-dir">@((plano.Valor ?? 0).ToString("C"))</td>
                     <td class="opcional">
                         @if (plano.TotalServicos > 0)
@@ -86,7 +92,9 @@
         @if (visualizando != null)
         {
             <dl class="ficha">
-                <div><dt>Valor mensal</dt><dd>@((visualizando.Valor ?? 0).ToString("C"))</dd></div>
+                <div><dt>Valor</dt><dd>@((visualizando.Valor ?? 0).ToString("C"))</dd></div>
+                <div><dt>Periodicidade</dt><dd>@Periodicidade.Rotulo(visualizando.Periodicidade)</dd></div>
+                <div><dt>Comissão do assinante</dt><dd>@(visualizando.RegraComissaoAssinante == RegraComissaoAssinante.SemComissao ? "Sem comissão" : "Normal")</dd></div>
                 <div><dt>Itens</dt><dd>@visualizando.TotalItens</dd></div>
                 <div class="largo">
                     <dt>Descrição</dt>
@@ -103,7 +111,7 @@
                         {
                             @foreach (var item in itensVisualizados)
                             {
-                                <div>@item.Quantidade× @item.Descricao <span class="text-muted">(@item.RotuloTipo)</span></div>
+                                <div>@(item.Ilimitado ? "Ilimitado:" : $"{item.Quantidade}×") @item.Descricao <span class="text-muted">(@item.RotuloTipo)</span></div>
                             }
                         }
                     </dd>

@@ -64,6 +64,7 @@
             <th>Plano</th>
             <th>Início</th>
             <th>Vencimento</th>
+            <th class="opcional">Dia de cobrança</th>
             <th class="col-num">Valor</th>
             <th>Situação</th>
         </tr>
@@ -79,6 +80,7 @@
                     <td><span class="descritivo">@a.NomePlano</span></td>
                     <td><span class="data">@a.DataInicio.ToString("dd/MM/yyyy")</span></td>
                     <td><span class="data">@(a.DataFim?.ToString("dd/MM/yyyy") ?? "sem prazo")</span></td>
+                    <td class="opcional">@(a.DiaCobranca.HasValue ? $"dia {a.DiaCobranca}" : "—")</td>
                     <td class="col-num">@a.ValorPago.ToString("C")</td>
                     <td>
                         <span class="status @ClasseDaSituacao(sit)"><i></i>@RotuloDaSituacao(sit)</span>
@@ -89,7 +91,7 @@
         else
         {
             <tr>
-                <td colspan="6" class="vazio">Nenhuma assinatura encontrada.</td>
+                <td colspan="7" class="vazio">Nenhuma assinatura encontrada.</td>
             </tr>
         }
     </tbody>

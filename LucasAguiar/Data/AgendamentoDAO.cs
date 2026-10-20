@@ -13,12 +13,25 @@ namespace LucasAguiar.Data
             _conexao = conexao;
         }
 
+        // Os servicos vem agregados de agendamento_servico, com o preco proprio
+        // do profissional (funcionario_servico) quando houver.
         private const string SelecaoPadrao = @"
-            SELECT a.*, c.nome_cli, c.telefone_cli, f.nome_fun, s.nome_serv, s.preco_serv
+            SELECT a.*, c.nome_cli, c.telefone_cli, f.nome_fun,
+                   sv.nomes AS nome_serv, sv.preco AS preco_serv, sv.ids AS ids_serv
             FROM agendamento a
             LEFT JOIN cliente c ON c.id_cli = a.id_cli_fk
             LEFT JOIN funcionario f ON f.id_fun = a.id_fun_fk
-            LEFT JOIN servico s ON s.id_serv = a.id_serv_fk";
+            LEFT JOIN (
+                SELECT ags.id_agend_fk,
+                       GROUP_CONCAT(s.nome_serv ORDER BY ags.ordem SEPARATOR ' + ') AS nomes,
+                       GROUP_CONCAT(CAST(s.id_serv AS CHAR) ORDER BY ags.ordem) AS ids,
+                       SUM(COALESCE(fs.preco, s.preco_serv)) AS preco
+                  FROM agendamento_servico ags
+                  JOIN agendamento a2 ON a2.id_agend = ags.id_agend_fk
+                  JOIN servico s ON s.id_serv = ags.id_serv_fk
+                  LEFT JOIN funcionario_servico fs ON fs.id_fun_fk = a2.id_fun_fk AND fs.id_serv_fk = s.id_serv
+                 GROUP BY ags.id_agend_fk
+            ) sv ON sv.id_agend_fk = a.id_agend";
 
         public int Inserir(Agendamento agendamento)
         {
@@ -27,17 +40,31 @@ namespace LucasAguiar.Data
             using var conexao = _conexao.GetConnection();
             VerificarConflito(agendamento, conexao);
 
-            using var comando = new MySqlCommand(@"
-                INSERT INTO agendamento
-                    (data_hora, duracao_min, id_cli_fk, id_fun_fk, id_serv_fk, observacao, status)
-                VALUES
-                    (@dataHora, @duracao, @idCliente, @idFuncionario, @idServico, @observacao, @status);
-                SELECT LAST_INSERT_ID();", conexao);
+            using var transacao = conexao.BeginTransaction();
+            try
+            {
+                int id;
+                using (var comando = new MySqlCommand(@"
+                    INSERT INTO agendamento
+                        (data_hora, duracao_min, id_cli_fk, id_fun_fk, id_serv_fk, observacao, status)
+                    VALUES
+                        (@dataHora, @duracao, @idCliente, @idFuncionario, @idServico, @observacao, @status);
+                    SELECT LAST_INSERT_ID();", conexao, transacao))
+                {
+                    PreencherParametros(comando, agendamento);
+                    comando.Parameters.AddWithValue("@status", StatusAgendamento.Agendado);
+                    id = Convert.ToInt32(comando.ExecuteScalar());
+                }
 
-            PreencherParametros(comando, agendamento);
-            comando.Parameters.AddWithValue("@status", StatusAgendamento.Agendado);
-
-            return Convert.ToInt32(comando.ExecuteScalar());
+                GravarServicos(conexao, transacao, id, agendamento.IdsServicos);
+                transacao.Commit();
+                return id;
+            }
+            catch
+            {
+                transacao.Rollback();
+                throw;
+            }
         }
 
         public void Atualizar(Agendamento agendamento)
@@ -51,18 +78,52 @@ namespace LucasAguiar.Data
             if (agendamento.Status == StatusAgendamento.Agendado)
                 VerificarConflito(agendamento, conexao);
 
-            using var comando = new MySqlCommand(@"
-                UPDATE agendamento SET
-                    data_hora = @dataHora, duracao_min = @duracao, id_cli_fk = @idCliente,
-                    id_fun_fk = @idFuncionario, id_serv_fk = @idServico,
-                    observacao = @observacao, status = @status
-                WHERE id_agend = @id", conexao);
+            using var transacao = conexao.BeginTransaction();
+            try
+            {
+                using (var comando = new MySqlCommand(@"
+                    UPDATE agendamento SET
+                        data_hora = @dataHora, duracao_min = @duracao, id_cli_fk = @idCliente,
+                        id_fun_fk = @idFuncionario, id_serv_fk = @idServico,
+                        observacao = @observacao, status = @status
+                    WHERE id_agend = @id", conexao, transacao))
+                {
+                    PreencherParametros(comando, agendamento);
+                    comando.Parameters.AddWithValue("@status", agendamento.Status);
+                    comando.Parameters.AddWithValue("@id", agendamento.IdAgendamento);
+                    comando.ExecuteNonQuery();
+                }
 
-            PreencherParametros(comando, agendamento);
-            comando.Parameters.AddWithValue("@status", agendamento.Status);
-            comando.Parameters.AddWithValue("@id", agendamento.IdAgendamento);
+                GravarServicos(conexao, transacao, agendamento.IdAgendamento, agendamento.IdsServicos);
+                transacao.Commit();
+            }
+            catch
+            {
+                transacao.Rollback();
+                throw;
+            }
+        }
 
-            comando.ExecuteNonQuery();
+        private static void GravarServicos(
+            MySqlConnection conexao, MySqlTransaction transacao, int idAgendamento, List<int> idsServicos)
+        {
+            using (var limpar = new MySqlCommand(
+                "DELETE FROM agendamento_servico WHERE id_agend_fk = @id", conexao, transacao))
+            {
+                limpar.Parameters.AddWithValue("@id", idAgendamento);
+                limpar.ExecuteNonQuery();
+            }
+
+            for (var i = 0; i < idsServicos.Count; i++)
+            {
+                using var inserir = new MySqlCommand(@"
+                    INSERT INTO agendamento_servico (id_agend_fk, id_serv_fk, ordem)
+                    VALUES (@id, @idServico, @ordem)", conexao, transacao);
+                inserir.Parameters.AddWithValue("@id", idAgendamento);
+                inserir.Parameters.AddWithValue("@idServico", idsServicos[i]);
+                inserir.Parameters.AddWithValue("@ordem", i);
+                inserir.ExecuteNonQuery();
+            }
         }
 
         /// <summary>Fecha o agendamento apontando para a venda que ele gerou.</summary>
@@ -123,9 +184,16 @@ namespace LucasAguiar.Data
 
         private static void Validar(Agendamento agendamento)
         {
+            // Quem so preenche IdServico (um servico) continua valendo.
+            if (agendamento.IdsServicos.Count == 0 && agendamento.IdServico > 0)
+                agendamento.IdsServicos.Add(agendamento.IdServico);
+
+            agendamento.IdsServicos = agendamento.IdsServicos.Where(id => id > 0).Distinct().ToList();
+            agendamento.IdServico = agendamento.IdsServicos.FirstOrDefault();
+
             if (agendamento.IdCliente <= 0) throw new Exception("Selecione o cliente.");
             if (agendamento.IdFuncionario <= 0) throw new Exception("Selecione o profissional.");
-            if (agendamento.IdServico <= 0) throw new Exception("Selecione o serviço.");
+            if (agendamento.IdServico <= 0) throw new Exception("Selecione ao menos um serviço.");
             if (agendamento.DataHora == default) throw new Exception("Informe a data e a hora.");
             if (agendamento.DuracaoMin <= 0) throw new Exception("A duração deve ser maior que zero.");
         }
@@ -193,14 +261,22 @@ namespace LucasAguiar.Data
             var iVenda = leitor.GetOrdinal("id_vend_fk");
             var iPreco = leitor.GetOrdinal("preco_serv");
 
+            var idServico = Inteiro("id_serv_fk");
+            var ids = (Texto("ids_serv") ?? "")
+                .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                .Select(int.Parse)
+                .ToList();
+            if (ids.Count == 0 && idServico > 0) ids.Add(idServico);
+
             return new Agendamento
             {
+                IdsServicos = ids,
                 IdAgendamento = leitor.GetInt32("id_agend"),
                 DataHora = leitor.GetDateTime("data_hora"),
                 DuracaoMin = Inteiro("duracao_min"),
                 IdCliente = Inteiro("id_cli_fk"),
                 IdFuncionario = Inteiro("id_fun_fk"),
-                IdServico = Inteiro("id_serv_fk"),
+                IdServico = idServico,
                 Observacao = Texto("observacao"),
                 Status = Texto("status") ?? StatusAgendamento.Agendado,
                 IdVenda = leitor.IsDBNull(iVenda) ? null : leitor.GetInt32(iVenda),
@@ -208,7 +284,7 @@ namespace LucasAguiar.Data
                 TelefoneCliente = Texto("telefone_cli"),
                 NomeFuncionario = Texto("nome_fun"),
                 NomeServico = Texto("nome_serv"),
-                // preco_serv e FLOAT no banco: converte em vez de GetDecimal.
+                // Soma de FLOAT com DECIMAL vem como double: converte em vez de GetDecimal.
                 PrecoServico = leitor.IsDBNull(iPreco) ? 0m : Convert.ToDecimal(leitor.GetValue(iPreco))
             };
         }

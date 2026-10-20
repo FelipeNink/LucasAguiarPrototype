@@ -28,7 +28,12 @@ namespace LucasAguiar.Models
 
         public int IdCliente { get; set; }
         public int IdFuncionario { get; set; }
+
+        /// <summary>Primeiro serviço da lista; é o que agendamento.id_serv_fk guarda.</summary>
         public int IdServico { get; set; }
+
+        /// <summary>Serviços do horário, na ordem em que serão feitos.</summary>
+        public List<int> IdsServicos { get; set; } = new();
 
         public string? Observacao { get; set; }
         public string Status { get; set; } = StatusAgendamento.Agendado;
@@ -40,7 +45,11 @@ namespace LucasAguiar.Models
         public string? NomeCliente { get; set; }
         public string? TelefoneCliente { get; set; }
         public string? NomeFuncionario { get; set; }
+
+        /// <summary>Nomes de todos os serviços, "Corte + Barba".</summary>
         public string? NomeServico { get; set; }
+
+        /// <summary>Soma dos serviços, já com o preço próprio do profissional quando houver.</summary>
         public decimal PrecoServico { get; set; }
 
         public DateTime Fim => DataHora.AddMinutes(DuracaoMin);

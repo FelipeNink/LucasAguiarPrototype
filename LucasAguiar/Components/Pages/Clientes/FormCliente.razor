@@ -5,6 +5,7 @@
 @using LucasAguiar.Models
 @inject ClienteDAO clienteDAO
 @inject PlanoDAO planoDAO
+@inject FuncionarioDAO funcionarioDAO
 @inject NavigationManager Navigation
 
 <div class="form-pagina">
@@ -39,6 +40,10 @@
                 <Campo Rotulo="RG" Para="cli-rg" Colunas="4">
                     <input id="cli-rg" class="form-control" maxlength="7" @bind="Modelo.RG" />
                 </Campo>
+                <Campo Rotulo="E-mail" Para="cli-email" Colunas="8" Erro="@Documentos.ErroEmail(Modelo.Email)">
+                    <input id="cli-email" type="email" class="form-control" maxlength="100"
+                           placeholder="nome@exemplo.com" @bind="Modelo.Email" />
+                </Campo>
             </div>
         </section>
 
@@ -64,6 +69,34 @@
             </div>
         </section>
 
+        <section class="cartao secao-form">
+            <h2>Relacionamento</h2>
+            <div class="grade-12">
+                <Campo Rotulo="Como conheceu" Colunas="4">
+                    <Seletor TItem="Opcao" TValor="string" Itens="OpcoesOrigem"
+                             Valor="@(Modelo.Origem ?? string.Empty)"
+                             ValorChanged="@(v => Modelo.Origem = string.IsNullOrEmpty(v) ? null : v)"
+                             TextoDe="o => o.Rotulo" ValorDe="o => o.Valor" />
+                </Campo>
+                <Campo Rotulo="Profissional preferido" Colunas="4">
+                    <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesProfissional"
+                             Valor="Modelo.IdProfissionalPreferidoCadastro ?? 0"
+                             ValorChanged="v => Modelo.IdProfissionalPreferidoCadastro = v == 0 ? null : v"
+                             TextoDe="o => o.Rotulo" ValorDe="o => o.Id" ComAvatar="true" />
+                </Campo>
+                <Campo Rotulo="Situação" Para="cli-ativo" Colunas="4">
+                    <div class="form-check form-switch campo-switch">
+                        <input id="cli-ativo" class="form-check-input" type="checkbox" role="switch" @bind="Modelo.Ativo" />
+                        <label class="form-check-label" for="cli-ativo">@(Modelo.Ativo ? "Ativo" : "Inativo")</label>
+                    </div>
+                </Campo>
+                <Campo Rotulo="Observações" Para="cli-obs" Colunas="12">
+                    <textarea id="cli-obs" class="form-control" rows="3" maxlength="500"
+                              placeholder="Ex.: alérgico a pós-barba com álcool" @bind="Modelo.Observacoes"></textarea>
+                </Campo>
+            </div>
+        </section>
+
         <RodapeForm Cancelar="/cliente" Salvando="salvando" />
     </form>
 </div>
@@ -78,6 +111,7 @@
     [Parameter] public bool Novo { get; set; }
 
     private List<Plano> planos = new();
+    private List<Funcionario> funcionarios = new();
     private string? erro;
     private bool tentouSalvar;
     private bool salvando;
@@ -89,12 +123,26 @@
             .Concat(planos.Select(p => new OpcaoId(p.IdPlano, p.NomePlano ?? "Sem nome")))
             .ToList();
 
+    private static List<Opcao> OpcoesOrigem =>
+        new List<Opcao> { new("", "Não informado") }
+            .Concat(OrigemCliente.Todas.Select(o => new Opcao(o.Valor, o.Rotulo)))
+            .ToList();
+
+    /// <summary>Inativos ficam de fora, menos o que ja esta escolhido.</summary>
+    private List<OpcaoId> OpcoesProfissional =>
+        new List<OpcaoId> { new(0, "Nenhum") }
+            .Concat(funcionarios
+                .Where(f => f.Ativo || f.IdFuncionario == Modelo.IdProfissionalPreferidoCadastro)
+                .Select(f => new OpcaoId(f.IdFuncionario, f.NomeFuncionario ?? "Sem nome")))
+            .ToList();
+
 
     protected override void OnInitialized()
     {
         try
         {
             planos = planoDAO.ListarTodos();
+            funcionarios = funcionarioDAO.ListarTodos();
         }
         catch (Exception ex)
         {
@@ -130,6 +178,7 @@
             string.IsNullOrWhiteSpace(Modelo.NomeCliente)
             || Documentos.ErroTelefone(Modelo.Telefone) != null
             || Documentos.ErroCpf(Modelo.CPF) != null
+            || Documentos.ErroEmail(Modelo.Email) != null
             || Documentos.ErroCep(Modelo.Cep) != null;
 
         if (temErro)
@@ -148,6 +197,8 @@
             Modelo.CPF = Vazio(Documentos.FormatarCpf(Modelo.CPF));
             Modelo.Cep = Vazio(Documentos.FormatarCep(Modelo.Cep));
             Modelo.RG = Vazio(Modelo.RG);
+            Modelo.Email = Vazio(Modelo.Email);
+            Modelo.Observacoes = Vazio(Modelo.Observacoes);
 
             if (Novo) clienteDAO.Inserir(Modelo);
             else clienteDAO.Atualizar(Modelo);

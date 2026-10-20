@@ -15,6 +15,9 @@ namespace LucasAguiar.Models
         /// </summary>
         public const string Plano = "PLANO";
 
+        /// <summary>Venda paga com mais de uma forma; o detalhe fica em venda_pagamento.</summary>
+        public const string Misto = "MISTO";
+
         public static readonly (string Valor, string Rotulo)[] Todas =
         {
             (Dinheiro, "Dinheiro"),
@@ -24,9 +27,22 @@ namespace LucasAguiar.Models
         };
 
         public static string Rotulo(string? valor) =>
-            valor == Plano
-                ? "Crédito do plano"
-                : Todas.FirstOrDefault(f => f.Valor == valor).Rotulo ?? (valor ?? "—");
+            valor switch
+            {
+                Plano => "Crédito do plano",
+                Misto => "Misto",
+                _ => Todas.FirstOrDefault(f => f.Valor == valor).Rotulo ?? (valor ?? "—")
+            };
+    }
+
+    /// <summary>Uma linha da grade de pagamentos da venda.</summary>
+    public class VendaPagamento
+    {
+        public string Forma { get; set; } = FormaPagamento.Dinheiro;
+        public decimal Valor { get; set; }
+
+        /// <summary>Só no crédito.</summary>
+        public int? Parcelas { get; set; }
     }
 
     public static class StatusVenda
@@ -58,6 +74,12 @@ namespace LucasAguiar.Models
         public List<VendaItem> Itens { get; set; } = new();
 
         /// <summary>
+        /// Formas e valores pagos. Vazio com FormaPagamentoVenda preenchida
+        /// vira um pagamento único do total.
+        /// </summary>
+        public List<VendaPagamento> Pagamentos { get; set; } = new();
+
+        /// <summary>
         /// Preenchido quando esta venda comercializa um plano: ao confirmar,
         /// cria a assinatura com os créditos correspondentes.
         /// </summary>
@@ -68,6 +90,9 @@ namespace LucasAguiar.Models
             public int IdPlano { get; set; }
             public decimal ValorPago { get; set; }
             public List<PlanoItem> Componentes { get; set; } = new();
+
+            /// <summary>Vem da periodicidade do plano.</summary>
+            public int ValidadeDias { get; set; } = 30;
         }
 
         // Preenchidos por join, para exibicao

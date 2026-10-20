@@ -135,10 +135,14 @@ namespace LucasAguiar.Data
                     $"{oQue} de {valor:C} é maior que o dinheiro em caixa ({disponivel:C}).");
         }
 
-        public void RegistrarMovimento(int idCaixa, string tipo, decimal valor, string? descricao, string? usuario)
+        public void RegistrarMovimento(int idCaixa, string tipo, decimal valor, string? descricao, string? usuario,
+                                       string forma = FormaPagamento.Dinheiro)
         {
             if (valor <= 0)
                 throw new Exception("O valor precisa ser maior que zero.");
+
+            if (!FormaPagamento.Todas.Any(f => f.Valor == forma))
+                throw new Exception("Forma de pagamento inválida.");
 
             var caixa = BuscarPorId(idCaixa)
                 ?? throw new Exception("Caixa não encontrado.");
@@ -146,14 +150,16 @@ namespace LucasAguiar.Data
             if (!caixa.EstaAberto)
                 throw new Exception("Este caixa já está fechado.");
 
-            if (tipo == TipoMovimento.Sangria)
+            // So a retirada em dinheiro esvazia a gaveta.
+            if (tipo == TipoMovimento.Sangria && forma == FormaPagamento.Dinheiro)
                 GarantirSaldoParaSaida(idCaixa, valor, "A sangria");
 
             using var conexao = _conexao.GetConnection();
             using var comando = new MySqlCommand(@"
-                INSERT INTO movimento_caixa (id_caixa_fk, tipo, valor, descricao, data_hora, usuario)
-                VALUES (@idCaixa, @tipo, @valor, @descricao, @dataHora, @usuario)", conexao);
+                INSERT INTO movimento_caixa (id_caixa_fk, tipo, valor, descricao, data_hora, usuario, forma_pagamento)
+                VALUES (@idCaixa, @tipo, @valor, @descricao, @dataHora, @usuario, @forma)", conexao);
 
+            comando.Parameters.AddWithValue("@forma", forma);
             comando.Parameters.AddWithValue("@idCaixa", idCaixa);
             comando.Parameters.AddWithValue("@tipo", tipo);
             comando.Parameters.AddWithValue("@valor", valor);
@@ -228,6 +234,7 @@ namespace LucasAguiar.Data
                     IdMovimento = leitor.GetInt32("id_mov"),
                     IdCaixa = leitor.GetInt32("id_caixa_fk"),
                     Tipo = leitor.GetString("tipo"),
+                    FormaPagamento = leitor.GetString("forma_pagamento"),
                     Valor = leitor.GetDecimal("valor"),
                     Descricao = leitor.IsDBNull(iDesc) ? null : leitor.GetString(iDesc),
                     DataHora = leitor.GetDateTime("data_hora"),
@@ -247,21 +254,29 @@ namespace LucasAguiar.Data
             var resumo = new ResumoCaixa();
 
             using (var comando = new MySqlCommand(@"
-                SELECT forma_pagamento_vend forma, COUNT(*) qtd, SUM(valor_vend) total
-                FROM venda
-                WHERE id_caixa_fk = @id AND status_vend <> 'CANCELADA'
-                GROUP BY forma_pagamento_vend", conexao))
+                SELECT COUNT(*) FROM venda
+                WHERE id_caixa_fk = @id AND status_vend <> 'CANCELADA'", conexao))
+            {
+                comando.Parameters.AddWithValue("@id", idCaixa);
+                resumo.QuantidadeVendas = Convert.ToInt32(comando.ExecuteScalar());
+            }
+
+            // Pelos pagamentos, e nao pela venda: uma venda mista poe parte
+            // na gaveta (dinheiro) e parte fora dela (cartao, PIX).
+            using (var comando = new MySqlCommand(@"
+                SELECT p.forma, SUM(p.valor) total
+                FROM venda_pagamento p
+                JOIN venda v ON v.id_vend = p.id_vend_fk
+                WHERE v.id_caixa_fk = @id AND v.status_vend <> 'CANCELADA'
+                GROUP BY p.forma", conexao))
             {
                 comando.Parameters.AddWithValue("@id", idCaixa);
                 using var leitor = comando.ExecuteReader();
                 while (leitor.Read())
                 {
-                    var forma = leitor.IsDBNull(leitor.GetOrdinal("forma"))
-                        ? "" : leitor.GetString("forma");
+                    var forma = leitor.GetString("forma");
                     var total = leitor.IsDBNull(leitor.GetOrdinal("total"))
                         ? 0m : leitor.GetDecimal("total");
-
-                    resumo.QuantidadeVendas += leitor.GetInt32("qtd");
 
                     switch (forma)
                     {
@@ -302,7 +317,7 @@ namespace LucasAguiar.Data
                 SELECT
                   COALESCE(SUM(CASE WHEN tipo = 'SANGRIA' THEN valor ELSE 0 END), 0) sangrias,
                   COALESCE(SUM(CASE WHEN tipo = 'SUPRIMENTO' THEN valor ELSE 0 END), 0) suprimentos
-                FROM movimento_caixa WHERE id_caixa_fk = @id", conexao))
+                FROM movimento_caixa WHERE id_caixa_fk = @id AND forma_pagamento = 'DINHEIRO'", conexao))
             {
                 comando.Parameters.AddWithValue("@id", idCaixa);
                 using var leitor = comando.ExecuteReader();
