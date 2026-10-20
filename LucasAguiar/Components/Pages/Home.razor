@@ -178,6 +178,11 @@ else
     <CalendarioAgenda />
 }
 
+@if (permissao.PodeVer("clientes"))
+{
+    <CartaoAniversariantes />
+}
+
 @* Os dados vão para o JS por um elemento oculto, lido pelo dashboard.js.
    Sem permissao de ver valores o elemento nem existe: esconder o grafico
    e deixar os numeros no HTML nao esconderia nada. *@

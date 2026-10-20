@@ -37,6 +37,7 @@ namespace LucasAguiar.Services
         public const string Produtos = "tela:produtos:Ver";
         public const string Estoque = "tela:estoque:Ver";
         public const string Planos = "tela:planos:Ver";
+        public const string Assinaturas = "tela:assinaturas:Ver";
         public const string Funcionarios = "tela:funcionarios:Ver";
         public const string Fornecedores = "tela:fornecedores:Ver";
         public const string Equipe = "tela:equipe:Ver";
@@ -57,6 +58,18 @@ namespace LucasAguiar.Services
 
     /// <summary>A tela de componentes do plano so existe para editar.</summary>
     public const string EditarPlano = "tela:planos:Editar";
+
+    /// <summary>Paginas de edicao dos cadastros, que sairam dos modais da listagem.</summary>
+    public const string EditarCliente = "tela:clientes:Editar";
+    public const string EditarVenda = "tela:vendas:Editar";
+    public const string EditarServico = "tela:servicos:Editar";
+    public const string EditarProduto = "tela:produtos:Editar";
+    public const string EditarFuncionario = "tela:funcionarios:Editar";
+    public const string EditarFornecedor = "tela:fornecedores:Editar";
+    public const string EditarCompra = "tela:compras:Editar";
+    public const string EditarAgendamento = "tela:agendamentos:Editar";
+    public const string CriarDespesa = "tela:despesas:Criar";
+    public const string EditarDespesa = "tela:despesas:Editar";
     }
 
     /// <summary>Exige uma acao numa tela nomeada.</summary>

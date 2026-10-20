@@ -44,6 +44,8 @@ namespace LucasAguiar.Data
                 CriarTabelasNovas(conexao);
 
                 MigrarAcessos(conexao);
+
+                MigrarCadastros(conexao);
             }
             catch (Exception ex)
             {
@@ -395,7 +397,57 @@ namespace LucasAguiar.Data
             }
         }
 
+        // =============================================================
+        // CADASTROS
+        //
+        // Campos que os formularios padronizados pedem. Mesma regra das
+        // migracoes de acesso: so acrescenta, e rodar duas vezes nao muda
+        // nada.
+        // =============================================================
+
+        private void MigrarCadastros(MySqlConnection conexao)
+        {
+            // CEP antes do endereco, com preenchimento automatico.
+            GarantirColuna(conexao, "cliente", "cep_cli", "varchar(9) DEFAULT NULL AFTER `rg_cli`");
+
+            // "(69) 99999-9999" tem 15 caracteres e a coluna era de 14: o
+            // celular com mascara nao cabia.
+            GarantirTamanho(conexao, "cliente", "telefone_cli", 20, "varchar(20) DEFAULT NULL");
+
+            GarantirColuna(conexao, "fornecedor", "documento_forn", "varchar(18) DEFAULT NULL AFTER `nome_forn`");
+            GarantirTamanho(conexao, "fornecedor", "telefone_forn", 20, "varchar(20) DEFAULT NULL");
+
+            GarantirColuna(conexao, "funcionario", "cep_fun", "varchar(9) DEFAULT NULL AFTER `email_fun`");
+            GarantirTamanho(conexao, "funcionario", "telefone_fun", 20, "varchar(20) DEFAULT NULL");
+        }
+
         // ---------- apoio das migracoes ----------
+
+        /// <summary>
+        /// Alarga um varchar que ficou curto. So aumenta: se a coluna ja
+        /// tiver o tamanho pedido ou mais, nao faz nada.
+        /// </summary>
+        private void GarantirTamanho(
+            MySqlConnection conexao, string tabela, string coluna, int tamanho, string definicao)
+        {
+            using (var atual = new MySqlCommand(
+                @"SELECT character_maximum_length FROM information_schema.columns
+                   WHERE table_schema = DATABASE()
+                     AND table_name = @t AND column_name = @c", conexao))
+            {
+                atual.Parameters.AddWithValue("@t", tabela);
+                atual.Parameters.AddWithValue("@c", coluna);
+
+                var valor = atual.ExecuteScalar();
+                if (valor == null || valor == DBNull.Value || Convert.ToInt64(valor) >= tamanho) return;
+            }
+
+            using var alterar = new MySqlCommand(
+                $"ALTER TABLE `{tabela}` MODIFY COLUMN `{coluna}` {definicao}", conexao);
+
+            alterar.ExecuteNonQuery();
+            _log.LogWarning("Coluna {Tabela}.{Coluna} ampliada para {Tamanho}.", tabela, coluna, tamanho);
+        }
 
         private void CriarTabela(MySqlConnection conexao, string nome, string ddl)
         {

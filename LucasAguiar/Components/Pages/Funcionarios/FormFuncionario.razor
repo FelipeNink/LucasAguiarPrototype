@@ -1,0 +1,124 @@
+@* Formulario de funcionario, o mesmo para criar e editar. *@
+
+@using LucasAguiar.Configs
+@using LucasAguiar.Models
+@inject FuncionarioDAO funcionarioDAO
+@inject NavigationManager Navigation
+
+<div class="form-pagina">
+    <TopoForm Titulo="@(Novo ? "Novo funcionário" : "Editar funcionário")" Voltar="/funcionario" RotuloVoltar="Funcionários" />
+
+    @if (erro != null)
+    {
+        <div class="alert alert-danger" role="alert">@erro</div>
+    }
+
+    <form @onsubmit="Salvar" novalidate>
+        <section class="cartao secao-form">
+            <h2>Dados pessoais</h2>
+            <div class="grade-12">
+                <Campo Rotulo="Nome" Para="fun-nome" Colunas="8" Obrigatorio="true"
+                       Erro="@(tentouSalvar && string.IsNullOrWhiteSpace(Modelo.NomeFuncionario) ? "Informe o nome." : null)">
+                    <input id="fun-nome" class="form-control" maxlength="100" @bind="Modelo.NomeFuncionario" />
+                </Campo>
+                <Campo Rotulo="Data de nascimento" Para="fun-nasc" Colunas="4">
+                    <input id="fun-nasc" type="date" class="form-control" @bind="Modelo.DataNascimento" />
+                </Campo>
+
+                <Campo Rotulo="CPF" Para="fun-cpf" Colunas="4" Erro="@Documentos.ErroCpf(Modelo.CPF)">
+                    <input id="fun-cpf" class="form-control" inputmode="numeric" data-mascara="cpf"
+                           placeholder="000.000.000-00" @bind="Modelo.CPF" />
+                </Campo>
+                <Campo Rotulo="RG" Para="fun-rg" Colunas="4">
+                    <input id="fun-rg" class="form-control" maxlength="7" @bind="Modelo.RG" />
+                </Campo>
+                <Campo Rotulo="CTPS" Para="fun-ctps" Colunas="4">
+                    <input id="fun-ctps" class="form-control" maxlength="12" @bind="Modelo.CTPS" />
+                </Campo>
+            </div>
+        </section>
+
+        <section class="cartao secao-form">
+            <h2>Contato</h2>
+            <div class="grade-12">
+                <Campo Rotulo="Telefone" Para="fun-tel" Colunas="4" Erro="@Documentos.ErroTelefone(Modelo.Telefone)">
+                    <input id="fun-tel" class="form-control" inputmode="tel" data-mascara="telefone"
+                           placeholder="(69) 99999-9999" @bind="Modelo.Telefone" />
+                </Campo>
+                <Campo Rotulo="E-mail" Para="fun-email" Colunas="6" Erro="@Documentos.ErroEmail(Modelo.Email)">
+                    <input id="fun-email" type="email" class="form-control" maxlength="100"
+                           placeholder="nome@exemplo.com" @bind="Modelo.Email" />
+                </Campo>
+            </div>
+        </section>
+
+        <CamposEndereco Modelo="Modelo" Prefixo="fun" />
+
+        <section class="cartao secao-form">
+            <h2>Remuneração</h2>
+            <div class="grade-12">
+                <Campo Rotulo="Salário fixo mensal" Para="fun-salario" Colunas="3"
+                       Dica="Somado às comissões na folha. Zero para quem trabalha só por comissão.">
+                    <InputMoeda Id="fun-salario" @bind-Valor="Modelo.SalarioFixo" />
+                </Campo>
+            </div>
+        </section>
+
+        <RodapeForm Cancelar="/funcionario" Salvando="salvando" />
+    </form>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public Funcionario Modelo { get; set; } = new();
+    [Parameter] public bool Novo { get; set; }
+
+    private string? erro;
+    private bool tentouSalvar;
+    private bool salvando;
+
+    private void Salvar()
+    {
+        tentouSalvar = true;
+        erro = null;
+
+        var temErro =
+            string.IsNullOrWhiteSpace(Modelo.NomeFuncionario)
+            || Documentos.ErroCpf(Modelo.CPF) != null
+            || Documentos.ErroTelefone(Modelo.Telefone) != null
+            || Documentos.ErroEmail(Modelo.Email) != null
+            || Documentos.ErroCep(Modelo.Cep) != null;
+
+        if (temErro)
+        {
+            erro = "Confira os campos destacados.";
+            return;
+        }
+
+        try
+        {
+            salvando = true;
+
+            Modelo.NomeFuncionario = Modelo.NomeFuncionario!.Trim();
+            Modelo.CPF = Vazio(Documentos.FormatarCpf(Modelo.CPF));
+            Modelo.Telefone = Vazio(Documentos.FormatarTelefone(Modelo.Telefone));
+            Modelo.Email = Vazio(Modelo.Email);
+            Modelo.Cep = Vazio(Documentos.FormatarCep(Modelo.Cep));
+
+            if (Novo) funcionarioDAO.Inserir(Modelo);
+            else funcionarioDAO.Atualizar(Modelo);
+
+            Navigation.NavigateTo("/funcionario");
+        }
+        catch (Exception ex)
+        {
+            erro = ex.Message;
+        }
+        finally
+        {
+            salvando = false;
+        }
+    }
+
+    private static string? Vazio(string? texto) =>
+        string.IsNullOrWhiteSpace(texto) ? null : texto.Trim();
+}

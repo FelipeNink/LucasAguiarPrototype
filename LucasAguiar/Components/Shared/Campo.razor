@@ -1,0 +1,42 @@
+@* Um campo de formulario de cadastro: rotulo acima, asterisco quando
+   obrigatorio, erro abaixo com a borda em vermelho. A largura e em
+   colunas da grade de 12 (.grade-12, no app.css). *@
+
+<div class="campo-form c-@Colunas @(string.IsNullOrEmpty(Erro) ? "" : "com-erro")">
+    <label for="@Para">
+        @Rotulo
+        @if (Obrigatorio)
+        {
+            <span class="obrigatorio" aria-hidden="true">*</span>
+        }
+    </label>
+
+    @ChildContent
+
+    @if (!string.IsNullOrEmpty(Erro))
+    {
+        <small class="erro-campo" role="alert">@Erro</small>
+    }
+    else if (!string.IsNullOrEmpty(Dica))
+    {
+        <small class="dica">@Dica</small>
+    }
+
+    @Acao
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string Rotulo { get; set; } = "";
+
+    /// <summary>Id do input, para o clique no rotulo focar o campo.</summary>
+    [Parameter] public string? Para { get; set; }
+
+    [Parameter] public int Colunas { get; set; } = 6;
+    [Parameter] public bool Obrigatorio { get; set; }
+    [Parameter] public string? Erro { get; set; }
+    [Parameter] public string? Dica { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    /// <summary>Link discreto abaixo do campo ("Cadastrar plano").</summary>
+    [Parameter] public RenderFragment? Acao { get; set; }
+}

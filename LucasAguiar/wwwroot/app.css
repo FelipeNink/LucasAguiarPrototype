@@ -619,6 +619,65 @@ kbd {
     margin-left: auto;
 }
 
+/* Topo das listagens: titulo sozinho na linha, um pouco mais alto, e
+   abaixo dele as acoes a direita -- exportar e, por ultimo, cadastrar. */
+h1.titulo-listagem {
+    margin-top: -0.35rem;
+    margin-bottom: 1.6rem;
+}
+
+.barra-listagem {
+    justify-content: flex-end;
+}
+
+.btn-exportar svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+
+.btn-cadastrar {
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+/* WhatsApp (Shared/BotaoWhatsApp): o verde do estado "ok" do sistema,
+   para o icone ser reconhecido sem trazer o verde da marca deles. */
+.btn-acao.whatsapp {
+    color: var(--ok);
+}
+
+.btn-acao.whatsapp:hover {
+    background: var(--ok-fundo);
+    color: var(--ok-escuro);
+}
+
+.btn-whatsapp {
+    border-color: var(--ok-borda);
+    color: var(--ok-texto);
+}
+
+.btn-whatsapp:hover {
+    background: var(--ok-fundo);
+    border-color: var(--ok-borda);
+    color: var(--ok-texto);
+}
+
+.btn-whatsapp svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    color: var(--ok);
+}
+
+.btn-cadastrar::before {
+    content: "+";
+    font-size: 21px;
+    font-weight: 500;
+    line-height: 1;
+    margin-top: -2px;
+}
+
 /* ===========================================================
    CONTROLE SEGMENTADO DE PERIODO
    Substitui as pilulas soltas: o trilho mostra que as opcoes
@@ -743,7 +802,10 @@ td.col-num {
     font-weight: 600;
 }
 
-th.col-num {
+/* Com a especificidade do cabecalho geral (table.table > thead > tr > th),
+   senao ele vence e o titulo "Valor" fica a esquerda dos valores. */
+th.col-num,
+table.table > thead > tr > th.col-num {
     text-align: right;
 }
 
@@ -1566,4 +1628,218 @@ form .form-check-label {
         width: 100%;
         text-align: center;
     }
+}
+
+/* ===========================================================
+   FORMULARIO DE CADASTRO
+   Uma regra para toda tela de criar e editar: grade de 12
+   colunas, secoes em cartao, rotulo acima, erro abaixo, rodape
+   com Cancelar e Salvar fixo no fim da pagina.
+
+   Tudo descendente de .form-pagina, para nao mexer em modal,
+   filtro ou tela que ainda nao foi convertida.
+   =========================================================== */
+
+/* Centralizado: alinhado a esquerda, sobrava um vao do lado direito
+   em tela larga. */
+.form-pagina {
+    max-width: 1100px;
+    margin-inline: auto;
+}
+
+/* Voltar acima do titulo. */
+.topo-form {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 1.25rem;
+}
+
+.topo-form h1 {
+    margin: 0;
+}
+
+.topo-form .voltar {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    align-self: flex-start;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--texto-3);
+    text-decoration: none;
+}
+
+.topo-form .voltar:hover {
+    color: var(--marca);
+}
+
+.topo-form .voltar svg {
+    width: 13px;
+    height: 13px;
+}
+
+/* Secao = cartao com titulo. 24px entre secoes. */
+.form-pagina .secao-form {
+    margin-bottom: 24px;
+}
+
+.form-pagina .secao-form > h2 {
+    margin: 0 0 16px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--texto);
+}
+
+.form-pagina .grade-12 {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.form-pagina .c-2  { grid-column: span 2; }
+.form-pagina .c-3  { grid-column: span 3; }
+.form-pagina .c-4  { grid-column: span 4; }
+.form-pagina .c-5  { grid-column: span 5; }
+.form-pagina .c-6  { grid-column: span 6; }
+.form-pagina .c-7  { grid-column: span 7; }
+.form-pagina .c-8  { grid-column: span 8; }
+.form-pagina .c-12 { grid-column: span 12; }
+
+/* Campo: rotulo acima, erro abaixo. */
+.form-pagina .campo-form {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.form-pagina .campo-form > label {
+    margin-bottom: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--texto-2);
+}
+
+.form-pagina .campo-form .obrigatorio {
+    color: var(--perigo);
+    margin-left: 2px;
+}
+
+/* Mesma altura, borda e raio em todo tipo de campo. */
+.form-pagina .campo-form .form-control,
+.form-pagina .campo-form .form-select {
+    height: var(--altura-controle);
+    border-radius: var(--raio);
+}
+
+.form-pagina .campo-form textarea.form-control {
+    height: auto;
+    min-height: calc(3 * 1.5em + 1rem);
+}
+
+.form-pagina .campo-form .form-control::placeholder {
+    color: var(--texto-apagado);
+}
+
+.form-pagina .campo-form.com-erro .form-control,
+.form-pagina .campo-form.com-erro .form-select {
+    border-color: var(--perigo);
+}
+
+.form-pagina .campo-form .erro-campo {
+    margin-top: 5px;
+    font-size: 12.5px;
+    color: var(--perigo);
+}
+
+.form-pagina .campo-form .dica {
+    margin-top: 5px;
+    font-size: 12.5px;
+    color: var(--texto-fraco);
+}
+
+/* Acao auxiliar (cadastrar plano, fornecedor...) ao lado do campo:
+   link discreto, nunca botao na cor primaria. Global: as telas de venda
+   e agendamento, que nao sao .form-pagina, usam tambem. */
+.acao-campo {
+    align-self: flex-start;
+    margin-top: 6px;
+    padding: 0;
+    border: 0;
+    background: none;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--marca-escura);
+    cursor: pointer;
+}
+
+.acao-campo:hover {
+    color: var(--marca);
+    text-decoration: underline;
+}
+
+/* Cancelar e Salvar a direita, presos ao fim da area visivel. */
+.form-pagina .rodape-form {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin: 0 -4px;
+    padding: 14px 4px;
+    background: var(--fundo);
+    border-top: 1px solid var(--borda);
+}
+
+@media (max-width: 767.98px) {
+    .form-pagina .grade-12 > * {
+        grid-column: span 12;
+    }
+}
+
+/* Dinheiro alinhado a direita tambem no campo, como na tabela. */
+.form-pagina .al-dir-campo {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Liga/desliga na altura dos outros campos. */
+.form-pagina .campo-switch {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: var(--altura-controle);
+    margin: 0;
+    padding-left: 2.6em;
+}
+
+.form-pagina .campo-switch .form-check-input {
+    width: 2.4em;
+    height: 1.3em;
+    margin-top: 0;
+    cursor: pointer;
+}
+
+.form-pagina .campo-switch .form-check-input:checked {
+    background-color: var(--marca);
+    border-color: var(--marca);
+}
+
+.form-pagina .campo-switch .form-check-label {
+    font-size: 14px;
+    color: var(--texto);
+    cursor: pointer;
+}
+
+/* Recado sobre o que o formulario faz ao salvar. */
+.form-pagina .aviso-form {
+    margin: 16px 0 0;
+    padding: 10px 14px;
+    border-radius: var(--raio);
+    background: var(--superficie-2);
+    font-size: 13.5px;
+    color: var(--texto-3);
 }

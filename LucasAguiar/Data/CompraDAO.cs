@@ -308,11 +308,13 @@ namespace LucasAguiar.Data
 
             using var conexao = _conexao.GetConnection();
             using var comando = new MySqlCommand($@"
-                SELECT c.*, p.nome_prod, f.nome_forn, u.nome_fun
+                SELECT c.*, p.nome_prod, f.nome_forn, u.nome_fun,
+                       d.forma_pagamento AS forma_desp, d.pago AS pago_desp
                 FROM compras c
                 LEFT JOIN produto p ON c.id_prod_fk = p.id_prod
                 LEFT JOIN fornecedor f ON c.id_forn_fk = f.id_forn
                 LEFT JOIN funcionario u ON c.id_fun_fk = u.id_fun
+                LEFT JOIN despesa d ON c.id_desp_fk = d.id_desp
                 WHERE 1 = 1 {condicoes}
                 ORDER BY c.data_comp DESC, c.id_comp DESC", conexao);
 
@@ -320,7 +322,16 @@ namespace LucasAguiar.Data
             if (ate.HasValue) comando.Parameters.AddWithValue("@ate", ate.Value.Date);
 
             using var leitor = comando.ExecuteReader();
-            while (leitor.Read()) lista.Add(Ler(leitor));
+            var iForma = leitor.GetOrdinal("forma_desp");
+            var iPago = leitor.GetOrdinal("pago_desp");
+
+            while (leitor.Read())
+            {
+                var compra = Ler(leitor);
+                compra.FormaPagamentoDespesa = leitor.IsDBNull(iForma) ? null : leitor.GetString(iForma);
+                compra.Pago = leitor.IsDBNull(iPago) ? null : leitor.GetBoolean(iPago);
+                lista.Add(compra);
+            }
             return lista;
         }
 

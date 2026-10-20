@@ -376,11 +376,11 @@
    Medido: 649px de conteudo em 617px de espaco, agora 614 em 625. */
 
 .nav-scrollable {
-    padding: 8px 16px;
+    padding: 14px 16px 8px;
 }
 
 .grupo + .grupo {
-    margin-top: 8px;
+    margin-top: 14px;
 }
 
 .grupo-rotulo {
@@ -435,4 +435,21 @@
 
 .area-nova-venda ::deep .botao-novo-agendamento {
     margin-top: 5px;
+}
+
+/* Vigesimo item no menu (Estoque e Assinaturas entraram juntos no
+   merge) e a lateral passou 21px de novo.
+
+   Medido antes de mexer: 20 itens x 28px = 560px, contra 68px de
+   rotulos, 18px de espaco entre grupos e 12px de padding. Os itens sao
+   85% do total, entao e deles que o corte tem de sair -- apertar
+   rotulo e espaco de grupo renderia uns 50px no maximo e as secoes
+   deixariam de se distinguir.
+
+   26px ainda acomoda o icone de 16px e o texto de 13.5px. E o piso:
+   o proximo item nao cabe mais por aperto, e vai pedir grupo
+   recolhivel ou um item saindo do menu. */
+
+.nav-item ::deep .nav-link {
+    height: 26px;
 }

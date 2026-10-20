@@ -5,54 +5,71 @@
 @using LucasAguiar.Configs
 @using LucasAguiar.Models
 @inject ClienteDAO clienteDAO
-@inject PlanoDAO planoDAO
+@inject NavigationManager Navigation
 
 
-<h1>Lista de Clientes</h1>
+<h1 class="titulo-listagem">Gestão de Clientes</h1>
 
-<div class="barra-acoes">
-    <NavLink href="/cliente/novo" class="btn-novo">Novo Cliente</NavLink>
-    <a href="/relatorio/clientes" class="btn-pdf" data-enhance-nav="false">Relatório PDF</a>
-    <a href="/excel/clientes" class="btn-pdf" data-enhance-nav="false">Excel</a>
+<div class="barra-acoes barra-listagem">
+    <BotaoExportar Href="/relatorio/clientes" />
+    <BotaoExportar Tipo="BotaoExportar.Formato.Excel" Href="/excel/clientes" />
+    <NavLink href="/cliente/novo" class="btn-novo btn-cadastrar">Cadastrar cliente</NavLink>
 </div>
+
+@* ---------- filtros ---------- *@
+<section class="filtros">
+    <div class="campo campo-largo">
+        <label>Nome, telefone ou CPF</label>
+        <input class="form-control" placeholder="Buscar cliente" @bind="busca" @bind:event="oninput" />
+    </div>
+    <div class="campo">
+        <label>Profissional preferido</label>
+        <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesProfissional"
+                 @bind-Valor="idProfissional" TextoDe="o => o.Rotulo" ValorDe="o => o.Id"
+                 ContagemDe="o => o.Contagem" ComAvatar="true" />
+    </div>
+    <div class="campo-acoes">
+        <button type="button" class="btn btn-outline-secondary" @onclick="Limpar">Limpar</button>
+    </div>
+</section>
 
 <div class="tabela fixa">
     <table class="table table-striped">
     <thead>
         <tr>
-            <th class="col-id">#</th>
             <th>Nome</th>
             <th>Telefone</th>
-            <th class="opcional">CPF</th>
-            <th class="opcional">Cidade</th>
+            <th class="opcional">Profissional preferido</th>
+            <th class="opcional">Última visita</th>
+            <th class="al-dir opcional">Visitas</th>
+            <th class="al-dir">Total gasto</th>
             <th class="col-acoes">Ações</th>
         </tr>
     </thead>
     <tbody>
-        @if (listaCliente != null && listaCliente.Any())
+        @if (Filtrados.Any())
         {
-            int contador = 1;
-            foreach (var cliente in listaCliente)
+            foreach (var cliente in Filtrados)
             {
                 <tr>
-                    <td>@contador</td>
                     <td>@cliente.NomeCliente</td>
-                    <td>@cliente.Telefone</td>
-                    <td class="opcional">@cliente.CPF</td>
-                    <td class="opcional">@cliente.Cidade</td>
+                    <td>@Valor(cliente.Telefone)</td>
+                    <td class="opcional">@Valor(cliente.NomeProfissionalPreferido)</td>
+                    <td class="opcional"><span class="data">@Valor(cliente.UltimaVisita?.ToString("dd/MM/yyyy"))</span></td>
+                    <td class="al-dir opcional">@cliente.Visitas</td>
+                    <td class="al-dir">@cliente.TotalGasto.ToString("C")</td>
                     <td class="col-acoes">
                         <AcoesLinha OnVisualizar="() => visualizando = cliente"
                                     OnEditar="() => Editar(cliente)"
                                     OnExcluir="() => excluindo = cliente" />
                     </td>
                 </tr>
-                contador++;
             }
         }
         else
         {
             <tr>
-                <td colspan="6" class="text-center text-muted">Nenhum cliente encontrado.</td>
+                <td colspan="7" class="text-center text-muted">Nenhum cliente encontrado.</td>
             </tr>
         }
     </tbody>
@@ -74,6 +91,7 @@
                 <div><dt>Telefone</dt><dd>@Valor(visualizando.Telefone)</dd></div>
                 <div><dt>CPF</dt><dd>@Valor(visualizando.CPF)</dd></div>
                 <div><dt>RG</dt><dd>@Valor(visualizando.RG)</dd></div>
+                <div><dt>CEP</dt><dd>@Valor(visualizando.Cep)</dd></div>
                 <div><dt>Nascimento</dt><dd>@Valor(visualizando.DataNascimento?.ToString("dd/MM/yyyy"))</dd></div>
                 <div class="largo"><dt>Plano</dt><dd>@Valor(visualizando.NomePlano)</dd></div>
                 <div class="largo">
@@ -86,68 +104,6 @@
     <Rodape>
         <button type="button" class="btn btn-outline-secondary" @onclick="Fechar">Fechar</button>
         <button type="button" class="btn btn-primary" @onclick="() => Editar(visualizando!)">Editar</button>
-    </Rodape>
-</Janela>
-
-<Janela Visivel="@(editando != null)" Titulo="Editar cliente" Largura="640" Erro="@erroModal"
-        OnFechar="Fechar">
-    <ChildContent>
-        @if (editando != null)
-        {
-            <div class="grade-campos">
-                <div class="largo">
-                    <label class="form-label">Nome</label>
-                    <input class="form-control" @bind="editando.NomeCliente" />
-                </div>
-                <div>
-                    <label class="form-label">Telefone</label>
-                    <input class="form-control" @bind="editando.Telefone" />
-                </div>
-                <div>
-                    <label class="form-label">CPF</label>
-                    <input class="form-control" @bind="editando.CPF" />
-                </div>
-                <div>
-                    <label class="form-label">RG</label>
-                    <input class="form-control" @bind="editando.RG" />
-                </div>
-                <div>
-                    <label class="form-label">Nascimento</label>
-                    <input type="date" class="form-control" @bind="editando.DataNascimento" />
-                </div>
-                <div class="largo">
-                    <label class="form-label">Plano</label>
-                    <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesPlano"
-                             Valor="editando.IdPlano ?? 0"
-                             ValorChanged="v => editando.IdPlano = v == 0 ? null : v"
-                             TextoDe="o => o.Rotulo" ValorDe="o => o.Id" Class="mb-3" />
-                </div>
-                <div>
-                    <label class="form-label">Estado</label>
-                    <input class="form-control" @bind="editando.Estado" />
-                </div>
-                <div>
-                    <label class="form-label">Cidade</label>
-                    <input class="form-control" @bind="editando.Cidade" />
-                </div>
-                <div>
-                    <label class="form-label">Bairro</label>
-                    <input class="form-control" @bind="editando.Bairro" />
-                </div>
-                <div>
-                    <label class="form-label">Rua</label>
-                    <input class="form-control" @bind="editando.Rua" />
-                </div>
-                <div>
-                    <label class="form-label">Número</label>
-                    <input class="form-control" @bind="editando.Numero" />
-                </div>
-            </div>
-        }
-    </ChildContent>
-    <Rodape>
-        <button type="button" class="btn btn-outline-secondary" @onclick="Fechar">Cancelar</button>
-        <button type="button" class="btn btn-primary" @onclick="Salvar">Salvar</button>
     </Rodape>
 </Janela>
 
@@ -179,16 +135,49 @@
     }
 
     private List<Cliente> listaCliente = new();
-    private List<Plano> planos = new();
 
     private Cliente? visualizando;
-    private Cliente? editando;
-    private string? erroModal;
 
-    private List<OpcaoId> OpcoesPlano =>
-        new List<OpcaoId> { new(0, "Nenhum") }
-            .Concat(planos.Select(p => new OpcaoId(p.IdPlano, p.NomePlano ?? "Sem nome")))
+
+    private string busca = "";
+    private int idProfissional;
+
+    private List<Cliente> Filtrados
+    {
+        get
+        {
+            var termo = busca.Trim();
+            var digitos = new string(termo.Where(char.IsDigit).ToArray());
+
+            return listaCliente
+                .Where(c => termo == ""
+                            || (c.NomeCliente ?? "").Contains(termo, StringComparison.OrdinalIgnoreCase)
+                            || (c.Telefone ?? "").Contains(termo)
+                            || (c.CPF ?? "").Contains(termo)
+                            // Telefone e CPF podem estar gravados com ou sem mascara.
+                            || (digitos.Length >= 3
+                                && (new string((c.Telefone ?? "").Where(char.IsDigit).ToArray()).Contains(digitos)
+                                    || new string((c.CPF ?? "").Where(char.IsDigit).ToArray()).Contains(digitos))))
+                .Where(c => idProfissional == 0 || c.IdProfissionalPreferido == idProfissional)
+                .ToList();
+        }
+    }
+
+    /// <summary>Só aparecem profissionais que são o preferido de alguém.</summary>
+    private List<OpcaoId> OpcoesProfissional =>
+        new List<OpcaoId> { new(0, "Todos") }
+            .Concat(listaCliente
+                .Where(c => c.IdProfissionalPreferido.HasValue)
+                .GroupBy(c => (Id: c.IdProfissionalPreferido!.Value, Nome: c.NomeProfissionalPreferido ?? "Sem nome"))
+                .OrderBy(g => g.Key.Nome)
+                .Select(g => new OpcaoId(g.Key.Id, g.Key.Nome, null, g.Count().ToString())))
             .ToList();
+
+    private void Limpar()
+    {
+        busca = "";
+        idProfissional = 0;
+    }
 
     protected override void OnInitialized()
     {
@@ -199,7 +188,7 @@
     {
         try
         {
-            listaCliente = clienteDAO.ListarTodos();
+            listaCliente = clienteDAO.ListarComHistorico();
         }
         catch (Exception ex)
         {
@@ -210,55 +199,9 @@
     private static string Valor(string? texto) =>
         string.IsNullOrWhiteSpace(texto) ? "—" : texto;
 
-    /// <summary>Edita uma copia: cancelar o modal nao pode alterar a linha da tabela.</summary>
-    private void Editar(Cliente c)
-    {
-        visualizando = null;
-        erroModal = null;
+    /// <summary>A edicao e uma pagina propria, com o mesmo formulario do cadastro.</summary>
+    private void Editar(Cliente c) => Navigation.NavigateTo($"/cliente/{c.IdCliente}");
 
-        try { if (planos.Count == 0) planos = planoDAO.ListarTodos(); }
-        catch (Exception ex) { erroModal = ex.Message; }
+    private void Fechar() => visualizando = null;
 
-        editando = new Cliente
-        {
-            IdCliente = c.IdCliente,
-            NomeCliente = c.NomeCliente,
-            Telefone = c.Telefone,
-            CPF = c.CPF,
-            DataNascimento = c.DataNascimento,
-            RG = c.RG,
-            Estado = c.Estado,
-            Cidade = c.Cidade,
-            Bairro = c.Bairro,
-            Rua = c.Rua,
-            Numero = c.Numero,
-            IdPlano = c.IdPlano
-        };
-    }
-
-    private void Fechar()
-    {
-        visualizando = null;
-        editando = null;
-        erroModal = null;
-    }
-
-    private void Salvar()
-    {
-        if (editando == null) return;
-
-        try
-        {
-            if (string.IsNullOrWhiteSpace(editando.NomeCliente))
-                throw new Exception("O nome é obrigatório.");
-
-            clienteDAO.Atualizar(editando);
-            Fechar();
-            CarregarClientes();
-        }
-        catch (Exception ex)
-        {
-            erroModal = ex.Message;
-        }
-    }
 }

@@ -2,24 +2,30 @@
 @rendermode InteractiveServer
 @attribute [Authorize(Policy = Politicas.Vendas)]
 
+@using LucasAguiar.Configs
 @using LucasAguiar.Models
 @using Microsoft.AspNetCore.WebUtilities
 @inject VendaDAO vendaDAO
 @inject FuncionarioDAO funcionarioDAO
+@inject ClienteDAO clienteDAO
 @inject NavigationManager Navigation
 @inject LucasAguiar.Services.AuthenticationService auth
 
 
-<h1>Vendas</h1>
-<div class="barra-acoes">
-    <a href="/venda/nova" class="btn-novo">Nova Venda</a>
-    <a href="@UrlRelatorio" class="btn-pdf" data-enhance-nav="false">Relatório PDF</a>
-    <a href="@UrlRelatorio.Replace("/relatorio/", "/excel/")" class="btn-pdf" data-enhance-nav="false">Excel</a>
+<h1 class="titulo-listagem">Gestão de Vendas</h1>
+<div class="barra-acoes barra-listagem">
+    <BotaoExportar Href="@UrlRelatorio" />
+    <BotaoExportar Tipo="BotaoExportar.Formato.Excel" Href="@UrlRelatorio.Replace("/relatorio/", "/excel/")" />
+    <a href="/venda/nova" class="btn-novo btn-cadastrar">Cadastrar venda</a>
 </div>
 
 @if (idNova.HasValue)
 {
     <div class="alert alert-success">Venda #@idNova registrada com sucesso.</div>
+}
+@if (idEditada.HasValue)
+{
+    <div class="alert alert-success">Venda #@idEditada salva.</div>
 }
 @if (!string.IsNullOrEmpty(erro))
 {
@@ -248,6 +254,11 @@
                         Cancelar venda
                     </button>
                 }
+                @if (detalhe.Status != StatusVenda.Cancelada)
+                {
+                    <BotaoWhatsApp Telefone="@detalhe.TelefoneCliente" Rotulo="Enviar comprovante"
+                                   Mensagem="@WhatsApp.ComprovanteVenda(detalhe)" />
+                }
                 <button class="btn btn-secondary" @onclick="Fechar">Fechar</button>
             </div>
         </div>
@@ -296,15 +307,20 @@
         @if (editandoVenda != null)
         {
             <p class="text-muted" style="font-size: 14px;">
-                @editandoVenda.DataVenda.ToString("dd/MM/yyyy HH:mm") · @(editandoVenda.NomeCliente ?? "Sem cliente") · @editandoVenda.ValorVenda.ToString("C")
+                @editandoVenda.DataVenda.ToString("dd/MM/yyyy HH:mm") · @editandoVenda.ValorVenda.ToString("C")
             </p>
-            <label class="form-label">Profissional</label>
-            <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesEdicao"
-                     @bind-Valor="idFuncionarioEdicao" TextoDe="o => o.Rotulo" ValorDe="o => o.Id"
-                     ComAvatar="true" Placeholder="Selecione" Class="mb-3" />
-            <p class="text-muted mb-0" style="font-size: 13px;">
-                Itens, valores e pagamento não mudam: para corrigir isso, cancele a venda e lance outra.
-            </p>
+            <label class="form-label">Cliente</label>
+            <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesClienteEdicao"
+                     @bind-Valor="idClienteEdicao" TextoDe="o => o.Rotulo" ValorDe="o => o.Id"
+                     ComAvatar="true" Class="mb-3" />
+            @if (situacaoEdicao?.PodeTrocarProfissional == true)
+            {
+                <label class="form-label">Profissional</label>
+                <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesEdicao"
+                         @bind-Valor="idFuncionarioEdicao" TextoDe="o => o.Rotulo" ValorDe="o => o.Id"
+                         ComAvatar="true" Placeholder="Selecione" Class="mb-3" />
+            }
+            <p class="text-muted mb-0" style="font-size: 13px;">@situacaoEdicao?.Motivo</p>
         }
     </ChildContent>
     <Rodape>
@@ -385,6 +401,10 @@
     private int idFuncionarioEdicao;
     private string? erroEdicao;
     private List<OpcaoId> OpcoesEdicao = new();
+    private List<OpcaoId> OpcoesClienteEdicao = new();
+    private int idClienteEdicao;
+    private VendaDAO.SituacaoEdicao? situacaoEdicao;
+    private int? idEditada;
     private string? erro;
     private int? idNova;
 
@@ -421,6 +441,8 @@
         var query = QueryHelpers.ParseQuery(new Uri(Navigation.Uri).Query);
         if (query.TryGetValue("nova", out var valor) && int.TryParse(valor, out var id))
             idNova = id;
+        if (query.TryGetValue("editada", out var editada) && int.TryParse(editada, out var idE))
+            idEditada = idE;
 
         try
         {
@@ -459,6 +481,7 @@
     private void Aplicar()
     {
         idNova = null;
+        idEditada = null;
         Carregar();
     }
 
@@ -513,18 +536,32 @@
             erro = null;
             erroEdicao = null;
 
-            var venda = vendaDAO.BuscarPorId(id);
-            if (venda == null) return;
-
-            if (venda.Status == StatusVenda.Cancelada)
+            // Caixa aberto e comissao nao paga: a tela da venda inteira.
+            // Senao, so cliente e profissional, aqui no modal.
+            var situacao = vendaDAO.SituacaoParaEditar(id);
+            if (situacao.Modo == VendaDAO.ModoEdicao.Completa)
             {
-                erro = "Venda cancelada não pode ser editada.";
+                Navigation.NavigateTo($"/venda/{id}");
                 return;
             }
 
+            if (situacao.Modo == VendaDAO.ModoEdicao.Bloqueada)
+            {
+                erro = situacao.Motivo;
+                return;
+            }
+
+            var venda = vendaDAO.BuscarPorId(id);
+            if (venda == null) return;
+
             OpcoesEdicao = funcionarioDAO.ListarTodos()
                 .Select(f => new OpcaoId(f.IdFuncionario, f.NomeFuncionario ?? "Sem nome")).ToList();
+            OpcoesClienteEdicao = new List<OpcaoId> { new(0, "Sem cliente") }
+                .Concat(clienteDAO.ListarTodos().Select(c => new OpcaoId(c.IdCliente, c.Identificacao)))
+                .ToList();
             idFuncionarioEdicao = venda.IdFuncionario ?? 0;
+            idClienteEdicao = venda.IdCliente ?? 0;
+            situacaoEdicao = situacao;
             editandoVenda = venda;
         }
         catch (Exception ex)
@@ -545,7 +582,8 @@
 
         try
         {
-            vendaDAO.TrocarProfissional(editandoVenda.IdVenda, idFuncionarioEdicao);
+            vendaDAO.AtualizarClienteEProfissional(editandoVenda.IdVenda,
+                idClienteEdicao > 0 ? idClienteEdicao : null, idFuncionarioEdicao);
             FecharEdicao();
             Carregar();
         }

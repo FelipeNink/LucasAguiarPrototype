@@ -118,6 +118,10 @@ else
                 <label for="email">E-mail</label>
                 <input id="email" type="email" class="form-control" maxlength="100"
                        autocomplete="off" @bind="membro.EmailUsr" />
+                @if (Documentos.ErroEmail(membro.EmailUsr) is { } erroEmail)
+                {
+                    <small class="erro-campo">@erroEmail</small>
+                }
             </div>
 
             <hr />
@@ -313,6 +317,12 @@ else
         if (!string.IsNullOrEmpty(senha) && senha != senhaConfirma)
         {
             erro = "A confirmação não é igual à senha.";
+            return;
+        }
+
+        if (Documentos.ErroEmail(membro.EmailUsr) is { } erroEmail)
+        {
+            erro = erroEmail;
             return;
         }
 

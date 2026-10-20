@@ -18,7 +18,7 @@ namespace LucasAguiar.Services
             List<string[]> linhas, string titulo, string detalhe, string terceira, string quarta)
         {
             linhas.Add(new[] { "", "", "", "" });
-            linhas.Add(new[] { titulo, detalhe, terceira, quarta });
+            linhas.Add(new[] { TituloSecao(titulo), detalhe, terceira, quarta });
         }
 
         public static void MapearRelatorios(this WebApplication app)
@@ -247,12 +247,12 @@ namespace LucasAguiar.Services
                     new[] { "Suprimentos", "", caixa.Resumo.Suprimentos.ToString("C") },
                     new[] { "Sangrias", "", "- " + caixa.Resumo.Sangrias.ToString("C") },
                     new[] { "Despesas em dinheiro", "", "- " + caixa.Resumo.DespesasDinheiro.ToString("C") },
-                    new[] { "SALDO ESPERADO NA GAVETA", "", caixa.Resumo.SaldoEsperadoGaveta(caixa.ValorAbertura).ToString("C") },
+                    new[] { Destaque("SALDO ESPERADO NA GAVETA"), "", caixa.Resumo.SaldoEsperadoGaveta(caixa.ValorAbertura).ToString("C") },
                     new[] { "", "", "" },
                     new[] { "Vendas em PIX", "", caixa.Resumo.VendasPix.ToString("C") },
                     new[] { "Vendas em débito", "", caixa.Resumo.VendasDebito.ToString("C") },
                     new[] { "Vendas em crédito", "", caixa.Resumo.VendasCredito.ToString("C") },
-                    new[] { "FATURAMENTO TOTAL", "", caixa.Resumo.FaturamentoTotal.ToString("C") },
+                    new[] { Destaque("FATURAMENTO TOTAL"), "", caixa.Resumo.FaturamentoTotal.ToString("C") },
                     new[] { "Comissões geradas", "", caixa.Resumo.Comissoes.ToString("C") },
                     new[] { "", "", "" }
                 };
@@ -260,7 +260,7 @@ namespace LucasAguiar.Services
                 if (!caixa.EstaAberto)
                 {
                     linhas.Add(new[] { "Contado no fechamento", caixa.DataFechamento?.ToString("dd/MM/yyyy HH:mm") ?? "", caixa.ValorInformado?.ToString("C") ?? "—" });
-                    linhas.Add(new[] { "DIFERENÇA", caixa.RotuloDiferenca, caixa.Diferenca?.ToString("C") ?? "—" });
+                    linhas.Add(new[] { Destaque("DIFERENÇA"), caixa.RotuloDiferenca, caixa.Diferenca?.ToString("C") ?? "—" });
                 }
 
                 var titulo = caixa.EstaAberto
@@ -324,14 +324,14 @@ namespace LucasAguiar.Services
                 var resumo = painel.Resumo(inicio, fim);
                 var linhas = new List<string[]>
                 {
-                    new[] { "FATURAMENTO", "", "", "" },
+                    new[] { TituloSecao("FATURAMENTO"), "", "", "" },
                     new[] { "Faturamento do período", $"{resumo.QuantidadeVendas} atendimento(s)", "", resumo.Receita.ToString("C") },
                     new[] { "Ticket médio", "por atendimento", "", resumo.TicketMedio.ToString("C") },
                     new[] { "Comissões", "geradas no período", "", resumo.Comissoes.ToString("C") },
                     new[] { "Despesas", "lançadas no período", "", resumo.Despesas.ToString("C") },
-                    new[] { resumo.Lucro >= 0 ? "LUCRO" : "PREJUÍZO", "receita − despesas − comissões", "", resumo.Lucro.ToString("C") },
+                    new[] { Destaque(resumo.Lucro >= 0 ? "LUCRO" : "PREJUÍZO"), "receita − despesas − comissões", "", resumo.Lucro.ToString("C") },
                     new[] { "", "", "", "" },
-                    new[] { "POR PROFISSIONAL", "ticket", "atend.", "faturamento" }
+                    new[] { TituloSecao("POR PROFISSIONAL"), "ticket", "atend.", "faturamento" }
                 };
 
                 foreach (var p in dao.FaturamentoPorProfissional(inicio, fim))

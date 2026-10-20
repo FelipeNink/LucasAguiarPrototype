@@ -8,7 +8,7 @@
 @inject AuthenticationService auth
 
 
-<h1>Caixa</h1>
+<h1 class="titulo-listagem">Gestão de Caixa</h1>
 
 @if (!string.IsNullOrEmpty(erro))
 {
@@ -158,16 +158,73 @@ else
 }
 
 @* ---------- histórico ---------- *@
-<h2 class="titulo-secao">Sessões anteriores</h2>
+<h2 class="titulo-secao">Sessões</h2>
+
+@* ---------- filtros ---------- *@
+<section class="filtros">
+    <div class="campo">
+        <label>De</label>
+        <input type="date" class="form-control" @bind="de" />
+    </div>
+    <div class="campo">
+        <label>Até</label>
+        <input type="date" class="form-control" @bind="ate" />
+    </div>
+    <div class="campo">
+        <label>Operador</label>
+        <Seletor TItem="Opcao" TValor="string" Itens="OpcoesOperador"
+                 @bind-Valor="operador" TextoDe="o => o.Rotulo" ValorDe="o => o.Valor" ComAvatar="true" />
+    </div>
+    <div class="campo">
+        <label>Situação</label>
+        <Seletor TItem="Opcao" TValor="string" Itens="OpcoesSituacao"
+                 @bind-Valor="situacao" TextoDe="o => o.Rotulo" ValorDe="o => o.Valor"
+                 PontoDe="o => o.Cor" />
+    </div>
+    <div class="campo-acoes">
+        <button type="button" class="btn btn-primary" @onclick="Aplicar">Filtrar</button>
+        <button type="button" class="btn btn-outline-secondary" @onclick="Limpar">Limpar</button>
+    </div>
+</section>
+
+<div class="atalhos-periodo mb-3">
+    <button type="button" @onclick="() => Periodo(0)">Hoje</button>
+    <button type="button" @onclick="() => Periodo(7)">Últimos 7 dias</button>
+    <button type="button" @onclick="PeriodoMes">Este mês</button>
+</div>
+
+@* ---------- resumo ---------- *@
+@* Entradas e saidas sao as da gaveta, as mesmas do "esperado":
+   abertura + entradas - saidas = esperado. *@
+<div class="resumo">
+    <div class="cartao-resumo">
+        <span class="rotulo">Entradas</span>
+        <strong class="valor">@HistoricoFiltrado.Sum(c => Entradas(c)).ToString("C")</strong>
+    </div>
+    <div class="cartao-resumo">
+        <span class="rotulo">Saídas</span>
+        <strong class="valor">@HistoricoFiltrado.Sum(c => Saidas(c)).ToString("C")</strong>
+    </div>
+    <div class="cartao-resumo">
+        <span class="rotulo">Saldo</span>
+        <strong class="valor">@HistoricoFiltrado.Sum(c => Entradas(c) - Saidas(c)).ToString("C")</strong>
+    </div>
+    <div class="cartao-resumo @(SomaDiferencas < 0 ? "prejuizo" : "")">
+        <span class="rotulo">Soma das diferenças</span>
+        <strong class="valor">@SomaDiferencas.ToString("C")</strong>
+    </div>
+</div>
 
 <div class="tabela">
 <table class="table table-striped">
     <thead>
         <tr>
-            <th>#</th>
             <th>Abertura</th>
             <th>Fechamento</th>
-            <th class="dir">Faturamento</th>
+            <th>Operador</th>
+            <th class="dir">Valor inicial</th>
+            <th class="dir">Entradas</th>
+            <th class="dir">Saídas</th>
             <th class="dir">Esperado</th>
             <th class="dir">Contado</th>
             <th class="dir">Diferença</th>
@@ -175,15 +232,26 @@ else
         </tr>
     </thead>
     <tbody>
-        @if (historico.Count > 0)
+        @if (HistoricoFiltrado.Count > 0)
         {
-            @foreach (var c in historico)
+            @foreach (var c in HistoricoFiltrado)
             {
                 <tr>
-                    <td>@c.IdCaixa</td>
                     <td>@c.DataAbertura.ToString("dd/MM/yy HH:mm")</td>
-                    <td>@(c.DataFechamento?.ToString("dd/MM/yy HH:mm") ?? "—")</td>
-                    <td class="dir">@c.Resumo.FaturamentoTotal.ToString("C")</td>
+                    <td>
+                        @if (c.EstaAberto)
+                        {
+                            <span class="status aberto-caixa"><i></i>Aberto</span>
+                        }
+                        else
+                        {
+                            @(c.DataFechamento?.ToString("dd/MM/yy HH:mm") ?? "—")
+                        }
+                    </td>
+                    <td>@(string.IsNullOrWhiteSpace(c.UsuarioAbertura) ? "—" : c.UsuarioAbertura)</td>
+                    <td class="dir">@c.ValorAbertura.ToString("C")</td>
+                    <td class="dir">@Entradas(c).ToString("C")</td>
+                    <td class="dir">@Saidas(c).ToString("C")</td>
                     <td class="dir">@(c.ValorCalculado?.ToString("C") ?? "—")</td>
                     <td class="dir">@(c.ValorInformado?.ToString("C") ?? "—")</td>
                     <td class="dir @ClasseDiferenca(c)">@c.RotuloDiferenca</td>
@@ -197,7 +265,7 @@ else
         else
         {
             <tr>
-                <td colspan="8" class="text-center text-muted">Nenhuma sessão de caixa registrada.</td>
+                <td colspan="10" class="text-center text-muted">Nenhuma sessão de caixa encontrada.</td>
             </tr>
         }
     </tbody>
@@ -297,6 +365,65 @@ else
 
     private string? Usuario => auth.GetUsuarioNome();
 
+    // Filtros do historico
+    private DateTime? de;
+    private DateTime? ate;
+    private string operador = "";
+    private string situacao = "";
+
+    private List<Caixa> HistoricoFiltrado =>
+        historico
+            .Where(c => operador == "" || string.Equals(c.UsuarioAbertura, operador, StringComparison.OrdinalIgnoreCase))
+            .Where(c => situacao == "" || c.Status == situacao)
+            .ToList();
+
+    private static decimal Entradas(Caixa c) => c.Resumo.VendasDinheiro + c.Resumo.Suprimentos;
+    private static decimal Saidas(Caixa c) => c.Resumo.Sangrias + c.Resumo.DespesasDinheiro;
+
+    private decimal SomaDiferencas => HistoricoFiltrado.Sum(c => c.Diferenca ?? 0m);
+
+    private List<Opcao> OpcoesOperador =>
+        new List<Opcao> { new("", "Todos") }
+            .Concat(historico
+                .Select(c => c.UsuarioAbertura)
+                .Where(u => !string.IsNullOrWhiteSpace(u))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(u => u)
+                .Select(u => new Opcao(u!, u!)))
+            .ToList();
+
+    private static readonly List<Opcao> OpcoesSituacao = new()
+    {
+        new("", "Todas"),
+        new(StatusCaixa.Aberto, "Aberto", "var(--ok)"),
+        new(StatusCaixa.Fechado, "Fechado", "var(--texto-fraco)")
+    };
+
+    private void Aplicar() => Carregar();
+
+    private void Limpar()
+    {
+        de = ate = null;
+        operador = "";
+        situacao = "";
+        Carregar();
+    }
+
+    private void Periodo(int dias)
+    {
+        ate = DateTime.Today;
+        de = DateTime.Today.AddDays(-dias);
+        Carregar();
+    }
+
+    private void PeriodoMes()
+    {
+        var hoje = DateTime.Today;
+        de = new DateTime(hoje.Year, hoje.Month, 1);
+        ate = hoje;
+        Carregar();
+    }
+
     protected override async Task OnInitializedAsync()
     {
         // Quem esta logado precisa ser carregado antes de Carregar(): o nome
@@ -311,7 +438,8 @@ else
         {
             erro = null;
             caixa = caixaDAO.BuscarAberto();
-            historico = caixaDAO.Listar();
+            // 'ate' e exclusivo no SQL: soma um dia para incluir o dia escolhido.
+            historico = caixaDAO.Listar(de: de, ate: ate?.AddDays(1));
         }
         catch (Exception ex)
         {

@@ -5,69 +5,69 @@
 @using LucasAguiar.Models
 @using LucasAguiar.Configs
 @inject PlanoDAO planoDAO
+@inject NavigationManager Navigation
 
 
-<h1>Lista de plano</h1>
+<h1 class="titulo-listagem">Gestão de Planos</h1>
 
-<div class="barra-acoes">
-    <NavLink href="/plano/novo" class="btn-novo">Novo plano</NavLink>
-    <a href="/relatorio/planos" class="btn-pdf" data-enhance-nav="false">Relatório PDF</a>
+<div class="barra-acoes barra-listagem">
+    <BotaoExportar Href="/relatorio/planos" />
+    <NavLink href="/plano/novo" class="btn-novo btn-cadastrar">Cadastrar plano</NavLink>
 </div>
+
+@* ---------- filtros ---------- *@
+<section class="filtros">
+    <div class="campo campo-largo">
+        <label>Nome</label>
+        <input class="form-control" placeholder="Buscar plano" @bind="busca" @bind:event="oninput" />
+    </div>
+    <div class="campo-acoes">
+        <button type="button" class="btn btn-outline-secondary" @onclick="() => busca = string.Empty">Limpar</button>
+    </div>
+</section>
 
 <div class="tabela fixa">
     <table class="table table-striped">
     <thead>
         <tr>
-            <th class="col-id">#</th>
             <th>Nome</th>
-            <th class="opcional">Descrição</th>
-            <th class="opcional">Inclui</th>
             <th class="al-dir">Valor</th>
-            <th class="col-acoes quatro">Ações</th>
+            <th class="opcional">Serviços incluídos</th>
+            <th class="al-dir opcional">Assinantes ativos</th>
+            <th class="col-acoes">Ações</th>
         </tr>
     </thead>
     <tbody>
-        @if (listaPlano != null && listaPlano.Any())
+        @if (Filtrados.Any())
         {
-            int contador = 1;
-            foreach (var plano in listaPlano)
+            foreach (var plano in Filtrados)
             {
                 <tr>
-                    <td>@contador</td>
                     <td>@plano.NomePlano</td>
-                    <td class="opcional">@plano.Descricao</td>
+                    <td class="al-dir">@((plano.Valor ?? 0).ToString("C"))</td>
                     <td class="opcional">
-                        @if (plano.TotalItens > 0)
+                        @if (plano.TotalServicos > 0)
                         {
-                            <span>@plano.TotalItens item(ns)</span>
+                            <span>@plano.TotalServicos serviço(s)</span>
                         }
                         else
                         {
-                            <span class="text-muted">sem itens</span>
+                            <span class="text-muted">nenhum</span>
                         }
                     </td>
-                    <td class="al-dir">@((plano.Valor ?? 0).ToString("C"))</td>
+                    <td class="al-dir opcional">@plano.AssinantesAtivos</td>
                     <td class="col-acoes">
                         <AcoesLinha OnVisualizar="() => Visualizar(plano)"
                                     OnEditar="() => Editar(plano)"
-                                    OnExcluir="() => excluindo = plano">
-                            <a href="/plano/@plano.IdPlano/componentes" class="btn-acao"
-                               title="Componentes" aria-label="Componentes">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-                                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                    <path d="M12 3l9 5-9 5-9-5zM3 13l9 5 9-5" />
-                                </svg>
-                            </a>
-                        </AcoesLinha>
+                                    OnExcluir="() => excluindo = plano" />
                     </td>
                 </tr>
-                contador++;
             }
         }
         else
         {
             <tr>
-                <td colspan="6" class="text-center text-muted">Nenhum plano encontrado.</td>
+                <td colspan="5" class="text-center text-muted">Nenhum plano encontrado.</td>
             </tr>
         }
     </tbody>
@@ -113,37 +113,7 @@
     </ChildContent>
     <Rodape>
         <button type="button" class="btn btn-outline-secondary" @onclick="Fechar">Fechar</button>
-        <a href="/plano/@visualizando?.IdPlano/componentes" class="btn btn-outline-secondary">Componentes</a>
         <button type="button" class="btn btn-primary" @onclick="() => Editar(visualizando!)">Editar</button>
-    </Rodape>
-</Janela>
-
-<Janela Visivel="@(editando != null)" Titulo="Editar plano" Erro="@erroModal" OnFechar="Fechar">
-    <ChildContent>
-        @if (editando != null)
-        {
-            <div class="grade-campos">
-                <div class="largo">
-                    <label class="form-label">Nome</label>
-                    <input class="form-control" @bind="editando.NomePlano" />
-                </div>
-                <div class="largo">
-                    <label class="form-label">Descrição</label>
-                    <input class="form-control" @bind="editando.Descricao" />
-                </div>
-                <div>
-                    <label class="form-label">Valor mensal</label>
-                    <input type="number" step="0.01" min="0" class="form-control" @bind="editando.Valor" />
-                </div>
-            </div>
-            <p class="text-muted mb-0" style="font-size: 13px;">
-                Os itens do plano são alterados em Componentes.
-            </p>
-        }
-    </ChildContent>
-    <Rodape>
-        <button type="button" class="btn btn-outline-secondary" @onclick="Fechar">Cancelar</button>
-        <button type="button" class="btn btn-primary" @onclick="Salvar">Salvar</button>
     </Rodape>
 </Janela>
 
@@ -178,8 +148,14 @@
 
     private Plano? visualizando;
     private List<PlanoItem> itensVisualizados = new();
-    private Plano? editando;
-    private string? erroModal;
+
+    private string busca = "";
+
+    private List<Plano> Filtrados =>
+        listaPlano
+            .Where(p => string.IsNullOrWhiteSpace(busca)
+                        || (p.NomePlano ?? "").Contains(busca.Trim(), StringComparison.OrdinalIgnoreCase))
+            .ToList();
 
     protected override void OnInitialized()
     {
@@ -188,53 +164,15 @@
 
     private void Visualizar(Plano p)
     {
-        editando = null;
         visualizando = p;
 
         try { itensVisualizados = planoDAO.ListarItens(p.IdPlano); }
         catch { itensVisualizados = new(); }
     }
 
-    /// <summary>Edita uma copia: cancelar o modal nao pode alterar a linha da tabela.</summary>
-    private void Editar(Plano p)
-    {
-        visualizando = null;
-        erroModal = null;
-        editando = new Plano
-        {
-            IdPlano = p.IdPlano,
-            NomePlano = p.NomePlano,
-            Descricao = p.Descricao,
-            Valor = p.Valor
-        };
-    }
+    /// <summary>A edicao e uma pagina propria, com o mesmo formulario do cadastro.</summary>
+    private void Editar(Plano p) => Navigation.NavigateTo($"/plano/{p.IdPlano}");
 
-    private void Fechar()
-    {
-        visualizando = null;
-        editando = null;
-        erroModal = null;
-    }
+    private void Fechar() => visualizando = null;
 
-    private void Salvar()
-    {
-        if (editando == null) return;
-
-        try
-        {
-            if (string.IsNullOrWhiteSpace(editando.NomePlano))
-                throw new Exception("O nome do plano é obrigatório.");
-
-            if (editando.Valor is not > 0)
-                throw new Exception("Informe o valor mensal do plano.");
-
-            planoDAO.Atualizar(editando);
-            Fechar();
-            listaPlano = planoDAO.ListarTodos();
-        }
-        catch (Exception ex)
-        {
-            erroModal = ex.Message;
-        }
-    }
 }

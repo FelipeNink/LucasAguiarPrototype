@@ -14,5 +14,11 @@ namespace LucasAguiar.Models
 
         /// <summary>Soma das quantidades dos componentes. Preenchido na listagem.</summary>
         public int TotalItens { get; set; }
+
+        /// <summary>Soma das quantidades de serviços. Preenchido na listagem.</summary>
+        public int TotalServicos { get; set; }
+
+        /// <summary>Assinaturas ativas e dentro da validade. Preenchido na listagem.</summary>
+        public int AssinantesAtivos { get; set; }
     }
 }

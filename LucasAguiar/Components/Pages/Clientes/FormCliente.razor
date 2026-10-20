@@ -1,0 +1,169 @@
+@* Formulario de cliente, o mesmo para criar e editar. Quem decide qual
+   e a pagina (CadastrarCliente / EditarCliente), pelo parametro Novo. *@
+
+@using LucasAguiar.Configs
+@using LucasAguiar.Models
+@inject ClienteDAO clienteDAO
+@inject PlanoDAO planoDAO
+@inject NavigationManager Navigation
+
+<div class="form-pagina">
+    <TopoForm Titulo="@(Novo ? "Novo cliente" : "Editar cliente")" Voltar="/cliente" RotuloVoltar="Clientes" />
+
+    @if (erro != null)
+    {
+        <div class="alert alert-danger" role="alert">@erro</div>
+    }
+
+    <form @onsubmit="Salvar" novalidate>
+        <section class="cartao secao-form">
+            <h2>Dados pessoais</h2>
+            <div class="grade-12">
+                <Campo Rotulo="Nome" Para="cli-nome" Colunas="8" Obrigatorio="true"
+                       Erro="@(tentouSalvar && string.IsNullOrWhiteSpace(Modelo.NomeCliente) ? "Informe o nome." : null)">
+                    <input id="cli-nome" class="form-control" maxlength="100" autocomplete="off"
+                           @bind="Modelo.NomeCliente" />
+                </Campo>
+                <Campo Rotulo="Data de nascimento" Para="cli-nasc" Colunas="4">
+                    <input id="cli-nasc" type="date" class="form-control" @bind="Modelo.DataNascimento" />
+                </Campo>
+
+                <Campo Rotulo="Telefone" Para="cli-tel" Colunas="4" Erro="@Documentos.ErroTelefone(Modelo.Telefone)">
+                    <input id="cli-tel" class="form-control" inputmode="tel" data-mascara="telefone"
+                           placeholder="(69) 99999-9999" @bind="Modelo.Telefone" />
+                </Campo>
+                <Campo Rotulo="CPF" Para="cli-cpf" Colunas="4" Erro="@Documentos.ErroCpf(Modelo.CPF)">
+                    <input id="cli-cpf" class="form-control" inputmode="numeric" data-mascara="cpf"
+                           placeholder="000.000.000-00" @bind="Modelo.CPF" />
+                </Campo>
+                <Campo Rotulo="RG" Para="cli-rg" Colunas="4">
+                    <input id="cli-rg" class="form-control" maxlength="7" @bind="Modelo.RG" />
+                </Campo>
+            </div>
+        </section>
+
+        <CamposEndereco Modelo="Modelo" Prefixo="cli" />
+
+        <section class="cartao secao-form">
+            <h2>Plano</h2>
+            <div class="grade-12">
+                <Campo Rotulo="Plano" Colunas="4"
+                       Dica="@(planos.Count == 0 ? "Nenhum plano cadastrado ainda." : null)">
+                    <ChildContent>
+                        <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesPlano"
+                                 Valor="Modelo.IdPlano ?? 0"
+                                 ValorChanged="v => Modelo.IdPlano = v == 0 ? null : v"
+                                 TextoDe="o => o.Rotulo" ValorDe="o => o.Id" />
+                    </ChildContent>
+                    <Acao>
+                        <button type="button" class="acao-campo" @onclick="() => modalPlano = true">
+                            + Cadastrar plano
+                        </button>
+                    </Acao>
+                </Campo>
+            </div>
+        </section>
+
+        <RodapeForm Cancelar="/cliente" Salvando="salvando" />
+    </form>
+</div>
+
+<CadastroRapido Visivel="modalPlano"
+                Tipo="CadastroRapido.TipoCadastro.Plano"
+                OnCriado="AoCriarPlano"
+                OnCancelado="() => modalPlano = false" />
+
+@code {
+    [Parameter, EditorRequired] public Cliente Modelo { get; set; } = new();
+    [Parameter] public bool Novo { get; set; }
+
+    private List<Plano> planos = new();
+    private string? erro;
+    private bool tentouSalvar;
+    private bool salvando;
+    private bool modalPlano;
+
+    /// <summary>Sem plano e uma escolha valida, entao entra como item zero.</summary>
+    private List<OpcaoId> OpcoesPlano =>
+        new List<OpcaoId> { new(0, "Nenhum") }
+            .Concat(planos.Select(p => new OpcaoId(p.IdPlano, p.NomePlano ?? "Sem nome")))
+            .ToList();
+
+
+    protected override void OnInitialized()
+    {
+        try
+        {
+            planos = planoDAO.ListarTodos();
+        }
+        catch (Exception ex)
+        {
+            erro = "Erro ao carregar os planos: " + ex.Message;
+        }
+    }
+
+
+    private void AoCriarPlano(int id)
+    {
+        try
+        {
+            erro = null;
+            planos = planoDAO.ListarTodos() ?? new();
+            Modelo.IdPlano = id;
+        }
+        catch (Exception ex)
+        {
+            erro = ex.Message;
+        }
+        finally
+        {
+            modalPlano = false;
+        }
+    }
+
+    private void Salvar()
+    {
+        tentouSalvar = true;
+        erro = null;
+
+        var temErro =
+            string.IsNullOrWhiteSpace(Modelo.NomeCliente)
+            || Documentos.ErroTelefone(Modelo.Telefone) != null
+            || Documentos.ErroCpf(Modelo.CPF) != null
+            || Documentos.ErroCep(Modelo.Cep) != null;
+
+        if (temErro)
+        {
+            erro = "Confira os campos destacados.";
+            return;
+        }
+
+        try
+        {
+            salvando = true;
+
+            // Grava sempre no mesmo formato, digitado com ou sem mascara.
+            Modelo.NomeCliente = Modelo.NomeCliente!.Trim();
+            Modelo.Telefone = Vazio(Documentos.FormatarTelefone(Modelo.Telefone));
+            Modelo.CPF = Vazio(Documentos.FormatarCpf(Modelo.CPF));
+            Modelo.Cep = Vazio(Documentos.FormatarCep(Modelo.Cep));
+            Modelo.RG = Vazio(Modelo.RG);
+
+            if (Novo) clienteDAO.Inserir(Modelo);
+            else clienteDAO.Atualizar(Modelo);
+
+            Navigation.NavigateTo("/cliente");
+        }
+        catch (Exception ex)
+        {
+            erro = ex.Message;
+        }
+        finally
+        {
+            salvando = false;
+        }
+    }
+
+    private static string? Vazio(string? texto) =>
+        string.IsNullOrWhiteSpace(texto) ? null : texto.Trim();
+}

@@ -1,0 +1,37 @@
+@page "/fornecedores/{Id:int}"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = Politicas.EditarFornecedor)]
+
+@using LucasAguiar.Models
+@inject FornecedorDAO fornecedorDAO
+
+<PageTitle>Editar fornecedor</PageTitle>
+
+@if (erro != null)
+{
+    <div class="alert alert-danger" role="alert">@erro</div>
+}
+else if (fornecedor != null)
+{
+    <FormFornecedor Modelo="fornecedor" Novo="false" />
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private Fornecedor? fornecedor;
+    private string? erro;
+
+    protected override void OnParametersSet()
+    {
+        try
+        {
+            fornecedor = fornecedorDAO.BuscarPorId(Id);
+            if (fornecedor == null) erro = $"Fornecedor #{Id} não encontrado.";
+        }
+        catch (Exception ex)
+        {
+            erro = "Erro ao carregar o fornecedor: " + ex.Message;
+        }
+    }
+}

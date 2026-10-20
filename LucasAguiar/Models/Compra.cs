@@ -26,6 +26,10 @@ namespace LucasAguiar.Models
         public string? NomeFornecedor { get; set; }
         public string? NomeFuncionario { get; set; }
 
+        // Da despesa gerada, preenchidos so na listagem. Nulos sem despesa.
+        public string? FormaPagamentoDespesa { get; set; }
+        public bool? Pago { get; set; }
+
         public decimal ValorUnitario =>
             Quantidade > 0 ? Math.Round(ValorCompra / Quantidade, 2) : ValorCompra;
     }

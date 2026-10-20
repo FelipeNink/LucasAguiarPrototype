@@ -1,0 +1,344 @@
+@* Formulario de plano, o mesmo para criar e editar: dados do plano e o
+   que ele inclui. A edicao dos itens, que era uma tela a parte
+   (Componentes), mora aqui agora. *@
+
+@using LucasAguiar.Models
+@inject PlanoDAO planoDAO
+@inject ServicoDAO servicoDAO
+@inject ProdutoDAO produtoDAO
+@inject NavigationManager Navigation
+
+<div class="form-pagina">
+    <TopoForm Titulo="@(Novo ? "Novo plano" : "Editar plano")" Voltar="/plano" RotuloVoltar="Planos" />
+
+    @if (erro != null)
+    {
+        <div class="alert alert-danger" role="alert">@erro</div>
+    }
+
+    <form @onsubmit="Salvar" novalidate>
+        <section class="cartao secao-form">
+            <h2>Dados do plano</h2>
+            <div class="grade-12">
+                <Campo Rotulo="Nome" Para="pln-nome" Colunas="8" Obrigatorio="true"
+                       Erro="@(tentouSalvar && string.IsNullOrWhiteSpace(Modelo.NomePlano) ? "Informe o nome." : null)">
+                    <input id="pln-nome" class="form-control" maxlength="200" placeholder="Ex.: Plano Híbrido"
+                           @bind="Modelo.NomePlano" />
+                </Campo>
+                <Campo Rotulo="Valor mensal" Para="pln-valor" Colunas="3" Obrigatorio="true"
+                       Erro="@(tentouSalvar && valor <= 0 ? "Informe o valor do plano." : null)">
+                    <InputMoeda Id="pln-valor" @bind-Valor="valor" />
+                </Campo>
+
+                <Campo Rotulo="Descrição" Para="pln-descricao" Colunas="8">
+                    <input id="pln-descricao" class="form-control" maxlength="200"
+                           placeholder="Ex.: 4 cortes e 4 barbas por mês" @bind="Modelo.Descricao" />
+                </Campo>
+            </div>
+
+            @if (SomaItens > 0)
+            {
+                <div class="dica-preco">
+                    <span>Os itens somam <strong>@SomaItens.ToString("C")</strong> avulsos.</span>
+                    <button type="button" class="btn-link-acao" @onclick="UsarSomaComoPreco">
+                        Usar esse valor
+                    </button>
+                </div>
+            }
+        </section>
+
+        <section class="cartao secao-form">
+            <h2>O que o plano inclui</h2>
+
+            <p class="explicacao">
+                Escolha um serviço ou produto e quantas vezes ele cabe no plano.
+                Exemplo: 4 cortes e 4 barbas.
+            </p>
+
+            <div class="seletor">
+                <div class="abas">
+                    <button type="button" class="aba @(tipo == TipoItem.Servico ? "ativa" : "")"
+                            @onclick="@(() => TrocarTipo(TipoItem.Servico))">
+                        Serviços
+                    </button>
+                    <button type="button" class="aba @(tipo == TipoItem.Produto ? "ativa" : "")"
+                            @onclick="@(() => TrocarTipo(TipoItem.Produto))">
+                        Produtos
+                    </button>
+                </div>
+
+                <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesItem"
+                         @bind-Valor="idEscolhido" TextoDe="o => o.Rotulo" ValorDe="o => o.Id"
+                         Placeholder="Selecione…" />
+
+                <div class="contador">
+                    <button type="button" @onclick="() => AjustarNovo(-1)" disabled="@(quantidade <= 1)">−</button>
+                    <span>@quantidade</span>
+                    <button type="button" @onclick="() => AjustarNovo(1)">+</button>
+                </div>
+
+                <button type="button" class="btn btn-outline-secondary" disabled="@(idEscolhido <= 0)" @onclick="Adicionar">
+                    Adicionar
+                </button>
+            </div>
+
+            <div class="acao-montador">
+                @if (tipo == TipoItem.Servico)
+                {
+                    <button type="button" class="acao-campo" @onclick="() => modalAberto = CadastroRapido.TipoCadastro.Servico">
+                        + Cadastrar serviço
+                    </button>
+                }
+                else
+                {
+                    <button type="button" class="acao-campo" @onclick="() => modalAberto = CadastroRapido.TipoCadastro.Produto">
+                        + Cadastrar produto
+                    </button>
+                }
+            </div>
+
+            @if (itens.Count == 0)
+            {
+                <div class="vazio">
+                    Nenhum item adicionado. O plano pode ser salvo assim, mas não terá
+                    nada para lançar automaticamente na venda.
+                </div>
+            }
+            else
+            {
+                <ul class="itens">
+                    @foreach (var item in itens)
+                    {
+                        <li>
+                            <div class="item-info">
+                                <span class="item-nome">@item.Descricao</span>
+                                <span class="item-tipo">@item.RotuloTipo · @item.ValorUnitario.ToString("C") cada</span>
+                            </div>
+
+                            <div class="contador">
+                                <button type="button" @onclick="() => Ajustar(item, -1)" disabled="@(item.Quantidade <= 1)">−</button>
+                                <span>@item.Quantidade</span>
+                                <button type="button" @onclick="() => Ajustar(item, 1)">+</button>
+                            </div>
+
+                            <span class="item-total">@((item.ValorUnitario * item.Quantidade).ToString("C"))</span>
+
+                            <button type="button" class="remover" title="Remover" @onclick="() => itens.Remove(item)">×</button>
+                        </li>
+                    }
+                </ul>
+
+                <div class="rodape-itens">
+                    <span>@itens.Sum(i => i.Quantidade) item(ns) no plano</span>
+                    <strong>@SomaItens.ToString("C")</strong>
+                </div>
+
+                @if (valor > 0 && SomaItens > 0)
+                {
+                    <div class="comparativo @(Diferenca >= 0 ? "bom" : "ruim")">
+                        @if (Diferenca >= 0)
+                        {
+                            <text>O cliente economiza @Diferenca.ToString("C") por mês com este plano.</text>
+                        }
+                        else
+                        {
+                            <text>Atenção: o plano custa @Math.Abs(Diferenca).ToString("C") a mais que comprar avulso.</text>
+                        }
+                    </div>
+                }
+            }
+        </section>
+
+        <RodapeForm Cancelar="/plano" Salvando="salvando" />
+    </form>
+</div>
+
+<CadastroRapido Visivel="@(modalAberto != null)"
+                Tipo="@(modalAberto ?? CadastroRapido.TipoCadastro.Servico)"
+                OnCriado="AoCriarRegistro"
+                OnCancelado="() => modalAberto = null" />
+
+@code {
+    [Parameter, EditorRequired] public Plano Modelo { get; set; } = new();
+    [Parameter] public bool Novo { get; set; }
+
+    /// <summary>Itens ja gravados, na edicao.</summary>
+    [Parameter] public List<PlanoItem>? ItensIniciais { get; set; }
+
+    /// <summary>Servicos ou produtos, conforme o tipo escolhido, com o preco no rotulo.</summary>
+    private List<OpcaoId> OpcoesItem =>
+        tipo == TipoItem.Servico
+            ? servicos.Select(s => new OpcaoId(s.IdServico,
+                $"{s.NomeServico} — {s.PrecoServico.ToString("C")}")).ToList()
+            : produtos.Select(p => new OpcaoId(p.IdProduto,
+                $"{p.NomeProduto} — {p.Valor.ToString("C")}")).ToList();
+
+    private CadastroRapido.TipoCadastro? modalAberto;
+    private decimal valor;
+    private string? erro;
+    private bool tentouSalvar;
+    private bool salvando;
+
+    private List<Servico> servicos = new();
+    private List<Produto> produtos = new();
+    private List<PlanoItem> itens = new();
+
+    private string tipo = TipoItem.Servico;
+    private int idEscolhido;
+    private int quantidade = 1;
+
+    private decimal SomaItens => itens.Sum(i => i.ValorUnitario * i.Quantidade);
+    private decimal Diferenca => SomaItens - valor;
+
+    protected override void OnInitialized()
+    {
+        valor = Math.Round((decimal)(Modelo.Valor ?? 0), 2);
+        itens = ItensIniciais?.ToList() ?? new();
+
+        try
+        {
+            servicos = servicoDAO.ListarTodos() ?? new();
+            produtos = produtoDAO.ListarTodos() ?? new();
+        }
+        catch (Exception ex)
+        {
+            erro = "Erro ao carregar os cadastros: " + ex.Message;
+        }
+    }
+
+    private void TrocarTipo(string novo)
+    {
+        tipo = novo;
+        idEscolhido = 0;
+    }
+
+    /// <summary>
+    /// Recarrega a lista e já seleciona o que acabou de ser criado,
+    /// preservando os itens que já estavam montados no plano.
+    /// </summary>
+    private void AoCriarRegistro(int id)
+    {
+        try
+        {
+            erro = null;
+
+            if (modalAberto == CadastroRapido.TipoCadastro.Servico)
+            {
+                servicos = servicoDAO.ListarTodos() ?? new();
+                tipo = TipoItem.Servico;
+            }
+            else
+            {
+                produtos = produtoDAO.ListarTodos() ?? new();
+                tipo = TipoItem.Produto;
+            }
+
+            idEscolhido = id;
+        }
+        catch (Exception ex)
+        {
+            erro = ex.Message;
+        }
+        finally
+        {
+            modalAberto = null;
+        }
+    }
+
+    private void AjustarNovo(int delta) => quantidade = Math.Max(1, quantidade + delta);
+
+    private void Ajustar(PlanoItem item, int delta) => item.Quantidade = Math.Max(1, item.Quantidade + delta);
+
+    private void UsarSomaComoPreco() => valor = SomaItens;
+
+    private void Adicionar()
+    {
+        erro = null;
+
+        if (idEscolhido <= 0)
+        {
+            erro = "Selecione um serviço ou produto.";
+            return;
+        }
+
+        string descricao;
+        decimal valorUnitario;
+
+        if (tipo == TipoItem.Servico)
+        {
+            var s = servicos.FirstOrDefault(x => x.IdServico == idEscolhido);
+            if (s == null) { erro = "Serviço não encontrado."; return; }
+            descricao = s.NomeServico ?? "Serviço";
+            valorUnitario = (decimal)s.PrecoServico;
+        }
+        else
+        {
+            var p = produtos.FirstOrDefault(x => x.IdProduto == idEscolhido);
+            if (p == null) { erro = "Produto não encontrado."; return; }
+            descricao = p.NomeProduto ?? "Produto";
+            valorUnitario = (decimal)p.Valor;
+        }
+
+        // Item repetido soma na linha existente em vez de duplicar.
+        var existente = itens.FirstOrDefault(i => i.TipoItem == tipo && i.IdReferencia == idEscolhido);
+        if (existente != null)
+        {
+            existente.Quantidade += quantidade;
+        }
+        else
+        {
+            itens.Add(new PlanoItem
+            {
+                TipoItem = tipo,
+                IdReferencia = idEscolhido,
+                Quantidade = quantidade,
+                Descricao = descricao,
+                ValorUnitario = valorUnitario
+            });
+        }
+
+        idEscolhido = 0;
+        quantidade = 1;
+    }
+
+    private void Salvar()
+    {
+        tentouSalvar = true;
+        erro = null;
+
+        if (string.IsNullOrWhiteSpace(Modelo.NomePlano) || valor <= 0)
+        {
+            erro = "Confira os campos destacados.";
+            return;
+        }
+
+        try
+        {
+            salvando = true;
+            Modelo.NomePlano = Modelo.NomePlano.Trim();
+            Modelo.Valor = (float)valor;
+
+            if (Novo)
+            {
+                var idPlano = planoDAO.Inserir(Modelo);
+                if (itens.Count > 0) planoDAO.SalvarItens(idPlano, itens);
+            }
+            else
+            {
+                // Substitui os itens: o que foi removido aqui sai do plano.
+                planoDAO.Atualizar(Modelo);
+                planoDAO.SalvarItens(Modelo.IdPlano, itens);
+            }
+
+            Navigation.NavigateTo("/plano");
+        }
+        catch (Exception ex)
+        {
+            erro = ex.Message;
+        }
+        finally
+        {
+            salvando = false;
+        }
+    }
+}

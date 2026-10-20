@@ -26,10 +26,10 @@ namespace LucasAguiar.Data
                 using var conexao = _conexao.GetConnection();
                 using var comando = new MySqlCommand(@"
                     INSERT INTO cliente
-                        (nome_cli, telefone_cli, cpf_cli, data_nasc_cli, rg_cli,
+                        (nome_cli, telefone_cli, cpf_cli, data_nasc_cli, rg_cli, cep_cli,
                          estado_cli, cidade_cli, bairro_cli, rua_cli, numero_cli, id_plan_fk)
                     VALUES
-                        (@nome, @telefone, @cpf, @dataNasc, @rg,
+                        (@nome, @telefone, @cpf, @dataNasc, @rg, @cep,
                          @estado, @cidade, @bairro, @rua, @numero, @idPlano);
                     SELECT LAST_INSERT_ID();", conexao);
 
@@ -38,6 +38,7 @@ namespace LucasAguiar.Data
                 comando.Parameters.AddWithValue("@cpf", cliente.CPF ?? (object)DBNull.Value);
                 comando.Parameters.AddWithValue("@dataNasc", cliente.DataNascimento ?? (object)DBNull.Value);
                 comando.Parameters.AddWithValue("@rg", cliente.RG ?? (object)DBNull.Value);
+                comando.Parameters.AddWithValue("@cep", cliente.Cep ?? (object)DBNull.Value);
                 comando.Parameters.AddWithValue("@estado", cliente.Estado ?? (object)DBNull.Value);
                 comando.Parameters.AddWithValue("@cidade", cliente.Cidade ?? (object)DBNull.Value);
                 comando.Parameters.AddWithValue("@bairro", cliente.Bairro ?? (object)DBNull.Value);
@@ -97,6 +98,21 @@ namespace LucasAguiar.Data
             return leitor.Read() ? Ler(leitor) : null;
         }
 
+        /// <summary>Quem faz aniversario no mes, pela ordem do dia. So le data_nasc_cli, que ja existe.</summary>
+        public List<Cliente> AniversariantesDoMes(int mes)
+        {
+            var lista = new List<Cliente>();
+            using var conexao = _conexao.GetConnection();
+            using var comando = new MySqlCommand(SelecaoPadrao + @"
+                WHERE c.data_nasc_cli IS NOT NULL AND MONTH(c.data_nasc_cli) = @mes
+                ORDER BY DAY(c.data_nasc_cli), c.nome_cli", conexao);
+            comando.Parameters.AddWithValue("@mes", mes);
+
+            using var leitor = comando.ExecuteReader();
+            while (leitor.Read()) lista.Add(Ler(leitor));
+            return lista;
+        }
+
         public List<Cliente> ListarTodos()
         {
             var lista = new List<Cliente>();
@@ -107,13 +123,71 @@ namespace LucasAguiar.Data
             return lista;
         }
 
+        /// <summary>
+        /// Listagem com o historico de vendas validas: ultima visita, numero
+        /// de visitas, total gasto e o profissional que mais o atendeu.
+        /// </summary>
+        public List<Cliente> ListarComHistorico()
+        {
+            var lista = new List<Cliente>();
+            using var conexao = _conexao.GetConnection();
+            using var comando = new MySqlCommand(@"
+                SELECT x.*, fp.nome_fun AS nome_fun_pref
+                FROM (
+                    SELECT c.*, p.nome_plan, p.valor_plan,
+                           h.ultima_visita, h.visitas, h.total_gasto,
+                           (SELECT v2.id_fun_fk
+                              FROM venda v2
+                             WHERE v2.id_cli_fk = c.id_cli
+                               AND v2.id_fun_fk IS NOT NULL
+                               AND v2.status_vend <> 'CANCELADA'
+                             GROUP BY v2.id_fun_fk
+                             ORDER BY COUNT(*) DESC, MAX(v2.data_vend) DESC
+                             LIMIT 1) AS id_fun_pref
+                    FROM cliente c
+                    LEFT JOIN plano p ON p.id_plan = c.id_plan_fk
+                    LEFT JOIN (
+                        SELECT id_cli_fk,
+                               MAX(data_vend) AS ultima_visita,
+                               COUNT(*) AS visitas,
+                               SUM(valor_vend) AS total_gasto
+                          FROM venda
+                         WHERE status_vend <> 'CANCELADA'
+                         GROUP BY id_cli_fk
+                    ) h ON h.id_cli_fk = c.id_cli
+                ) x
+                LEFT JOIN funcionario fp ON fp.id_fun = x.id_fun_pref
+                ORDER BY x.nome_cli", conexao);
+
+            using var leitor = comando.ExecuteReader();
+            while (leitor.Read())
+            {
+                var cliente = Ler(leitor);
+
+                var iUltima = leitor.GetOrdinal("ultima_visita");
+                var iVisitas = leitor.GetOrdinal("visitas");
+                var iTotal = leitor.GetOrdinal("total_gasto");
+                var iPref = leitor.GetOrdinal("id_fun_pref");
+                var iNomePref = leitor.GetOrdinal("nome_fun_pref");
+
+                cliente.UltimaVisita = leitor.IsDBNull(iUltima) ? null : leitor.GetDateTime(iUltima);
+                cliente.Visitas = leitor.IsDBNull(iVisitas) ? 0 : Convert.ToInt32(leitor.GetValue(iVisitas));
+                cliente.TotalGasto = leitor.IsDBNull(iTotal) ? 0m : Convert.ToDecimal(leitor.GetValue(iTotal));
+                cliente.IdProfissionalPreferido = leitor.IsDBNull(iPref) ? null : Convert.ToInt32(leitor.GetValue(iPref));
+                cliente.NomeProfissionalPreferido = leitor.IsDBNull(iNomePref) ? null : leitor.GetString(iNomePref);
+
+                lista.Add(cliente);
+            }
+            return lista;
+        }
+
         public void Atualizar(Cliente cliente)
         {
             using var conexao = _conexao.GetConnection();
             using var comando = new MySqlCommand(@"
                 UPDATE cliente SET
                     nome_cli = @nome, telefone_cli = @telefone, cpf_cli = @cpf,
-                    data_nasc_cli = @dataNasc, rg_cli = @rg, estado_cli = @estado,
+                    data_nasc_cli = @dataNasc, rg_cli = @rg, cep_cli = @cep, estado_cli = @estado,
                     cidade_cli = @cidade, bairro_cli = @bairro, rua_cli = @rua,
                     numero_cli = @numero, id_plan_fk = @idPlano
                 WHERE id_cli = @id", conexao);
@@ -123,6 +197,7 @@ namespace LucasAguiar.Data
             comando.Parameters.AddWithValue("@cpf", cliente.CPF ?? (object)DBNull.Value);
             comando.Parameters.AddWithValue("@dataNasc", cliente.DataNascimento ?? (object)DBNull.Value);
             comando.Parameters.AddWithValue("@rg", cliente.RG ?? (object)DBNull.Value);
+                comando.Parameters.AddWithValue("@cep", cliente.Cep ?? (object)DBNull.Value);
             comando.Parameters.AddWithValue("@estado", cliente.Estado ?? (object)DBNull.Value);
             comando.Parameters.AddWithValue("@cidade", cliente.Cidade ?? (object)DBNull.Value);
             comando.Parameters.AddWithValue("@bairro", cliente.Bairro ?? (object)DBNull.Value);
@@ -174,6 +249,7 @@ namespace LucasAguiar.Data
                 CPF = Texto("cpf_cli"),
                 DataNascimento = leitor.IsDBNull(iNasc) ? null : leitor.GetDateTime(iNasc),
                 RG = Texto("rg_cli"),
+                Cep = Texto("cep_cli"),
                 Estado = Texto("estado_cli"),
                 Cidade = Texto("cidade_cli"),
                 Bairro = Texto("bairro_cli"),

@@ -39,11 +39,12 @@ namespace LucasAguiar.Data
         {
             try
             {
-                using (var comando = _conexao.CreateCommand(@"INSERT INTO fornecedor (nome_forn, email_forn, telefone_forn, tipo_prod_forn)
-                    VALUES (@_nome, @_email, @_telefone, @_tipo)
+                using (var comando = _conexao.CreateCommand(@"INSERT INTO fornecedor (nome_forn, documento_forn, email_forn, telefone_forn, tipo_prod_forn)
+                    VALUES (@_nome, @_documento, @_email, @_telefone, @_tipo)
                 "))
                 {
                     comando.Parameters.AddWithValue("@_nome", fornecedor.NomeFornecedor ?? (object)DBNull.Value);
+                    comando.Parameters.AddWithValue("@_documento", fornecedor.Documento ?? (object)DBNull.Value);
                     comando.Parameters.AddWithValue("@_email", fornecedor.Email ?? (object)DBNull.Value);
                     comando.Parameters.AddWithValue("@_telefone", fornecedor.Telefone ?? (object)DBNull.Value);
                     comando.Parameters.AddWithValue("@_tipo", fornecedor.TipoProd ?? (object)DBNull.Value);
@@ -67,11 +68,12 @@ namespace LucasAguiar.Data
             using var conexao = _conexao.GetConnection();
             using var comando = new MySqlCommand(@"
                 UPDATE fornecedor SET
-                    nome_forn = @nome, email_forn = @email,
+                    nome_forn = @nome, documento_forn = @documento, email_forn = @email,
                     telefone_forn = @telefone, tipo_prod_forn = @tipo
                 WHERE id_forn = @id", conexao);
 
             comando.Parameters.AddWithValue("@nome", fornecedor.NomeFornecedor ?? (object)DBNull.Value);
+            comando.Parameters.AddWithValue("@documento", fornecedor.Documento ?? (object)DBNull.Value);
             comando.Parameters.AddWithValue("@email", fornecedor.Email ?? (object)DBNull.Value);
             comando.Parameters.AddWithValue("@telefone", fornecedor.Telefone ?? (object)DBNull.Value);
             comando.Parameters.AddWithValue("@tipo", fornecedor.TipoProd ?? (object)DBNull.Value);
@@ -109,6 +111,7 @@ namespace LucasAguiar.Data
                     {
                         IdFornecedor = leitor.GetInt32("id_forn"),
                         NomeFornecedor = leitor.IsDBNull(leitor.GetOrdinal("nome_forn")) ? "" : leitor.GetString("nome_forn"),
+                        Documento = leitor.IsDBNull(leitor.GetOrdinal("documento_forn")) ? null : leitor.GetString("documento_forn"),
                         Email = leitor.IsDBNull(leitor.GetOrdinal("email_forn")) ? "" : leitor.GetString("email_forn"),
                         Telefone = leitor.IsDBNull(leitor.GetOrdinal("telefone_forn")) ? "" : leitor.GetString("telefone_forn"),
                         TipoProd = leitor.IsDBNull(leitor.GetOrdinal("tipo_prod_forn")) ? "" : leitor.GetString("tipo_prod_forn")
@@ -116,6 +119,38 @@ namespace LucasAguiar.Data
 
                     lista.Add(fornecedor);
                 }
+            }
+
+            return lista;
+        }
+
+        /// <summary>Listagem com a data da compra mais recente de cada fornecedor.</summary>
+        public List<Fornecedor> ListarComUltimaCompra()
+        {
+            var lista = new List<Fornecedor>();
+
+            using var conexao = _conexao.GetConnection();
+            using var comando = new MySqlCommand(@"
+                SELECT f.*,
+                       (SELECT MAX(c.data_comp) FROM compras c WHERE c.id_forn_fk = f.id_forn) AS ultima_compra
+                FROM fornecedor f
+                ORDER BY f.nome_forn", conexao);
+
+            using var leitor = comando.ExecuteReader();
+            while (leitor.Read())
+            {
+                var iUltima = leitor.GetOrdinal("ultima_compra");
+
+                lista.Add(new Fornecedor
+                {
+                    IdFornecedor = leitor.GetInt32("id_forn"),
+                    NomeFornecedor = DAOHelper.GetString(leitor, "nome_forn"),
+                    Documento = DAOHelper.GetString(leitor, "documento_forn"),
+                    Email = DAOHelper.GetString(leitor, "email_forn"),
+                    Telefone = DAOHelper.GetString(leitor, "telefone_forn"),
+                    TipoProd = DAOHelper.GetString(leitor, "tipo_prod_forn"),
+                    UltimaCompra = leitor.IsDBNull(iUltima) ? null : leitor.GetDateTime(iUltima)
+                });
             }
 
             return lista;

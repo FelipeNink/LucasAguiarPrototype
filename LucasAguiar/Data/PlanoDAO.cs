@@ -42,17 +42,29 @@ namespace LucasAguiar.Data
             using var comando = new MySqlCommand(@"
                 SELECT p.*,
                        (SELECT COALESCE(SUM(pi.quantidade), 0)
-                          FROM plano_item pi WHERE pi.id_plan_fk = p.id_plan) AS total_itens
+                          FROM plano_item pi WHERE pi.id_plan_fk = p.id_plan) AS total_itens,
+                       (SELECT COALESCE(SUM(pi.quantidade), 0)
+                          FROM plano_item pi
+                         WHERE pi.id_plan_fk = p.id_plan AND pi.tipo_item = 'SERVICO') AS total_servicos,
+                       (SELECT COUNT(*)
+                          FROM assinatura a
+                         WHERE a.id_plan_fk = p.id_plan
+                           AND a.status = 'ATIVA'
+                           AND (a.data_fim IS NULL OR a.data_fim >= CURDATE())) AS assinantes_ativos
                 FROM plano p
                 ORDER BY p.nome_plan", conexao);
 
             using var leitor = comando.ExecuteReader();
             var iTotal = leitor.GetOrdinal("total_itens");
+            var iServicos = leitor.GetOrdinal("total_servicos");
+            var iAssinantes = leitor.GetOrdinal("assinantes_ativos");
 
             while (leitor.Read())
             {
                 var plano = Ler(leitor);
                 plano.TotalItens = leitor.IsDBNull(iTotal) ? 0 : Convert.ToInt32(leitor.GetValue(iTotal));
+                plano.TotalServicos = leitor.IsDBNull(iServicos) ? 0 : Convert.ToInt32(leitor.GetValue(iServicos));
+                plano.AssinantesAtivos = leitor.IsDBNull(iAssinantes) ? 0 : Convert.ToInt32(leitor.GetValue(iAssinantes));
                 lista.Add(plano);
             }
 

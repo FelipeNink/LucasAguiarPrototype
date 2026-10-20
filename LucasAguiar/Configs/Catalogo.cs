@@ -84,12 +84,12 @@ namespace LucasAguiar.Configs
             // Editar venda, hoje, e trocar o profissional do atendimento.
             new("vendas", "Vendas", Operacao,
                 Acao.Ver | Acao.Criar | Acao.Editar | Acao.Estornar | Acao.Exportar,
-                new[] { "/vendas", "/venda/nova" },
+                new[] { "/vendas", "/venda/nova", "/venda" },
                 new[] { "/relatorio/vendas", "/excel/vendas" }),
 
             new("agendamentos", "Agendamentos", Operacao,
                 Acao.Ver | Acao.Criar | Acao.Editar | Acao.Excluir | Acao.Exportar,
-                new[] { "/agendamentos", "/agendamento/novo" },
+                new[] { "/agendamentos", "/agendamento/novo", "/agendamento" },
                 new[] { "/excel/agendamentos" }),
 
             // Liquidar = abrir, fechar, sangria e suprimento.
@@ -108,7 +108,7 @@ namespace LucasAguiar.Configs
 
             new("despesas", "Despesas", Financeiro,
                 Acao.Ver | Acao.Criar | Acao.Editar | Acao.Excluir | Acao.Exportar,
-                new[] { "/despesas" },
+                new[] { "/despesas", "/despesa" },
                 new[] { "/relatorio/despesas", "/excel/despesas" }),
 
             new("comissoes", "Comissões", Financeiro,
@@ -152,6 +152,11 @@ namespace LucasAguiar.Configs
             new("planos", "Planos", Cadastros, Cadastro,
                 new[] { "/plano", "/plano/novo" },
                 new[] { "/relatorio/planos" }),
+
+            // So consulta: a assinatura nasce na venda do plano.
+            new("assinaturas", "Assinaturas", Cadastros,
+                Acao.Ver,
+                new[] { "/assinaturas" }),
 
             new("funcionarios", "Funcionários", Cadastros, Cadastro,
                 new[] { "/funcionario", "/funcionario/novo" },

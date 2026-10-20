@@ -19,28 +19,6 @@
 }
 
 
-.topo {
-    display: flex;
-    align-items: baseline;
-    gap: 0.9rem;
-    margin-bottom: 0.25rem;
-}
-
-.topo h1 {
-    margin: 0;
-}
-
-.voltar {
-    font-size: 0.82rem;
-    color: var(--texto-fraco);
-    text-decoration: none;
-    transition: color 0.15s;
-}
-
-.voltar:hover {
-    color: var(--marca-escura);
-}
-
 .venda {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 380px;
@@ -657,26 +635,6 @@
     font-size: 0.83rem;
     color: var(--texto-fraco);
     text-align: center;
-}
-
-.btn-criar {
-    margin-top: 0.8rem;
-    padding: 0.3rem 0.7rem;
-    background: none;
-    border: 1px dashed var(--marca-fraca);
-    border-radius: 7px;
-    font-size: 0.78rem;
-    font-weight: 600;
-    color: var(--marca-escura);
-    cursor: pointer;
-    transition: background 0.15s, border-color 0.15s, color 0.15s;
-}
-
-.btn-criar:hover {
-    background: var(--marca);
-    border-color: var(--marca);
-    border-style: solid;
-    color: var(--sobre-marca);
 }
 
 /* ---------- pagamento ---------- */

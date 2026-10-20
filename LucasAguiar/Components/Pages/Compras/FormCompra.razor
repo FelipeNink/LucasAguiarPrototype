@@ -1,0 +1,256 @@
+@* Formulario de compra, o mesmo para criar e editar. Na criacao a compra
+   lanca a despesa e da entrada no estoque; na edicao o DAO acerta os
+   dois, mas forma de pagamento e situacao nao mudam mais. *@
+
+@using LucasAguiar.Models
+@inject CompraDAO compraDAO
+@inject ProdutoDAO produtoDAO
+@inject FornecedorDAO fornecedorDAO
+@inject FuncionarioDAO funcionarioDAO
+@inject CaixaDAO caixaDAO
+@inject NavigationManager Navigation
+
+<div class="form-pagina">
+    <TopoForm Titulo="@(Novo ? "Nova compra" : "Editar compra")" Voltar="/compra" RotuloVoltar="Compras" />
+
+    @if (erro != null)
+    {
+        <div class="alert alert-danger" role="alert">@erro</div>
+    }
+
+    <form @onsubmit="Salvar" novalidate>
+        <section class="cartao secao-form">
+            <h2>Compra</h2>
+            <div class="grade-12">
+                <Campo Rotulo="Item" Para="cmp-item" Colunas="7" Obrigatorio="true"
+                       Erro="@(tentouSalvar && string.IsNullOrWhiteSpace(Modelo.ItemCompra) ? "Informe o item." : null)">
+                    <input id="cmp-item" class="form-control" maxlength="200" placeholder="Ex.: Caixa de pomada"
+                           @bind="Modelo.ItemCompra" />
+                </Campo>
+                <Campo Rotulo="Data" Para="cmp-data" Colunas="3">
+                    <input id="cmp-data" type="date" class="form-control" @bind="Modelo.DataCompra" />
+                </Campo>
+                <Campo Rotulo="Quantidade" Para="cmp-qtd" Colunas="2" Obrigatorio="true"
+                       Erro="@(tentouSalvar && Modelo.Quantidade <= 0 ? "Maior que zero." : null)">
+                    <input id="cmp-qtd" type="number" min="1" class="form-control" @bind="Modelo.Quantidade" />
+                </Campo>
+            </div>
+        </section>
+
+        <section class="cartao secao-form">
+            <h2>Pagamento</h2>
+            <div class="grade-12">
+                <Campo Rotulo="Valor total pago" Para="cmp-valor" Colunas="3" Obrigatorio="true"
+                       Erro="@(tentouSalvar && Modelo.ValorCompra <= 0 ? "Informe o valor." : null)"
+                       Dica="@(Modelo.Quantidade > 1 && Modelo.ValorCompra > 0 ? $"{Modelo.ValorUnitario:C} cada." : null)">
+                    <InputMoeda Id="cmp-valor" Valor="Modelo.ValorCompra" ValorChanged="v => Modelo.ValorCompra = v" />
+                </Campo>
+
+                @if (Novo)
+                {
+                    <Campo Rotulo="Forma de pagamento" Colunas="4">
+                        <Seletor TItem="Opcao" TValor="string" Itens="OpcoesForma"
+                                 @bind-Valor="formaPagamento" TextoDe="o => o.Rotulo" ValorDe="o => o.Valor"
+                                 PontoDe="o => o.Cor" />
+                    </Campo>
+                    <Campo Rotulo="Situação" Para="cmp-pago" Colunas="3">
+                        <div class="form-check form-switch campo-switch">
+                            <input id="cmp-pago" class="form-check-input" type="checkbox" role="switch" @bind="pago" />
+                            <label class="form-check-label" for="cmp-pago">@(pago ? "Já foi paga" : "A pagar")</label>
+                        </div>
+                    </Campo>
+                }
+                else
+                {
+                    <Campo Rotulo="Forma de pagamento" Colunas="5"
+                           Dica="Já lançada na despesa. Para mudar, exclua a compra e lance de novo.">
+                        <input class="form-control" readonly value="@FormaPagamento.Rotulo(Modelo.FormaPagamentoDespesa)" />
+                    </Campo>
+                }
+            </div>
+
+            @if (Novo)
+            {
+                <p class="aviso-form">
+                    A compra lança uma <strong>despesa</strong> na categoria Produtos e dá
+                    <strong>entrada no estoque</strong> do produto escolhido.
+                    @if (pago && formaPagamento == FormaPagamento.Dinheiro && caixaAberto != null)
+                    {
+                        <text> O valor sai da gaveta do caixa #@caixaAberto.IdCaixa.</text>
+                    }
+                </p>
+            }
+        </section>
+
+        <section class="cartao secao-form">
+            <h2>Origem</h2>
+            <div class="grade-12">
+                <Campo Rotulo="Produto" Colunas="4">
+                    <ChildContent>
+                        <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesProduto"
+                                 @bind-Valor="Modelo.IdProduto" TextoDe="o => o.Rotulo" ValorDe="o => o.Id" />
+                    </ChildContent>
+                    <Acao>
+                        <button type="button" class="acao-campo" @onclick="() => modalAberto = CadastroRapido.TipoCadastro.Produto">
+                            + Cadastrar produto
+                        </button>
+                    </Acao>
+                </Campo>
+                <Campo Rotulo="Fornecedor" Colunas="4">
+                    <ChildContent>
+                        <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesFornecedor"
+                                 @bind-Valor="Modelo.IdFornecedor" TextoDe="o => o.Rotulo" ValorDe="o => o.Id" />
+                    </ChildContent>
+                    <Acao>
+                        <button type="button" class="acao-campo" @onclick="() => modalAberto = CadastroRapido.TipoCadastro.Fornecedor">
+                            + Cadastrar fornecedor
+                        </button>
+                    </Acao>
+                </Campo>
+                <Campo Rotulo="Quem comprou" Colunas="4">
+                    <ChildContent>
+                        <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesFuncionario"
+                                 @bind-Valor="Modelo.IdFuncionario" TextoDe="o => o.Rotulo" ValorDe="o => o.Id"
+                                 ComAvatar="true" />
+                    </ChildContent>
+                    <Acao>
+                        <button type="button" class="acao-campo" @onclick="() => modalAberto = CadastroRapido.TipoCadastro.Funcionario">
+                            + Cadastrar funcionário
+                        </button>
+                    </Acao>
+                </Campo>
+            </div>
+        </section>
+
+        <RodapeForm Cancelar="/compra" Salvando="salvando" />
+    </form>
+</div>
+
+<CadastroRapido Visivel="@(modalAberto != null)"
+                Tipo="@(modalAberto ?? CadastroRapido.TipoCadastro.Produto)"
+                OnCriado="AoCriarRegistro"
+                OnCancelado="() => modalAberto = null" />
+
+@code {
+    [Parameter, EditorRequired] public Compra Modelo { get; set; } = new();
+    [Parameter] public bool Novo { get; set; }
+
+    private List<Opcao> OpcoesForma =>
+        FormaPagamento.Todas.Select(f => new Opcao(f.Valor, f.Rotulo, "var(--ok)")).ToList();
+
+    private List<OpcaoId> OpcoesProduto =>
+        new List<OpcaoId> { new(0, "Nenhum") }
+            .Concat(produtos.Select(p => new OpcaoId(p.IdProduto, p.NomeProduto ?? "Sem nome")))
+            .ToList();
+
+    private List<OpcaoId> OpcoesFornecedor =>
+        new List<OpcaoId> { new(0, "Nenhum") }
+            .Concat(fornecedores.Select(f => new OpcaoId(f.IdFornecedor, f.NomeFornecedor ?? "Sem nome")))
+            .ToList();
+
+    private List<OpcaoId> OpcoesFuncionario =>
+        new List<OpcaoId> { new(0, "Ninguém") }
+            .Concat(funcionarios.Select(u => new OpcaoId(u.IdFuncionario, u.NomeFuncionario ?? "Sem nome")))
+            .ToList();
+
+    private string? erro;
+    private bool tentouSalvar;
+    private bool salvando;
+    private CadastroRapido.TipoCadastro? modalAberto;
+    private string formaPagamento = FormaPagamento.Dinheiro;
+    private bool pago = true;
+    private Caixa? caixaAberto;
+
+    private List<Produto> produtos = new();
+    private List<Fornecedor> fornecedores = new();
+    private List<Funcionario> funcionarios = new();
+
+    protected override void OnInitialized()
+    {
+        try
+        {
+            produtos = produtoDAO.ListarTodos();
+            fornecedores = fornecedorDAO.ListarTodos();
+            funcionarios = funcionarioDAO.ListarTodos();
+            caixaAberto = caixaDAO.BuscarAberto();
+        }
+        catch (Exception ex)
+        {
+            erro = "Erro ao carregar os cadastros: " + ex.Message;
+        }
+    }
+
+    /// <summary>Recarrega e já seleciona, sem perder a compra em digitação.</summary>
+    private void AoCriarRegistro(int id)
+    {
+        try
+        {
+            erro = null;
+
+            switch (modalAberto)
+            {
+                case CadastroRapido.TipoCadastro.Produto:
+                    produtos = produtoDAO.ListarTodos() ?? new();
+                    Modelo.IdProduto = id;
+                    break;
+
+                case CadastroRapido.TipoCadastro.Fornecedor:
+                    fornecedores = fornecedorDAO.ListarTodos() ?? new();
+                    Modelo.IdFornecedor = id;
+                    break;
+
+                case CadastroRapido.TipoCadastro.Funcionario:
+                    funcionarios = funcionarioDAO.ListarTodos() ?? new();
+                    Modelo.IdFuncionario = id;
+                    break;
+            }
+        }
+        catch (Exception ex)
+        {
+            erro = ex.Message;
+        }
+        finally
+        {
+            modalAberto = null;
+        }
+    }
+
+    private void Salvar()
+    {
+        tentouSalvar = true;
+        erro = null;
+
+        if (string.IsNullOrWhiteSpace(Modelo.ItemCompra) || Modelo.Quantidade <= 0 || Modelo.ValorCompra <= 0)
+        {
+            erro = "Confira os campos destacados.";
+            return;
+        }
+
+        try
+        {
+            salvando = true;
+            Modelo.ItemCompra = Modelo.ItemCompra.Trim();
+
+            if (Novo)
+            {
+                // A compra lança a despesa e dá entrada no estoque, na mesma transação.
+                compraDAO.Inserir(Modelo, caixaAberto?.IdCaixa,
+                    gerarDespesa: true, formaPagamento: formaPagamento, pago: pago);
+            }
+            else
+            {
+                compraDAO.Atualizar(Modelo);
+            }
+
+            Navigation.NavigateTo("/compra");
+        }
+        catch (Exception ex)
+        {
+            erro = ex.Message;
+        }
+        finally
+        {
+            salvando = false;
+        }
+    }
+}

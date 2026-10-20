@@ -1,0 +1,82 @@
+@* Secao Endereco dos formularios de cadastro: CEP antes de tudo, e o
+   CEP preenche rua, bairro, cidade e UF. *@
+
+@using LucasAguiar.Configs
+@using LucasAguiar.Models
+@inject BuscaCep buscaCep
+
+<section class="cartao secao-form">
+    <h2>Endereço</h2>
+    <div class="grade-12">
+        <Campo Rotulo="CEP" Para="@($"{Prefixo}-cep")" Colunas="3" Erro="@Documentos.ErroCep(Modelo.Cep)" Dica="@dicaCep">
+            <input id="@($"{Prefixo}-cep")" class="form-control" inputmode="numeric" data-mascara="cep"
+                   placeholder="00000-000" @bind="Modelo.Cep" @bind:after="AoMudarCep" />
+        </Campo>
+        <Campo Rotulo="Rua" Para="@($"{Prefixo}-rua")" Colunas="7">
+            <input id="@($"{Prefixo}-rua")" class="form-control" maxlength="200" @bind="Modelo.Rua" />
+        </Campo>
+        <Campo Rotulo="Número" Para="@($"{Prefixo}-num")" Colunas="2">
+            <input id="@($"{Prefixo}-num")" class="form-control" maxlength="20" @bind="Modelo.Numero" />
+        </Campo>
+
+        <Campo Rotulo="Bairro" Para="@($"{Prefixo}-bairro")" Colunas="5">
+            <input id="@($"{Prefixo}-bairro")" class="form-control" maxlength="200" @bind="Modelo.Bairro" />
+        </Campo>
+        <Campo Rotulo="Cidade" Para="@($"{Prefixo}-cidade")" Colunas="5">
+            <input id="@($"{Prefixo}-cidade")" class="form-control" maxlength="200" @bind="Modelo.Cidade" />
+        </Campo>
+        <Campo Rotulo="UF" Colunas="2">
+            <Seletor TItem="Opcao" TValor="string" Itens="OpcoesUf"
+                     @bind-Valor="Modelo.Estado" TextoDe="o => o.Rotulo" ValorDe="o => o.Valor"
+                     Placeholder="—" />
+        </Campo>
+    </div>
+</section>
+
+@code {
+    [Parameter, EditorRequired] public IEndereco Modelo { get; set; } = default!;
+
+    /// <summary>Prefixo dos ids, para nao repetir id entre formularios.</summary>
+    [Parameter] public string Prefixo { get; set; } = "end";
+
+    private string? dicaCep;
+
+    /// <summary>
+    /// As 27 UFs. Cadastro antigo com o estado por extenso ("Rondônia")
+    /// entra como opcao extra, para nao sumir ao abrir a edicao.
+    /// </summary>
+    private List<Opcao> OpcoesUf
+    {
+        get
+        {
+            var lista = Documentos.Ufs.Select(u => new Opcao(u, u)).ToList();
+            if (!string.IsNullOrWhiteSpace(Modelo.Estado) && !Documentos.Ufs.Contains(Modelo.Estado))
+                lista.Insert(0, new Opcao(Modelo.Estado, Modelo.Estado));
+            return lista;
+        }
+    }
+
+    /// <summary>CEP completo e valido: busca e preenche rua, bairro, cidade e UF.</summary>
+    private async Task AoMudarCep()
+    {
+        dicaCep = null;
+        if (!Documentos.CepValido(Modelo.Cep)) return;
+
+        dicaCep = "Buscando endereço…";
+        StateHasChanged();
+
+        var endereco = await buscaCep.BuscarAsync(Modelo.Cep);
+        if (endereco == null)
+        {
+            dicaCep = "CEP não encontrado. Preencha o endereço.";
+            return;
+        }
+
+        Modelo.Cep = Documentos.FormatarCep(Modelo.Cep);
+        if (!string.IsNullOrWhiteSpace(endereco.Rua)) Modelo.Rua = endereco.Rua;
+        if (!string.IsNullOrWhiteSpace(endereco.Bairro)) Modelo.Bairro = endereco.Bairro;
+        Modelo.Cidade = endereco.Cidade;
+        Modelo.Estado = endereco.Uf;
+        dicaCep = null;
+    }
+}

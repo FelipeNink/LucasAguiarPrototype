@@ -40,12 +40,13 @@ namespace LucasAguiar.Data
             try
             {
                 using (var comando = _conexao.CreateCommand(@"
-                        INSERT INTO funcionario (nome_fun, telefone_fun, cpf_fun, data_nasc_fun, ctps_fun, rg_fun, email_fun, estado_fun, cidade_fun, bairro_fun, rua_fun, numero_fun, salario_fixo)
-                        VALUES (@_nome, @_telefone, @_cpf, @_dataNasc,@_ctps, @_rg, @_email, @_estado, @_cidade, @_bairro, @_rua, @_numero, @_salario)
+                        INSERT INTO funcionario (nome_fun, telefone_fun, cpf_fun, data_nasc_fun, ctps_fun, rg_fun, email_fun, cep_fun, estado_fun, cidade_fun, bairro_fun, rua_fun, numero_fun, salario_fixo)
+                        VALUES (@_nome, @_telefone, @_cpf, @_dataNasc,@_ctps, @_rg, @_email, @_cep, @_estado, @_cidade, @_bairro, @_rua, @_numero, @_salario)
                 "))
                 {
                     comando.Parameters.AddWithValue("@_salario", funcionario.SalarioFixo);
                     comando.Parameters.AddWithValue("@_email", funcionario.Email ?? (object)DBNull.Value);
+                    comando.Parameters.AddWithValue("@_cep", funcionario.Cep ?? (object)DBNull.Value);
                     comando.Parameters.AddWithValue("@_nome", funcionario.NomeFuncionario ?? (object)DBNull.Value);
                     comando.Parameters.AddWithValue("@_telefone", funcionario.Telefone ?? (object)DBNull.Value);
                     comando.Parameters.AddWithValue("@_cpf", funcionario.CPF ?? (object)DBNull.Value);
@@ -79,7 +80,7 @@ namespace LucasAguiar.Data
                 UPDATE funcionario SET
                     nome_fun = @nome, telefone_fun = @telefone, cpf_fun = @cpf,
                     data_nasc_fun = @dataNasc, ctps_fun = @ctps, rg_fun = @rg,
-                    email_fun = @email, estado_fun = @estado, cidade_fun = @cidade,
+                    email_fun = @email, cep_fun = @cep, estado_fun = @estado, cidade_fun = @cidade,
                     bairro_fun = @bairro, rua_fun = @rua, numero_fun = @numero,
                     salario_fixo = @salario
                 WHERE id_fun = @id", conexao);
@@ -91,6 +92,7 @@ namespace LucasAguiar.Data
             comando.Parameters.AddWithValue("@ctps", funcionario.CTPS ?? (object)DBNull.Value);
             comando.Parameters.AddWithValue("@rg", funcionario.RG ?? (object)DBNull.Value);
             comando.Parameters.AddWithValue("@email", funcionario.Email ?? (object)DBNull.Value);
+            comando.Parameters.AddWithValue("@cep", funcionario.Cep ?? (object)DBNull.Value);
             comando.Parameters.AddWithValue("@estado", funcionario.Estado ?? (object)DBNull.Value);
             comando.Parameters.AddWithValue("@cidade", funcionario.Cidade ?? (object)DBNull.Value);
             comando.Parameters.AddWithValue("@bairro", funcionario.Bairro ?? (object)DBNull.Value);
@@ -135,6 +137,8 @@ namespace LucasAguiar.Data
                         DataNascimento = leitor.IsDBNull(leitor.GetOrdinal("data_nasc_fun")) ? null : leitor.GetDateTime("data_nasc_fun"),
                         CTPS = leitor.IsDBNull(leitor.GetOrdinal("ctps_fun")) ? null : leitor.GetString("ctps_fun"),
                         RG = leitor.IsDBNull(leitor.GetOrdinal("rg_fun")) ? null : leitor.GetString("rg_fun"),
+                        Email = leitor.IsDBNull(leitor.GetOrdinal("email_fun")) ? null : leitor.GetString("email_fun"),
+                        Cep = leitor.IsDBNull(leitor.GetOrdinal("cep_fun")) ? null : leitor.GetString("cep_fun"),
                         Estado = leitor.IsDBNull(leitor.GetOrdinal("estado_fun")) ? null : leitor.GetString("estado_fun"),
                         Cidade = leitor.IsDBNull(leitor.GetOrdinal("cidade_fun")) ? null : leitor.GetString("cidade_fun"),
                         Bairro = leitor.IsDBNull(leitor.GetOrdinal("bairro_fun")) ? null : leitor.GetString("bairro_fun"),

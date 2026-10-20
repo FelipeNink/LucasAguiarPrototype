@@ -1,0 +1,37 @@
+@page "/funcionario/{Id:int}"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = Politicas.EditarFuncionario)]
+
+@using LucasAguiar.Models
+@inject FuncionarioDAO funcionarioDAO
+
+<PageTitle>Editar funcionário</PageTitle>
+
+@if (erro != null)
+{
+    <div class="alert alert-danger" role="alert">@erro</div>
+}
+else if (funcionario != null)
+{
+    <FormFuncionario Modelo="funcionario" Novo="false" />
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private Funcionario? funcionario;
+    private string? erro;
+
+    protected override void OnParametersSet()
+    {
+        try
+        {
+            funcionario = funcionarioDAO.BuscarPorId(Id);
+            if (funcionario == null) erro = $"Funcionário #{Id} não encontrado.";
+        }
+        catch (Exception ex)
+        {
+            erro = "Erro ao carregar o funcionário: " + ex.Message;
+        }
+    }
+}

@@ -1,124 +1,13 @@
-
-    @page "/cliente/novo"
+@page "/cliente/novo"
 @rendermode InteractiveServer
 @attribute [Authorize(Policy = Politicas.CriarCliente)]
 
 @using LucasAguiar.Models
-@using LucasAguiar.Configs
-@inject ClienteDAO ClienteDAO
-@inject PlanoDAO planoDAO
-@inject NavigationManager Navigation
 
+<PageTitle>Novo cliente</PageTitle>
 
-<a href="/cliente" class="btn btn-sm btn-outline-secondary mb-3">&#8592; Voltar</a>
-
-<h1>Novo Cliente</h1>
-
-@if (erro != null)
-{
-    <div class="alert alert-danger">@erro</div>
-}
-
-<EditForm Model="_novoCliente" OnValidSubmit="Salvar">
-    <DataAnnotationsValidator />
-    <ValidationSummary />
-
-    <div class="row">
-        <div class="col-md-6">
-            <InputText class="form-control mb-2" @bind-Value="_novoCliente.NomeCliente" placeholder="Nome" />
-            <InputText class="form-control mb-2" @bind-Value="_novoCliente.Telefone" placeholder="Telefone" />
-            <InputText class="form-control mb-2" @bind-Value="_novoCliente.CPF" placeholder="CPF" />
-            <InputDate class="form-control mb-2" @bind-Value="_novoCliente.DataNascimento" />
-            <InputText class="form-control mb-2" @bind-Value="_novoCliente.RG" placeholder="RG" />
-
-            <label>Plano</label>
-            <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesPlano"
-                     Valor="_novoCliente.IdPlano ?? 0"
-                     ValorChanged="v => _novoCliente.IdPlano = v == 0 ? null : v"
-                     TextoDe="o => o.Rotulo" ValorDe="o => o.Id"
-                     Placeholder="Selecione" Class="mb-2" />
-        </div>
-
-        <div class="col-md-6">
-            <InputText class="form-control mb-2" @bind-Value="_novoCliente.Estado" placeholder="Estado" />
-            <InputText class="form-control mb-2" @bind-Value="_novoCliente.Cidade" placeholder="Cidade" />
-            <InputText class="form-control mb-2" @bind-Value="_novoCliente.Bairro" placeholder="Bairro" />
-            <InputText class="form-control mb-2" @bind-Value="_novoCliente.Rua" placeholder="Rua" />
-            <InputText class="form-control mb-2" @bind-Value="_novoCliente.Numero" placeholder="Número" />
-        </div>
-    </div>
-
-    <div class="linha-criar">
-        <button type="button" class="btn-criar" @onclick="() => modalAberto = true">
-            + Cadastrar novo plano aqui
-        </button>
-        @if (planos.Count == 0)
-        {
-            <span class="aviso">Nenhum plano cadastrado ainda.</span>
-        }
-    </div>
-
-    <button type="submit" class="btn btn-primary mt-3">Salvar</button>
-    <a href="/cliente" class="btn btn-outline-secondary mt-3 ms-2">Cancelar</a>
-</EditForm>
-
-<CadastroRapido Visivel="modalAberto"
-                Tipo="CadastroRapido.TipoCadastro.Plano"
-                OnCriado="AoCriarPlano"
-                OnCancelado="() => modalAberto = false" />
+<FormCliente Modelo="cliente" Novo="true" />
 
 @code {
-
-    /// <summary>Sem plano e uma escolha valida, entao entra como item zero.</summary>
-    private List<OpcaoId> OpcoesPlano =>
-        new List<OpcaoId> { new(0, "Nenhum") }
-            .Concat(planos.Select(p => new OpcaoId(p.IdPlano, p.NomePlano ?? "Sem nome")))
-            .ToList();
-    private string? erro = null;
-    private bool modalAberto;
-    private Cliente _novoCliente = new();
-    private List<Plano> planos = new();
-
-    /// <summary>Recarrega e já seleciona, sem perder o cliente em digitação.</summary>
-    private void AoCriarPlano(int id)
-    {
-        try
-        {
-            erro = null;
-            planos = planoDAO.ListarTodos() ?? new();
-            _novoCliente.IdPlano = id;
-        }
-        catch (Exception ex)
-        {
-            erro = ex.Message;
-        }
-        finally
-        {
-            modalAberto = false;
-        }
-    }
-
-    protected override void OnInitialized()
-    {
-        planos = planoDAO.ListarTodos();
-    }
-
-    private void Salvar()
-    {
-        try
-        {
-            if (string.IsNullOrWhiteSpace(_novoCliente.NomeCliente))
-                throw new Exception("O nome é obrigatório.");
-
-            if (_novoCliente.IdPlano == null)
-                throw new Exception("Selecione um plano.");
-
-            ClienteDAO.Inserir(_novoCliente);
-            Navigation.NavigateTo("/cliente");
-        }
-        catch (Exception ex)
-        {
-            erro = ex.Message;
-        }
-    }
+    private readonly Cliente cliente = new();
 }

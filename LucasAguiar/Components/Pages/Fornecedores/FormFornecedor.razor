@@ -1,0 +1,111 @@
+@* Formulario de fornecedor, o mesmo para criar e editar. *@
+
+@using LucasAguiar.Configs
+@using LucasAguiar.Models
+@inject FornecedorDAO fornecedorDAO
+@inject NavigationManager Navigation
+
+<div class="form-pagina">
+    <TopoForm Titulo="@(Novo ? "Novo fornecedor" : "Editar fornecedor")" Voltar="/fornecedores" RotuloVoltar="Fornecedores" />
+
+    @if (erro != null)
+    {
+        <div class="alert alert-danger" role="alert">@erro</div>
+    }
+
+    <form @onsubmit="Salvar" novalidate>
+        <section class="cartao secao-form">
+            <h2>Dados do fornecedor</h2>
+            <div class="grade-12">
+                <Campo Rotulo="Nome" Para="frn-nome" Colunas="8" Obrigatorio="true"
+                       Erro="@(tentouSalvar && string.IsNullOrWhiteSpace(Modelo.NomeFornecedor) ? "Informe o nome." : null)">
+                    <input id="frn-nome" class="form-control" maxlength="200" @bind="Modelo.NomeFornecedor" />
+                </Campo>
+                <Campo Rotulo="CPF ou CNPJ" Para="frn-doc" Colunas="4" Erro="@Documentos.ErroCpfCnpj(Modelo.Documento)">
+                    <input id="frn-doc" class="form-control" inputmode="numeric" data-mascara="cpfcnpj"
+                           placeholder="00.000.000/0000-00" @bind="Modelo.Documento" />
+                </Campo>
+            </div>
+        </section>
+
+        <section class="cartao secao-form">
+            <h2>Contato</h2>
+            <div class="grade-12">
+                <Campo Rotulo="Telefone" Para="frn-tel" Colunas="3" Erro="@Documentos.ErroTelefone(Modelo.Telefone)">
+                    <input id="frn-tel" class="form-control" inputmode="tel" data-mascara="telefone"
+                           placeholder="(69) 99999-9999" @bind="Modelo.Telefone" />
+                </Campo>
+                <Campo Rotulo="E-mail" Para="frn-email" Colunas="5" Erro="@Documentos.ErroEmail(Modelo.Email)">
+                    <input id="frn-email" type="email" class="form-control" maxlength="200"
+                           placeholder="contato@fornecedor.com.br" @bind="Modelo.Email" />
+                </Campo>
+            </div>
+        </section>
+
+        <section class="cartao secao-form">
+            <h2>Observações</h2>
+            <div class="grade-12">
+                <Campo Rotulo="O que fornece" Para="frn-tipo" Colunas="12">
+                    <textarea id="frn-tipo" class="form-control" rows="3" maxlength="300"
+                              placeholder="Ex.: pomadas, lâminas, toalhas" @bind="Modelo.TipoProd"></textarea>
+                </Campo>
+            </div>
+        </section>
+
+        <RodapeForm Cancelar="/fornecedores" Salvando="salvando" />
+    </form>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public Fornecedor Modelo { get; set; } = new();
+    [Parameter] public bool Novo { get; set; }
+
+    private string? erro;
+    private bool tentouSalvar;
+    private bool salvando;
+
+    private void Salvar()
+    {
+        tentouSalvar = true;
+        erro = null;
+
+        var temErro =
+            string.IsNullOrWhiteSpace(Modelo.NomeFornecedor)
+            || Documentos.ErroCpfCnpj(Modelo.Documento) != null
+            || Documentos.ErroTelefone(Modelo.Telefone) != null
+            || Documentos.ErroEmail(Modelo.Email) != null;
+
+        if (temErro)
+        {
+            erro = "Confira os campos destacados.";
+            return;
+        }
+
+        try
+        {
+            salvando = true;
+
+            Modelo.NomeFornecedor = Modelo.NomeFornecedor!.Trim();
+            Modelo.Documento = Vazio(Documentos.FormatarCpfCnpj(Modelo.Documento));
+            Modelo.Telefone = Vazio(Documentos.FormatarTelefone(Modelo.Telefone));
+            Modelo.Email = Vazio(Modelo.Email);
+            Modelo.TipoProd = Vazio(Modelo.TipoProd);
+
+            if (Novo) fornecedorDAO.Inserir(Modelo);
+            else fornecedorDAO.Atualizar(Modelo);
+
+            Navigation.NavigateTo("/fornecedores");
+        }
+        catch (Exception ex)
+        {
+            erro = ex.Message;
+        }
+        finally
+        {
+            salvando = false;
+        }
+    }
+
+    private static string? Vazio(string? texto) =>
+        string.IsNullOrWhiteSpace(texto) ? null : texto.Trim();
+}

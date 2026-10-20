@@ -1,90 +1,7 @@
-.grade {
-    display: grid;
-    grid-template-columns: 340px 1fr;
-    gap: 1.5rem;
-    align-items: start;
-}
-
-.bloco {
-    background: var(--superficie);
-    border: 1px solid var(--borda-suave);
-    border-radius: 10px;
-    padding: 1.25rem;
-    box-shadow: 0 1px 3px rgba(16, 24, 40, 0.06);
-}
-
-.bloco-titulo {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    margin: 0 0 1rem;
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: var(--texto);
-}
-
-.passo {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 1.5rem;
-    height: 1.5rem;
-    border-radius: 50%;
-    background: var(--marca);
-    color: var(--sobre-marca);
-    font-size: 0.78rem;
-    font-weight: 700;
-}
-
-.rotulo {
-    display: block;
-    margin-bottom: 0.3rem;
-    font-size: 0.78rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-    color: var(--texto-fraco);
-}
-
-.obrigatorio {
-    color: var(--perigo-escuro);
-}
-
 .explicacao {
     margin: 0 0 1rem;
     font-size: 0.85rem;
     color: var(--texto-3);
-}
-
-.aviso {
-    font-size: 0.85rem;
-    color: var(--texto-3);
-}
-
-.linha-criar {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    flex-wrap: wrap;
-    margin-top: 0.85rem;
-}
-
-.btn-criar {
-    padding: 0.3rem 0.7rem;
-    background: none;
-    border: 1px dashed var(--marca);
-    border-radius: 6px;
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: var(--marca-escura);
-    cursor: pointer;
-    transition: background 0.15s, color 0.15s;
-}
-
-.btn-criar:hover {
-    background: var(--marca);
-    border-style: solid;
-    color: var(--sobre-marca);
 }
 
 /* ---------- dica de preco ---------- */
@@ -325,24 +242,7 @@
     color: var(--perigo-escuro);
 }
 
-/* ---------- acoes ---------- */
-
-.acoes-finais {
-    display: flex;
-    gap: 0.75rem;
-    margin: 1.5rem 0 2.5rem;
-}
-
-.btn-salvar {
-    padding: 0.6rem 2rem;
-    font-weight: 700;
-}
-
 @media (max-width: 1000px) {
-    .grade {
-        grid-template-columns: 1fr;
-    }
-
     .seletor {
         grid-template-columns: 1fr;
         grid-template-areas:
@@ -363,4 +263,9 @@
     font-family: var(--fonte-titulo);
     font-size: 17px;
     font-variant-numeric: tabular-nums;
+}
+
+/* "Cadastrar servico/produto" logo abaixo do montador. */
+.acao-montador {
+    margin: 6px 0 14px;
 }

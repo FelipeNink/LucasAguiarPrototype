@@ -54,7 +54,8 @@ namespace LucasAguiar.Data
                     comando.Parameters.AddWithValue("@_valor", produto.Valor);
                     comando.Parameters.AddWithValue("@_descricao", produto.Descricao ?? (object)DBNull.Value);
                     comando.Parameters.AddWithValue("@_marca", produto.Marca ?? (object)DBNull.Value);
-                    comando.Parameters.AddWithValue("@_idForn", produto.IdFornecedor);
+                    comando.Parameters.AddWithValue("@_idForn",
+                        produto.IdFornecedor > 0 ? produto.IdFornecedor : (object)DBNull.Value);
 
                     comando.ExecuteNonQuery();
                 }

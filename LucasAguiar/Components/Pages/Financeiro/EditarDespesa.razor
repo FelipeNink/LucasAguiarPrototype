@@ -1,0 +1,36 @@
+@page "/despesa/{Id:int}"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = Politicas.EditarDespesa)]
+
+@inject DespesaDAO despesaDAO
+
+<PageTitle>Editar despesa</PageTitle>
+
+@if (erro != null)
+{
+    <div class="alert alert-danger" role="alert">@erro</div>
+}
+else if (despesa != null)
+{
+    <FormDespesa Modelo="despesa" Novo="false" />
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private Despesa? despesa;
+    private string? erro;
+
+    protected override void OnParametersSet()
+    {
+        try
+        {
+            despesa = despesaDAO.BuscarPorId(Id);
+            if (despesa == null) erro = $"Despesa #{Id} não encontrada.";
+        }
+        catch (Exception ex)
+        {
+            erro = "Erro ao carregar a despesa: " + ex.Message;
+        }
+    }
+}

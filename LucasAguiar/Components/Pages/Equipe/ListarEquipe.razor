@@ -12,32 +12,30 @@
 
 <PageTitle>Equipe</PageTitle>
 
-<h1>Equipe</h1>
+<h1 class="titulo-listagem">Gestão de Equipe</h1>
 
-@* Uma linha de ferramentas: as duas acoes e a busca. No celular os dois
-   botoes dividem a linha e a busca desce inteira, em vez de tudo
-   espremer. *@
-<div class="barra-acoes barra-equipe">
-    @if (permissao.Pode("equipe", Acao.Criar))
-    {
-        <NavLink href="/equipe/novo" class="btn-novo">Adicionar membro</NavLink>
-    }
-
+<div class="barra-acoes barra-listagem">
     @if (permissao.Pode("equipe", Acao.Exportar))
     {
-        <a href="/relatorio/equipe" class="btn-pdf" data-enhance-nav="false">Relatório PDF</a>
+        <BotaoExportar Href="/relatorio/equipe" />
+        <BotaoExportar Tipo="BotaoExportar.Formato.Excel" Href="/excel/equipe" />
     }
 
-    <div class="busca-equipe">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
-             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.3-4.3" />
-        </svg>
-        <input class="form-control" type="search" placeholder="Buscar por nome, usuário ou função"
+    @if (permissao.Pode("equipe", Acao.Criar))
+    {
+        <NavLink href="/equipe/novo" class="btn-novo btn-cadastrar">Cadastrar membro</NavLink>
+    }
+</div>
+
+@* ---------- filtros ---------- *@
+<section class="filtros">
+    <div class="campo campo-largo">
+        <label>Nome, usuário ou função</label>
+        <input class="form-control" type="search" placeholder="Buscar membro"
                aria-label="Buscar membro" value="@busca"
                @oninput="AoBuscar" />
     </div>
-</div>
+</section>
 
 @if (!string.IsNullOrEmpty(aviso))
 {

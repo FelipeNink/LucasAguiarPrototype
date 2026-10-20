@@ -1,0 +1,156 @@
+@* Formulario de produto, o mesmo para criar e editar. *@
+
+@using LucasAguiar.Models
+@using LucasAguiar.Services
+@inject ProdutoDAO produtoDAO
+@inject FornecedorDAO fornecedorDAO
+@inject AuthenticationService auth
+@inject NavigationManager Navigation
+
+<div class="form-pagina">
+    <TopoForm Titulo="@(Novo ? "Novo produto" : "Editar produto")" Voltar="/produto" RotuloVoltar="Produtos" />
+
+    @if (erro != null)
+    {
+        <div class="alert alert-danger" role="alert">@erro</div>
+    }
+
+    <form @onsubmit="Salvar" novalidate>
+        <section class="cartao secao-form">
+            <h2>Produto</h2>
+            <div class="grade-12">
+                <Campo Rotulo="Nome" Para="prd-nome" Colunas="8" Obrigatorio="true"
+                       Erro="@(tentouSalvar && string.IsNullOrWhiteSpace(Modelo.NomeProduto) ? "Informe o nome." : null)">
+                    <input id="prd-nome" class="form-control" maxlength="200" placeholder="Ex.: Pomada modeladora 120 g"
+                           @bind="Modelo.NomeProduto" />
+                </Campo>
+                <Campo Rotulo="Marca" Para="prd-marca" Colunas="4">
+                    <input id="prd-marca" class="form-control" maxlength="200" @bind="Modelo.Marca" />
+                </Campo>
+                <Campo Rotulo="Descrição" Para="prd-descricao" Colunas="12">
+                    <textarea id="prd-descricao" class="form-control" rows="3" maxlength="200"
+                              @bind="Modelo.Descricao"></textarea>
+                </Campo>
+            </div>
+        </section>
+
+        <section class="cartao secao-form">
+            <h2>Estoque e preço</h2>
+            <div class="grade-12">
+                <Campo Rotulo="Quantidade" Para="prd-qtd" Colunas="2"
+                       Erro="@(Modelo.Quantidade < 0 ? "Não pode ser negativa." : null)">
+                    <input id="prd-qtd" type="number" min="0" class="form-control" @bind="Modelo.Quantidade" />
+                </Campo>
+                <Campo Rotulo="Preço de venda" Para="prd-valor" Colunas="3">
+                    <InputMoeda Id="prd-valor" Valor="(decimal)Modelo.Valor"
+                                ValorChanged="v => Modelo.Valor = (float)v" />
+                </Campo>
+            </div>
+        </section>
+
+        <section class="cartao secao-form">
+            <h2>Fornecedor</h2>
+            <div class="grade-12">
+                <Campo Rotulo="Fornecedor" Colunas="4"
+                       Dica="@(fornecedores.Count == 0 ? "Nenhum fornecedor cadastrado ainda." : null)">
+                    <ChildContent>
+                        <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesFornecedor"
+                                 @bind-Valor="Modelo.IdFornecedor" TextoDe="o => o.Rotulo" ValorDe="o => o.Id" />
+                    </ChildContent>
+                    <Acao>
+                        <button type="button" class="acao-campo" @onclick="() => modalFornecedor = true">
+                            + Cadastrar fornecedor
+                        </button>
+                    </Acao>
+                </Campo>
+            </div>
+        </section>
+
+        <RodapeForm Cancelar="/produto" Salvando="salvando" />
+    </form>
+</div>
+
+<CadastroRapido Visivel="modalFornecedor"
+                Tipo="CadastroRapido.TipoCadastro.Fornecedor"
+                OnCriado="AoCriarFornecedor"
+                OnCancelado="() => modalFornecedor = false" />
+
+@code {
+    [Parameter, EditorRequired] public Produto Modelo { get; set; } = new();
+    [Parameter] public bool Novo { get; set; }
+
+    private List<Fornecedor> fornecedores = new();
+    private string? erro;
+    private bool tentouSalvar;
+    private bool salvando;
+    private bool modalFornecedor;
+
+    private List<OpcaoId> OpcoesFornecedor =>
+        new List<OpcaoId> { new(0, "Nenhum") }
+            .Concat(fornecedores.Select(f => new OpcaoId(f.IdFornecedor, f.NomeFornecedor ?? "Sem nome")))
+            .ToList();
+
+    protected override void OnInitialized()
+    {
+        try
+        {
+            fornecedores = fornecedorDAO.ListarTodos();
+        }
+        catch (Exception ex)
+        {
+            erro = "Erro ao carregar os fornecedores: " + ex.Message;
+        }
+    }
+
+    /// <summary>Recarrega e já seleciona, sem perder o produto em digitação.</summary>
+    private void AoCriarFornecedor(int id)
+    {
+        try
+        {
+            erro = null;
+            fornecedores = fornecedorDAO.ListarTodos() ?? new();
+            Modelo.IdFornecedor = id;
+        }
+        catch (Exception ex)
+        {
+            erro = ex.Message;
+        }
+        finally
+        {
+            modalFornecedor = false;
+        }
+    }
+
+    private void Salvar()
+    {
+        tentouSalvar = true;
+        erro = null;
+
+        if (string.IsNullOrWhiteSpace(Modelo.NomeProduto) || Modelo.Quantidade < 0)
+        {
+            erro = "Confira os campos destacados.";
+            return;
+        }
+
+        try
+        {
+            salvando = true;
+            Modelo.NomeProduto = Modelo.NomeProduto.Trim();
+
+            if (Novo) produtoDAO.Inserir(Modelo);
+            // Mudar a quantidade aqui vira um ajuste no extrato do
+            // estoque, com o nome de quem editou.
+            else produtoDAO.Atualizar(Modelo, auth.GetUsuarioNome());
+
+            Navigation.NavigateTo("/produto");
+        }
+        catch (Exception ex)
+        {
+            erro = ex.Message;
+        }
+        finally
+        {
+            salvando = false;
+        }
+    }
+}

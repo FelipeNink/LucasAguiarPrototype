@@ -78,6 +78,9 @@ namespace LucasAguiar.Models
 
         // Preenchidos por join, para exibicao
         public string? NomeCliente { get; set; }
+
+        /// <summary>So o BuscarPorId preenche: e para o comprovante no WhatsApp.</summary>
+        public string? TelefoneCliente { get; set; }
         public string? NomeFuncionario { get; set; }
 
         public decimal Subtotal => Itens.Sum(i => i.ValorTotal);

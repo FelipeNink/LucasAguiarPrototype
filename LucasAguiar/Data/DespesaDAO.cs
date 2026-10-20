@@ -87,6 +87,20 @@ namespace LucasAguiar.Data
             comando.ExecuteNonQuery();
         }
 
+        public Despesa? BuscarPorId(int id)
+        {
+            using var conexao = _conexao.GetConnection();
+            using var comando = new MySqlCommand(@"
+                SELECT d.*, f.nome_forn
+                FROM despesa d
+                LEFT JOIN fornecedor f ON f.id_forn = d.id_forn_fk
+                WHERE d.id_desp = @id", conexao);
+            comando.Parameters.AddWithValue("@id", id);
+
+            using var leitor = comando.ExecuteReader();
+            return leitor.Read() ? Ler(leitor) : null;
+        }
+
         public void Excluir(int id)
         {
             using var conexao = _conexao.GetConnection();

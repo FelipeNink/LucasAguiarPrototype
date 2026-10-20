@@ -1,0 +1,36 @@
+@page "/agendamento/{Id:int}"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = Politicas.EditarAgendamento)]
+
+@inject AgendamentoDAO agendamentoDAO
+
+<PageTitle>Editar agendamento</PageTitle>
+
+@if (erro != null)
+{
+    <div class="alert alert-danger" role="alert">@erro</div>
+}
+else if (agendamento != null)
+{
+    <TelaAgendamento Modelo="agendamento" Novo="false" />
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private Agendamento? agendamento;
+    private string? erro;
+
+    protected override void OnParametersSet()
+    {
+        try
+        {
+            agendamento = agendamentoDAO.BuscarPorId(Id);
+            if (agendamento == null) erro = $"Agendamento #{Id} não encontrado.";
+        }
+        catch (Exception ex)
+        {
+            erro = "Erro ao carregar o agendamento: " + ex.Message;
+        }
+    }
+}

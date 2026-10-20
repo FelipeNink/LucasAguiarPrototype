@@ -1,0 +1,11 @@
+@page "/venda/{Id:int}"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = Politicas.EditarVenda)]
+
+<PageTitle>Editar venda</PageTitle>
+
+<TelaVenda IdVendaEdicao="Id" />
+
+@code {
+    [Parameter] public int Id { get; set; }
+}
