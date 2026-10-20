@@ -118,6 +118,117 @@
     letter-spacing: 0.2em;
     color: var(--lateral-fraco);
 }
+/* ---------- grupo recolhivel ----------
+   O rotulo virou botao: setinha a direita, contagem de itens quando
+   fechado e um ponto laranja se a pagina aberta estiver ali dentro. */
+
+button.grupo-rotulo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 26px;
+    margin: 0;
+    background: none;
+    border: none;
+    border-radius: 7px;
+    font-family: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: color 0.15s, background 0.15s;
+}
+
+button.grupo-rotulo > span:first-child {
+    flex: 1;
+}
+
+button.grupo-rotulo:hover {
+    color: var(--lateral-texto);
+    background: var(--lateral-ativo-fundo);
+}
+
+button.grupo-rotulo:focus-visible {
+    outline: 2px solid var(--marca);
+    outline-offset: 1px;
+}
+
+.grupo.aberto button.grupo-rotulo {
+    color: var(--lateral-texto);
+}
+
+.grupo-rotulo .seta {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transform: rotate(-90deg);
+    transition: transform 0.2s ease;
+}
+
+.grupo.aberto .grupo-rotulo .seta {
+    transform: rotate(0deg);
+}
+
+.grupo-contagem {
+    min-width: 20px;
+    padding: 1px 6px;
+    border-radius: 999px;
+    background: var(--lateral-linha);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0;
+    text-align: center;
+    color: var(--lateral-fraco);
+}
+
+.ponto-atual {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--marca);
+    box-shadow: 0 0 0 3px rgba(240, 101, 26, 0.18);
+}
+
+/* Altura animada pelo grid: 0fr fechado, 1fr aberto. */
+.grupo-itens {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.22s ease;
+}
+
+.grupo.aberto .grupo-itens {
+    grid-template-rows: 1fr;
+}
+
+.grupo-conteudo {
+    min-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: opacity 0.18s ease;
+}
+
+.grupo.aberto .grupo-conteudo {
+    opacity: 1;
+}
+
+/* Fechados ficam juntos, como uma lista de secoes; o respiro maior
+   so aparece depois de um grupo aberto. */
+.grupo:not(.aberto) + .grupo {
+    margin-top: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .grupo-itens,
+    .grupo-conteudo,
+    .grupo-rotulo .seta {
+        transition: none;
+    }
+}
+
 .nav-item {
     padding: 0;
 }

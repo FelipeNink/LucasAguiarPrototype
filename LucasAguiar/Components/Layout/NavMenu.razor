@@ -4,6 +4,7 @@
 @inject NavigationManager Navigation
 @inject AuthenticationService auth
 @inject Autorizacao permissao
+@implements IDisposable
 
 <div class="sidebar-header">
     <Marca Variante="Marca.Tipo.Compacta" />
@@ -50,8 +51,21 @@
 
         @if (AlgumaDe("painel", "vendas", "agendamentos", "caixa"))
         {
-            <div class="grupo">
-                <span class="grupo-rotulo">Operação</span>
+            <div class="grupo @(Aberto("Operação") ? "aberto" : "")">
+                <button type="button" class="grupo-rotulo" aria-expanded="@Aberto("Operação")"
+                        @onclick='() => Alternar("Operação")'>
+                    <span>Operação</span>
+                    @if (!Aberto("Operação"))
+                    {
+                        @if (GrupoAtual == "Operação")
+                        {
+                            <i class="ponto-atual" title="A página aberta está aqui"></i>
+                        }
+                        <span class="grupo-contagem">@(Contagem("painel", "vendas", "agendamentos", "caixa"))</span>
+                    }
+                    <svg class="seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+                </button>
+                <div class="grupo-itens"><div class="grupo-conteudo">
 
                 @if (Pode("painel"))
                 {
@@ -104,13 +118,27 @@
                         </NavLink>
                     </div>
                 }
+                </div></div>
             </div>
         }
 
         @if (AlgumaDe("relatorios", "fluxo", "despesas", "comissoes", "folha", "compras"))
         {
-            <div class="grupo">
-                <span class="grupo-rotulo">Financeiro</span>
+            <div class="grupo @(Aberto("Financeiro") ? "aberto" : "")">
+                <button type="button" class="grupo-rotulo" aria-expanded="@Aberto("Financeiro")"
+                        @onclick='() => Alternar("Financeiro")'>
+                    <span>Financeiro</span>
+                    @if (!Aberto("Financeiro"))
+                    {
+                        @if (GrupoAtual == "Financeiro")
+                        {
+                            <i class="ponto-atual" title="A página aberta está aqui"></i>
+                        }
+                        <span class="grupo-contagem">@(Contagem("relatorios", "fluxo", "despesas", "comissoes", "folha", "compras"))</span>
+                    }
+                    <svg class="seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+                </button>
+                <div class="grupo-itens"><div class="grupo-conteudo">
 
                 @* Primeiro da secao: depois do painel, e a tela que o dono
                    mais abre. *@
@@ -191,14 +219,29 @@
                         </NavLink>
                     </div>
                 }
+                </div></div>
             </div>
         }
 
         @if (AlgumaDe("clientes", "servicos", "produtos", "estoque", "planos",
                       "assinaturas", "funcionarios", "fornecedores"))
         {
-            <div class="grupo">
-                <span class="grupo-rotulo">Cadastros</span>
+            <div class="grupo @(Aberto("Cadastros") ? "aberto" : "")">
+                <button type="button" class="grupo-rotulo" aria-expanded="@Aberto("Cadastros")"
+                        @onclick='() => Alternar("Cadastros")'>
+                    <span>Cadastros</span>
+                    @if (!Aberto("Cadastros"))
+                    {
+                        @if (GrupoAtual == "Cadastros")
+                        {
+                            <i class="ponto-atual" title="A página aberta está aqui"></i>
+                        }
+                        <span class="grupo-contagem">@(Contagem("clientes", "servicos", "produtos", "estoque", "planos",
+                      "assinaturas", "funcionarios", "fornecedores"))</span>
+                    }
+                    <svg class="seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+                </button>
+                <div class="grupo-itens"><div class="grupo-conteudo">
 
                 @if (Pode("clientes"))
                 {
@@ -305,6 +348,7 @@
                         </NavLink>
                     </div>
                 }
+                </div></div>
             </div>
         }
 
@@ -312,8 +356,21 @@
            secao inteira nao existe. *@
         @if (AlgumaDe("equipe", "funcoes", "logs"))
         {
-            <div class="grupo">
-                <span class="grupo-rotulo">Sistema</span>
+            <div class="grupo @(Aberto("Sistema") ? "aberto" : "")">
+                <button type="button" class="grupo-rotulo" aria-expanded="@Aberto("Sistema")"
+                        @onclick='() => Alternar("Sistema")'>
+                    <span>Sistema</span>
+                    @if (!Aberto("Sistema"))
+                    {
+                        @if (GrupoAtual == "Sistema")
+                        {
+                            <i class="ponto-atual" title="A página aberta está aqui"></i>
+                        }
+                        <span class="grupo-contagem">@(Contagem("equipe", "funcoes", "logs"))</span>
+                    }
+                    <svg class="seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+                </button>
+                <div class="grupo-itens"><div class="grupo-conteudo">
 
                 @if (Pode("equipe"))
                 {
@@ -353,6 +410,7 @@
                         </NavLink>
                     </div>
                 }
+                </div></div>
             </div>
         }
     </nav>
@@ -433,7 +491,56 @@
     {
         await auth.PrepararAsync();
         await permissao.CarregarAsync();
+
+        // Ao entrar, so Operacao aberta -- e a secao da pagina, se for outra.
+        abertos.Add(Catalogo.Operacao);
+        if (GrupoAtual != null) abertos.Add(GrupoAtual);
+
+        Navigation.LocationChanged += AoNavegar;
     }
+
+    // ---------- grupos recolhiveis ----------
+
+    /// <summary>Secoes abertas. Vive com o circuito: recarregar a pagina volta ao inicio.</summary>
+    private readonly HashSet<string> abertos = new();
+
+    private bool Aberto(string grupo) => abertos.Contains(grupo);
+
+    private void Alternar(string grupo)
+    {
+        if (!abertos.Remove(grupo)) abertos.Add(grupo);
+    }
+
+    /// <summary>Quantos itens a pessoa ve na secao fechada.</summary>
+    private int Contagem(params string[] telas) => telas.Count(Pode);
+
+    /// <summary>Secao da pagina aberta, pelas rotas do catalogo.</summary>
+    private string? GrupoAtual
+    {
+        get
+        {
+            var caminho = "/" + Navigation.ToBaseRelativePath(Navigation.Uri).Split('?', '#')[0].TrimEnd('/');
+
+            return Catalogo.Telas
+                .FirstOrDefault(t => t.Rotas.Any(r => r == "/"
+                    ? caminho == "/"
+                    : caminho.Equals(r, StringComparison.OrdinalIgnoreCase)
+                      || caminho.StartsWith(r + "/", StringComparison.OrdinalIgnoreCase)))
+                ?.Secao;
+        }
+    }
+
+    /// <summary>Indo para outra secao, ela abre; as que estavam abertas continuam.</summary>
+    private void AoNavegar(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
+    {
+        var grupo = GrupoAtual;
+        if (grupo == null || abertos.Contains(grupo)) return;
+
+        abertos.Add(grupo);
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose() => Navigation.LocationChanged -= AoNavegar;
 
     /// <summary>
     /// O item aparece? Esconder o que a pessoa nao pode abrir evita o
