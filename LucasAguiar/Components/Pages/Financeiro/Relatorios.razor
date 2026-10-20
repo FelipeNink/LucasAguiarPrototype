@@ -9,33 +9,17 @@
 @inject PainelDAO painelDAO
 @inject Autorizacao permissao
 @inject AuthenticationService auth
+@inject NavigationManager Navigation
 
 <PageTitle>Relatórios</PageTitle>
 
-<div class="cabecalho-painel">
-    <div>
-        <span class="linha-titulo">@RotuloPeriodo · @Intervalo.De.ToString("dd/MM") a @Intervalo.Ate.AddDays(-1).ToString("dd/MM/yyyy")</span>
-        <h1 class="titulo-painel">Relatórios</h1>
-    </div>
-
-    <div class="atalhos-periodo">
-        <button type="button" class="@(periodo == 0 ? "ativo" : "")" @onclick="() => TrocarPeriodo(0)">Hoje</button>
-        <button type="button" class="@(periodo == 7 ? "ativo" : "")" @onclick="() => TrocarPeriodo(7)">7 dias</button>
-        <button type="button" class="@(periodo == 30 ? "ativo" : "")" @onclick="() => TrocarPeriodo(30)">30 dias</button>
-        <button type="button" class="@(periodo == -1 ? "ativo" : "")" @onclick="() => TrocarPeriodo(-1)">Este mês</button>
-        <button type="button" class="@(periodo == -2 ? "ativo" : "")" @onclick="() => TrocarPeriodo(-2)">Mês passado</button>
-    </div>
-</div>
+<h1 class="titulo-listagem">Relatórios</h1>
 
 @if (podeExportar)
 {
-    <div class="barra-acoes">
-        <a href="@UrlExportacao("/relatorio/gerencial")" class="btn-pdf" data-enhance-nav="false">
-            Relatório PDF
-        </a>
-        <a href="@UrlExportacao("/excel/gerencial")" class="btn-pdf" data-enhance-nav="false">
-            Excel
-        </a>
+    <div class="barra-acoes barra-listagem">
+        <BotaoExportar Href="@UrlExportacao("/relatorio/gerencial")" />
+        <BotaoExportar Tipo="BotaoExportar.Formato.Excel" Href="@UrlExportacao("/excel/gerencial")" />
     </div>
 }
 
@@ -44,290 +28,379 @@
     <div class="alert alert-danger" role="alert">@erro</div>
 }
 
+@* ---------- qual relatorio ---------- *@
+<nav class="escolha-relatorio" aria-label="Escolha o relatório">
+    @foreach (var r in Opcoes)
+    {
+        <button type="button" class="opcao-relatorio @(relatorio == r.Chave ? "ativa" : "")"
+                aria-pressed="@(relatorio == r.Chave)" @onclick="() => Escolher(r.Chave)">
+            <strong>@r.Nome</strong>
+            <span>@r.Descricao</span>
+        </button>
+    }
+</nav>
+
+@* ---------- filtros ---------- *@
+@if (relatorio == Inativos)
+{
+    <section class="filtros">
+        <div class="campo">
+            <label for="dias">Dias sem vir</label>
+            <input id="dias" type="number" class="form-control" min="7" max="730" step="1"
+                   @bind="diasInatividade" />
+        </div>
+        <div class="campo-acoes">
+            <button type="button" class="btn btn-primary" @onclick="Carregar">Filtrar</button>
+        </div>
+    </section>
+}
+else
+{
+    <section class="filtros">
+        <div class="campo">
+            <label>De</label>
+            <input type="date" class="form-control" @bind="de" />
+        </div>
+        <div class="campo">
+            <label>Até</label>
+            <input type="date" class="form-control" @bind="ate" />
+        </div>
+        <div class="campo-acoes">
+            <button type="button" class="btn btn-primary" @onclick="Aplicar">Filtrar</button>
+        </div>
+    </section>
+
+    <div class="atalhos-periodo">
+        <button type="button" class="@(periodo == 0 ? "ativo" : "")" @onclick="() => TrocarPeriodo(0)">Hoje</button>
+        <button type="button" class="@(periodo == 7 ? "ativo" : "")" @onclick="() => TrocarPeriodo(7)">7 dias</button>
+        <button type="button" class="@(periodo == 30 ? "ativo" : "")" @onclick="() => TrocarPeriodo(30)">30 dias</button>
+        <button type="button" class="@(periodo == -1 ? "ativo" : "")" @onclick="() => TrocarPeriodo(-1)">Este mês</button>
+        <button type="button" class="@(periodo == -2 ? "ativo" : "")" @onclick="() => TrocarPeriodo(-2)">Mês passado</button>
+    </div>
+}
+
 @if (carregando)
 {
     <p class="text-muted">Apurando…</p>
 }
-else
+else if (relatorio == Faturamento)
 {
-    @* ---------- 1 e 2: faturamento e ticket medio ---------- *@
-    <section class="bloco-relatorio">
-        <header>
-            <h2>Faturamento</h2>
-            <span>Venda cancelada não entra em nenhum número desta tela.</span>
-        </header>
-
-        <div class="indicadores">
-            <div class="indicador receita">
-                <span class="rotulo">Faturamento</span>
-                <strong class="valor">@resumo.Receita.ToString("C")</strong>
-                <span class="detalhe">@resumo.QuantidadeVendas atendimento(s)</span>
-            </div>
-            <div class="indicador">
-                <span class="rotulo">Ticket médio</span>
-                <strong class="valor">@resumo.TicketMedio.ToString("C")</strong>
-                <span class="detalhe">por atendimento</span>
-            </div>
-            <div class="indicador comissao">
-                <span class="rotulo">Comissões</span>
-                <strong class="valor">@resumo.Comissoes.ToString("C")</strong>
-                <span class="detalhe">geradas no período</span>
-            </div>
-            <div class="indicador @(resumo.Lucro >= 0 ? "lucro" : "prejuizo")">
-                <span class="rotulo">@(resumo.Lucro >= 0 ? "Lucro" : "Prejuízo")</span>
-                <strong class="valor">@resumo.Lucro.ToString("C")</strong>
-                <span class="detalhe">receita − despesas − comissões</span>
-            </div>
+    <div class="resumo">
+        <div class="cartao-resumo">
+            <span class="rotulo">Faturamento</span>
+            <strong class="valor">@resumo.Receita.ToString("C")</strong>
         </div>
-
-        <div class="tabela fixa">
-            <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>Profissional</th>
-                        <th class="al-dir">Atend.</th>
-                        <th class="al-dir opcional">Serviços</th>
-                        <th class="al-dir opcional">Produtos</th>
-                        <th class="al-dir">Ticket</th>
-                        <th class="al-dir">Faturamento</th>
-                        <th class="col-participacao">Fatia</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (profissionais.Count == 0)
-                    {
-                        <tr><td colspan="7" class="text-center text-muted">Nenhuma venda no período.</td></tr>
-                    }
-                    else
-                    {
-                        @foreach (var linha in profissionais)
-                        {
-                            <tr>
-                                <td><strong>@linha.Nome</strong></td>
-                                <td class="al-dir">@linha.Atendimentos</td>
-                                <td class="al-dir opcional dinheiro">@linha.Servicos.ToString("C")</td>
-                                <td class="al-dir opcional dinheiro">@linha.Produtos.ToString("C")</td>
-                                <td class="al-dir dinheiro">@linha.TicketMedio.ToString("C")</td>
-                                <td class="al-dir dinheiro"><strong>@linha.Faturamento.ToString("C")</strong></td>
-                                <td class="col-participacao">
-                                    <span class="barra" title="@linha.Participacao.ToString("0.#")% do período">
-                                        <i style="width: @linha.Participacao.ToString("0.#", Invariante)%"></i>
-                                    </span>
-                                    <span class="percentual">@linha.Participacao.ToString("0.#")%</span>
-                                </td>
-                            </tr>
-                        }
-                    }
-                </tbody>
-            </table>
+        <div class="cartao-resumo">
+            <span class="rotulo">Atendimentos</span>
+            <strong class="valor">@resumo.QuantidadeVendas</strong>
         </div>
-    </section>
-
-    @* ---------- 3: mais vendidos ---------- *@
-    <div class="par-relatorios">
-        <section class="bloco-relatorio">
-            <header>
-                <h2>Serviços mais vendidos</h2>
-                <span>Por quantidade no período.</span>
-            </header>
-            @RenderItens(servicos, "Nenhum serviço vendido no período.")
-        </section>
-
-        <section class="bloco-relatorio">
-            <header>
-                <h2>Produtos mais vendidos</h2>
-                <span>Por quantidade no período.</span>
-            </header>
-            @RenderItens(produtos, "Nenhum produto vendido no período.")
-        </section>
+        <div class="cartao-resumo">
+            <span class="rotulo">Ticket médio</span>
+            <strong class="valor">@resumo.TicketMedio.ToString("C")</strong>
+        </div>
+        <div class="cartao-resumo comissao">
+            <span class="rotulo">Comissões</span>
+            <strong class="valor">@resumo.Comissoes.ToString("C")</strong>
+        </div>
+        <div class="cartao-resumo @(resumo.Lucro >= 0 ? "" : "prejuizo")">
+            <span class="rotulo">@(resumo.Lucro >= 0 ? "Lucro" : "Prejuízo")</span>
+            <strong class="valor">@resumo.Lucro.ToString("C")</strong>
+        </div>
     </div>
 
-    @* ---------- 4: faltas ---------- *@
-    <section class="bloco-relatorio">
-        <header>
-            <h2>Faltas</h2>
-            <span>
-                O sistema não tem status "faltou": falta aqui é o agendamento cujo
-                horário já passou e que ninguém concluiu nem cancelou. Quem desmarcou
-                avisando entra como cancelado, à parte.
-            </span>
-        </header>
+    <p class="nota-relatorio">
+        Venda cancelada não entra. Lucro aqui é receita − despesas − comissões; o resultado
+        completo, com taxas e custo dos produtos, fica em <a href="/fluxo-caixa" class="link-texto">Fluxo de caixa</a>.
+    </p>
 
-        <div class="indicadores">
-            <div class="indicador @(faltas.Taxa >= 20 ? "prejuizo" : "lucro")">
-                <span class="rotulo">Taxa de faltas</span>
-                <strong class="valor">@faltas.Taxa.ToString("0.#")%</strong>
-                <span class="detalhe">sobre @faltas.Encerrados horário(s) encerrado(s)</span>
-            </div>
-            <div class="indicador">
-                <span class="rotulo">Faltas</span>
-                <strong class="valor">@faltas.Faltas</strong>
-                <span class="detalhe">não apareceram</span>
-            </div>
-            <div class="indicador">
-                <span class="rotulo">Concluídos</span>
-                <strong class="valor">@faltas.Concluidos</strong>
-                <span class="detalhe">atendidos</span>
-            </div>
-            <div class="indicador">
-                <span class="rotulo">Cancelados</span>
-                <strong class="valor">@faltas.Cancelados</strong>
-                <span class="detalhe">desmarcados com aviso</span>
-            </div>
-        </div>
-
-        @if (quemFaltou.Count > 0)
-        {
-            <div class="tabela fixa">
-                <table class="table table-striped">
-                    <thead>
+    <div class="tabela fixa">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Profissional</th>
+                    <th class="al-dir">Atend.</th>
+                    <th class="al-dir opcional">Serviços</th>
+                    <th class="al-dir opcional">Produtos</th>
+                    <th class="al-dir">Ticket</th>
+                    <th class="al-dir">Faturamento</th>
+                    <th class="col-participacao">Fatia</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (profissionais.Count == 0)
+                {
+                    <tr><td colspan="7" class="text-center text-muted">Nenhuma venda no período.</td></tr>
+                }
+                else
+                {
+                    @foreach (var linha in profissionais)
+                    {
                         <tr>
-                            <th>Quando</th>
-                            <th>Cliente</th>
-                            <th class="opcional">Telefone</th>
-                            <th class="opcional">Profissional</th>
-                            <th class="col-acoes"></th>
+                            <td><strong>@linha.Nome</strong></td>
+                            <td class="al-dir">@linha.Atendimentos</td>
+                            <td class="al-dir opcional dinheiro">@linha.Servicos.ToString("C")</td>
+                            <td class="al-dir opcional dinheiro">@linha.Produtos.ToString("C")</td>
+                            <td class="al-dir dinheiro">@linha.TicketMedio.ToString("C")</td>
+                            <td class="al-dir dinheiro"><strong>@linha.Faturamento.ToString("C")</strong></td>
+                            <td class="col-participacao">
+                                <span class="barra" title="@linha.Participacao.ToString("0.#")% do período">
+                                    <i style="width: @linha.Participacao.ToString("0.#", Invariante)%"></i>
+                                </span>
+                                <span class="percentual">@linha.Participacao.ToString("0.#")%</span>
+                            </td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var falta in quemFaltou)
-                        {
-                            <tr>
-                                <td>@falta.Quando.ToString("dd/MM 'às' HH:mm")</td>
-                                <td><strong>@falta.Cliente</strong></td>
-                                <td class="opcional">@(string.IsNullOrWhiteSpace(falta.Telefone) ? "—" : falta.Telefone)</td>
-                                <td class="opcional">@falta.Profissional</td>
-                                <td class="col-acoes">
-                                    <BotaoWhatsApp Telefone="@falta.Telefone" Titulo="Oferecer remarcação no WhatsApp"
-                                                   Mensagem="@WhatsApp.RemarcarFalta(falta.Cliente, falta.Quando)" />
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-        }
-    </section>
-
-    @* ---------- 6: ocupacao ---------- *@
-    <section class="bloco-relatorio">
-        <header>
-            <h2>Ocupação da agenda</h2>
-            <span>
-                Minutos agendados sobre a jornada de referência
-                (@RelatoriosDAO.Jornada.Descricao), em @diasDeFuncionamento dia(s) de
-                funcionamento no período. Horário cancelado não conta.
-            </span>
-        </header>
-
-        <div class="tabela fixa">
-            <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>Profissional</th>
-                        <th class="al-dir">Agend.</th>
-                        <th class="al-dir opcional">Horas</th>
-                        <th class="col-participacao">Ocupação</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (ocupacao.Count == 0)
-                    {
-                        <tr><td colspan="4" class="text-center text-muted">Nenhum agendamento no período.</td></tr>
                     }
-                    else
-                    {
-                        @foreach (var linha in ocupacao)
-                        {
-                            <tr>
-                                <td><strong>@linha.Nome</strong></td>
-                                <td class="al-dir">@linha.Agendamentos</td>
-                                <td class="al-dir opcional">@linha.HorasAgendadas</td>
-                                <td class="col-participacao">
-                                    <span class="barra @(linha.Ocupacao >= 85 ? "cheia" : "")">
-                                        <i style="width: @Math.Min(100, linha.Ocupacao).ToString("0.#", Invariante)%"></i>
-                                    </span>
-                                    <span class="percentual">@linha.Ocupacao.ToString("0.#")%</span>
-                                </td>
-                            </tr>
-                        }
-                    }
-                </tbody>
-            </table>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+else if (relatorio == MaisVendidos)
+{
+    <div class="resumo">
+        <div class="cartao-resumo">
+            <span class="rotulo">Serviços realizados</span>
+            <strong class="valor">@servicos.Sum(i => i.Quantidade)</strong>
         </div>
-    </section>
-
-    @* ---------- 5: clientes inativos ---------- *@
-    <section class="bloco-relatorio">
-        <header>
-            <h2>Clientes inativos</h2>
-            <span>
-                Sem vir há mais de @diasInatividade dias. Independe do período
-                escolhido acima: olha sempre a última visita até hoje.
-            </span>
-        </header>
-
-        <div class="faixa-inativos">
-            <label for="dias">Dias sem vir</label>
-            <input id="dias" type="number" class="form-control" min="7" max="730" step="1"
-                   @bind="diasInatividade" @bind:event="onchange" />
-            <button type="button" class="btn btn-primary" @onclick="CarregarInativos">Aplicar</button>
-
-            <span class="contagem">
-                @inativos.Count cliente(s)@(inativos.Count >= 100 ? " — mostrando os 100 mais antigos" : "")
-            </span>
+        <div class="cartao-resumo">
+            <span class="rotulo">Em serviços</span>
+            <strong class="valor">@servicos.Sum(i => i.Total).ToString("C")</strong>
         </div>
-
-        <div class="tabela fixa">
-            <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>Cliente</th>
-                        <th class="opcional">Telefone</th>
-                        <th class="al-dir">Sem vir há</th>
-                        <th class="al-dir opcional">Visitas</th>
-                        <th class="al-dir opcional">Já gastou</th>
-                        <th class="col-acoes"></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (inativos.Count == 0)
-                    {
-                        <tr><td colspan="6" class="text-center text-muted">Nenhum cliente nessa situação.</td></tr>
-                    }
-                    else
-                    {
-                        @foreach (var cliente in inativos)
-                        {
-                            <tr>
-                                <td><strong>@cliente.Nome</strong></td>
-                                <td class="opcional">@(string.IsNullOrWhiteSpace(cliente.Telefone) ? "—" : cliente.Telefone)</td>
-                                <td class="al-dir">
-                                    @if (cliente.DiasSemVir == null)
-                                    {
-                                        <span class="nunca">nunca veio</span>
-                                    }
-                                    else
-                                    {
-                                        <text>@cliente.DiasSemVir dias</text>
-                                    }
-                                </td>
-                                <td class="al-dir opcional">@cliente.Visitas</td>
-                                <td class="al-dir opcional dinheiro">@cliente.TotalGasto.ToString("C")</td>
-                                <td class="col-acoes">
-                                    <BotaoWhatsApp Telefone="@cliente.Telefone" Titulo="Chamar de volta no WhatsApp"
-                                                   Mensagem="@WhatsApp.ClienteInativo(cliente.Nome, cliente.DiasSemVir)" />
-                                </td>
-                            </tr>
-                        }
-                    }
-                </tbody>
-            </table>
+        <div class="cartao-resumo">
+            <span class="rotulo">Produtos vendidos</span>
+            <strong class="valor">@produtos.Sum(i => i.Quantidade)</strong>
         </div>
-    </section>
+        <div class="cartao-resumo">
+            <span class="rotulo">Em produtos</span>
+            <strong class="valor">@produtos.Sum(i => i.Total).ToString("C")</strong>
+        </div>
+    </div>
+
+    <div class="abas-relatorio" role="tablist">
+        <button type="button" role="tab" class="@(verProdutos ? "" : "ativa")" @onclick="() => verProdutos = false">Serviços</button>
+        <button type="button" role="tab" class="@(verProdutos ? "ativa" : "")" @onclick="() => verProdutos = true">Produtos</button>
+    </div>
+
+    @RenderItens(verProdutos ? produtos : servicos,
+                 verProdutos ? "Nenhum produto vendido no período." : "Nenhum serviço vendido no período.")
+}
+else if (relatorio == Faltas)
+{
+    <div class="resumo">
+        <div class="cartao-resumo @(faltas.Taxa >= 20 ? "prejuizo" : "")">
+            <span class="rotulo">Taxa de faltas</span>
+            <strong class="valor">@faltas.Taxa.ToString("0.#")%</strong>
+        </div>
+        <div class="cartao-resumo">
+            <span class="rotulo">Faltas</span>
+            <strong class="valor">@faltas.Faltas</strong>
+        </div>
+        <div class="cartao-resumo">
+            <span class="rotulo">Concluídos</span>
+            <strong class="valor">@faltas.Concluidos</strong>
+        </div>
+        <div class="cartao-resumo">
+            <span class="rotulo">Cancelados</span>
+            <strong class="valor">@faltas.Cancelados</strong>
+        </div>
+    </div>
+
+    <p class="nota-relatorio">
+        Falta é o agendamento marcado como "Faltou" e o que ficou agendado com o horário já
+        passado. A taxa é sobre @faltas.Encerrados horário(s) encerrado(s); cancelado, que avisou, fica à parte.
+    </p>
+
+    <div class="tabela fixa">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Quando</th>
+                    <th>Cliente</th>
+                    <th class="opcional">Telefone</th>
+                    <th class="opcional">Profissional</th>
+                    <th class="col-acoes"></th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (quemFaltou.Count == 0)
+                {
+                    <tr><td colspan="5" class="text-center text-muted">Nenhuma falta no período.</td></tr>
+                }
+                else
+                {
+                    @foreach (var falta in quemFaltou)
+                    {
+                        <tr>
+                            <td>@falta.Quando.ToString("dd/MM 'às' HH:mm")</td>
+                            <td><strong>@falta.Cliente</strong></td>
+                            <td class="opcional">@(string.IsNullOrWhiteSpace(falta.Telefone) ? "—" : falta.Telefone)</td>
+                            <td class="opcional">@falta.Profissional</td>
+                            <td class="col-acoes">
+                                <BotaoWhatsApp Telefone="@falta.Telefone" Titulo="Oferecer remarcação no WhatsApp"
+                                               Mensagem="@WhatsApp.RemarcarFalta(falta.Cliente, falta.Quando)" />
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+}
+else if (relatorio == Ocupacao)
+{
+    <div class="resumo">
+        <div class="cartao-resumo">
+            <span class="rotulo">Ocupação geral</span>
+            <strong class="valor">@OcupacaoGeral.ToString("0.#")%</strong>
+        </div>
+        <div class="cartao-resumo">
+            <span class="rotulo">Horários agendados</span>
+            <strong class="valor">@ocupacao.Sum(o => o.Agendamentos)</strong>
+        </div>
+        <div class="cartao-resumo">
+            <span class="rotulo">Dias de funcionamento</span>
+            <strong class="valor">@diasDeFuncionamento</strong>
+        </div>
+    </div>
+
+    <p class="nota-relatorio">
+        Minutos agendados sobre a jornada de referência (@RelatoriosDAO.Jornada.Descricao).
+        Horário cancelado não conta.
+    </p>
+
+    <div class="tabela fixa">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Profissional</th>
+                    <th class="al-dir">Agend.</th>
+                    <th class="al-dir opcional">Horas</th>
+                    <th class="col-participacao">Ocupação</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (ocupacao.Count == 0)
+                {
+                    <tr><td colspan="4" class="text-center text-muted">Nenhum agendamento no período.</td></tr>
+                }
+                else
+                {
+                    @foreach (var linha in ocupacao)
+                    {
+                        <tr>
+                            <td><strong>@linha.Nome</strong></td>
+                            <td class="al-dir">@linha.Agendamentos</td>
+                            <td class="al-dir opcional">@linha.HorasAgendadas</td>
+                            <td class="col-participacao">
+                                <span class="barra @(linha.Ocupacao >= 85 ? "cheia" : "")">
+                                    <i style="width: @Math.Min(100, linha.Ocupacao).ToString("0.#", Invariante)%"></i>
+                                </span>
+                                <span class="percentual">@linha.Ocupacao.ToString("0.#")%</span>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+}
+else if (relatorio == Inativos)
+{
+    <div class="resumo">
+        <div class="cartao-resumo">
+            <span class="rotulo">Clientes sumidos</span>
+            <strong class="valor">@inativos.Count@(inativos.Count >= 100 ? "+" : "")</strong>
+        </div>
+        <div class="cartao-resumo">
+            <span class="rotulo">Já gastaram</span>
+            <strong class="valor">@inativos.Sum(c => c.TotalGasto).ToString("C")</strong>
+        </div>
+        <div class="cartao-resumo">
+            <span class="rotulo">Nunca vieram</span>
+            <strong class="valor">@inativos.Count(c => c.DiasSemVir == null)</strong>
+        </div>
+    </div>
+
+    <p class="nota-relatorio">
+        Sem vir há mais de @diasInatividade dias, olhando a última visita até hoje.
+        @(inativos.Count >= 100 ? "Mostrando os 100 mais antigos." : "")
+    </p>
+
+    <div class="tabela fixa">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Cliente</th>
+                    <th class="opcional">Telefone</th>
+                    <th class="al-dir">Sem vir há</th>
+                    <th class="al-dir opcional">Visitas</th>
+                    <th class="al-dir opcional">Já gastou</th>
+                    <th class="col-acoes"></th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (inativos.Count == 0)
+                {
+                    <tr><td colspan="6" class="text-center text-muted">Nenhum cliente nessa situação.</td></tr>
+                }
+                else
+                {
+                    @foreach (var cliente in inativos)
+                    {
+                        <tr>
+                            <td><strong>@cliente.Nome</strong></td>
+                            <td class="opcional">@(string.IsNullOrWhiteSpace(cliente.Telefone) ? "—" : cliente.Telefone)</td>
+                            <td class="al-dir">
+                                @if (cliente.DiasSemVir == null)
+                                {
+                                    <span class="nunca">nunca veio</span>
+                                }
+                                else
+                                {
+                                    <text>@cliente.DiasSemVir dias</text>
+                                }
+                            </td>
+                            <td class="al-dir opcional">@cliente.Visitas</td>
+                            <td class="al-dir opcional dinheiro">@cliente.TotalGasto.ToString("C")</td>
+                            <td class="col-acoes">
+                                <BotaoWhatsApp Telefone="@cliente.Telefone" Titulo="Chamar de volta no WhatsApp"
+                                               Mensagem="@WhatsApp.ClienteInativo(cliente.Nome, cliente.DiasSemVir)" />
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
 }
 
 @code {
+    // Um relatorio por vez: so o escolhido vai ao banco.
+    private const string Faturamento = "faturamento";
+    private const string MaisVendidos = "mais-vendidos";
+    private const string Faltas = "faltas";
+    private const string Ocupacao = "ocupacao";
+    private const string Inativos = "inativos";
+
+    private static readonly (string Chave, string Nome, string Descricao)[] Opcoes =
+    {
+        (Faturamento, "Faturamento", "Por profissional, com ticket médio e comissões"),
+        (MaisVendidos, "Mais vendidos", "Serviços e produtos que mais saem"),
+        (Faltas, "Faltas", "Quem não apareceu e a taxa de faltas"),
+        (Ocupacao, "Ocupação da agenda", "Quanto da jornada de cada um está agendada"),
+        (Inativos, "Clientes inativos", "Quem sumiu, para chamar de volta")
+    };
+
+    /// <summary>Relatório aberto; vem de ?r= para dar link direto.</summary>
+    [SupplyParameterFromQuery(Name = "r")]
+    private string? RelatorioDaUrl { get; set; }
+
+    private string relatorio = Faturamento;
+    private bool verProdutos;
+
+    private DateTime de;
+    private DateTime ate;
+
     private PainelDAO.ResumoPainel resumo = new();
     private List<RelatoriosDAO.LinhaProfissional> profissionais = new();
     private List<RelatoriosDAO.LinhaItem> servicos = new();
@@ -344,8 +417,8 @@ else
     private bool podeExportar;
     private string? erro;
 
-    /// <summary>0 = hoje, 7/30 = últimos dias, -1 = mês corrente, -2 = mês passado.</summary>
-    private int periodo = 30;
+    /// <summary>0 = hoje, 7/30 = últimos dias, -1 = mês corrente, -2 = mês passado; nulo = datas digitadas.</summary>
+    private int? periodo = 30;
 
     /// <summary>
     /// A largura da barra vai no atributo style, que é CSS e não aceita
@@ -355,30 +428,33 @@ else
     private static readonly System.Globalization.CultureInfo Invariante =
         System.Globalization.CultureInfo.InvariantCulture;
 
-    private (DateTime De, DateTime Ate) Intervalo
+    /// <summary>Para o DAO: 'ate' exclusivo, o dia seguinte ao escolhido.</summary>
+    private (DateTime De, DateTime Ate) Intervalo => (de.Date, ate.Date.AddDays(1));
+
+    /// <summary>Atalho vira as datas do filtro, que ficam visíveis e editáveis.</summary>
+    private void AplicarAtalho(int atalho)
+    {
+        var hoje = DateTime.Today;
+        var primeiroDoMes = new DateTime(hoje.Year, hoje.Month, 1);
+
+        (de, ate) = atalho switch
+        {
+            0 => (hoje, hoje),
+            -1 => (primeiroDoMes, hoje),
+            -2 => (primeiroDoMes.AddMonths(-1), primeiroDoMes.AddDays(-1)),
+            _ => (hoje.AddDays(-atalho), hoje)
+        };
+        periodo = atalho;
+    }
+
+    private decimal OcupacaoGeral
     {
         get
         {
-            var hoje = DateTime.Today;
-
-            return periodo switch
-            {
-                0 => (hoje, hoje.AddDays(1)),
-                -1 => (new DateTime(hoje.Year, hoje.Month, 1), hoje.AddDays(1)),
-                -2 => (new DateTime(hoje.Year, hoje.Month, 1).AddMonths(-1),
-                       new DateTime(hoje.Year, hoje.Month, 1)),
-                _ => (hoje.AddDays(-periodo), hoje.AddDays(1))
-            };
+            var disponiveis = ocupacao.Sum(o => o.MinutosDisponiveis);
+            return disponiveis == 0 ? 0 : Math.Round(ocupacao.Sum(o => o.MinutosAgendados) * 100m / disponiveis, 1);
         }
     }
-
-    private string RotuloPeriodo => periodo switch
-    {
-        0 => "Hoje",
-        -1 => "Este mês",
-        -2 => "Mês passado",
-        _ => $"Últimos {periodo} dias"
-    };
 
     protected override async Task OnInitializedAsync()
     {
@@ -387,13 +463,35 @@ else
 
         podeExportar = permissao.Pode("relatorios", Acao.Exportar);
 
+        if (Opcoes.Any(o => o.Chave == RelatorioDaUrl)) relatorio = RelatorioDaUrl!;
+
+        AplicarAtalho(30);
         Carregar();
-        CarregarInativos();
+    }
+
+    private void Escolher(string chave)
+    {
+        relatorio = chave;
+        // Deixa o relatorio na URL, para voltar ou mandar o link direto.
+        Navigation.NavigateTo($"/relatorios?r={chave}", replace: true);
+        Carregar();
     }
 
     private void TrocarPeriodo(int novo)
     {
-        periodo = novo;
+        AplicarAtalho(novo);
+        Carregar();
+    }
+
+    private void Aplicar()
+    {
+        if (ate < de)
+        {
+            erro = "A data final é anterior à inicial.";
+            return;
+        }
+
+        periodo = null;
         Carregar();
     }
 
@@ -402,19 +500,36 @@ else
         carregando = true;
         erro = null;
 
-        var (de, ate) = Intervalo;
+        var (inicio, fim) = Intervalo;
 
         try
         {
-            resumo = painelDAO.Resumo(de, ate);
-            profissionais = relatoriosDAO.FaturamentoPorProfissional(de, ate);
-            servicos = relatoriosDAO.MaisVendidos(de, ate, "SERVICO");
-            produtos = relatoriosDAO.MaisVendidos(de, ate, "PRODUTO");
-            faltas = relatoriosDAO.Faltas(de, ate);
-            quemFaltou = relatoriosDAO.QuemFaltou(de, ate);
-            ocupacao = relatoriosDAO.OcupacaoDaAgenda(de, ate);
+            switch (relatorio)
+            {
+                case Faturamento:
+                    resumo = painelDAO.Resumo(inicio, fim);
+                    profissionais = relatoriosDAO.FaturamentoPorProfissional(inicio, fim);
+                    break;
 
-            diasDeFuncionamento = RelatoriosDAO.Jornada.DiasNoIntervalo(de, ate);
+                case MaisVendidos:
+                    servicos = relatoriosDAO.MaisVendidos(inicio, fim, "SERVICO");
+                    produtos = relatoriosDAO.MaisVendidos(inicio, fim, "PRODUTO");
+                    break;
+
+                case Faltas:
+                    faltas = relatoriosDAO.Faltas(inicio, fim);
+                    quemFaltou = relatoriosDAO.QuemFaltou(inicio, fim);
+                    break;
+
+                case Ocupacao:
+                    ocupacao = relatoriosDAO.OcupacaoDaAgenda(inicio, fim);
+                    diasDeFuncionamento = RelatoriosDAO.Jornada.DiasNoIntervalo(inicio, fim);
+                    break;
+
+                case Inativos:
+                    CarregarInativos();
+                    break;
+            }
         }
         catch (Exception ex)
         {
@@ -426,10 +541,7 @@ else
         }
     }
 
-    /// <summary>
-    /// Separado do resto: a inatividade não depende do período escolhido
-    /// em cima, e recarregar tudo ao mudar os dias seria desperdício.
-    /// </summary>
+    /// <summary>A inatividade não depende do período: olha a última visita até hoje.</summary>
     private void CarregarInativos()
     {
         try

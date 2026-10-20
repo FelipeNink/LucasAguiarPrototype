@@ -1,42 +1,85 @@
-/* Cada relatório é um bloco com título, uma linha explicando como o
-   número foi apurado, e a tabela. A explicação não é enfeite: "taxa de
-   faltas" e "ocupação" só querem dizer alguma coisa quando se sabe o
-   que entrou na conta. */
+/* ---------- escolha do relatorio ---------- */
 
-.bloco-relatorio {
-    margin-bottom: 1.75rem;
+.escolha-relatorio {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.6rem;
+    margin-bottom: 1.1rem;
 }
 
-.bloco-relatorio > header {
-    margin-bottom: 0.85rem;
+.opcao-relatorio {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    padding: 0.8rem 0.95rem;
+    background: var(--superficie);
+    border: 1px solid var(--borda);
+    border-radius: var(--raio-cartao);
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
 }
 
-.bloco-relatorio h2 {
-    margin: 0;
+.opcao-relatorio strong {
     font-family: var(--fonte-titulo);
-    font-size: 23px;
+    font-size: 1.1rem;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.01em;
-    line-height: 1.1;
+    letter-spacing: 0.02em;
     color: var(--texto);
 }
 
-.bloco-relatorio > header span {
-    display: block;
-    max-width: 640px;
-    margin-top: 3px;
-    font-size: 12.5px;
-    line-height: 1.5;
+.opcao-relatorio span {
+    font-size: 0.78rem;
+    line-height: 1.3;
+    color: var(--texto-3);
+}
+
+.opcao-relatorio:hover {
+    border-color: var(--marca-fraca);
+}
+
+.opcao-relatorio.ativa {
+    background: var(--morno-2);
+    border-color: var(--marca);
+    box-shadow: var(--anel-foco);
+}
+
+.opcao-relatorio.ativa strong {
+    color: var(--marca-escura);
+}
+
+.nota-relatorio {
+    margin: 0 0 1rem;
+    font-size: 0.8rem;
     color: var(--texto-fraco);
 }
 
-/* Serviços e produtos lado a lado: são a mesma pergunta feita duas
-   vezes, e comparar os dois é o ponto. */
-.par-relatorios {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    gap: 0 20px;
+/* Servicos / produtos dentro de "Mais vendidos". */
+.abas-relatorio {
+    display: inline-flex;
+    gap: 0.2rem;
+    margin-bottom: 0.85rem;
+    padding: 0.22rem;
+    background: var(--superficie-3);
+    border-radius: 9px;
+}
+
+.abas-relatorio button {
+    padding: 0.38rem 0.9rem;
+    background: none;
+    border: none;
+    border-radius: 7px;
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: var(--texto-3);
+    cursor: pointer;
+}
+
+.abas-relatorio button.ativa {
+    background: var(--superficie);
+    color: var(--marca-escura);
+    box-shadow: var(--sombra);
 }
 
 /* ---------- barra de participação e ocupação ---------- */
@@ -84,40 +127,6 @@
 }
 
 /* ---------- clientes inativos ---------- */
-
-.faixa-inativos {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-bottom: 0.85rem;
-}
-
-.faixa-inativos label {
-    font-size: 11.5px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: var(--texto-2);
-}
-
-.faixa-inativos .form-control {
-    width: 100px;
-    height: var(--altura-controle);
-}
-
-.faixa-inativos .btn {
-    height: var(--altura-controle);
-    padding: 0 18px;
-    display: inline-flex;
-    align-items: center;
-}
-
-.faixa-inativos .contagem {
-    margin-left: auto;
-    font-size: 12.5px;
-    color: var(--texto-fraco);
-}
 
 .nunca {
     font-size: 12.5px;
