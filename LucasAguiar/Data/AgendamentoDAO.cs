@@ -141,6 +141,22 @@ namespace LucasAguiar.Data
             comando.ExecuteNonQuery();
         }
 
+        /// <summary>Marca a falta do cliente; só vale para horário ainda em aberto.</summary>
+        public void MarcarFalta(int id)
+        {
+            using var conexao = _conexao.GetConnection();
+            using var comando = new MySqlCommand(@"
+                UPDATE agendamento SET status = @falta
+                WHERE id_agend = @id AND status = @agendado", conexao);
+
+            comando.Parameters.AddWithValue("@falta", StatusAgendamento.Faltou);
+            comando.Parameters.AddWithValue("@agendado", StatusAgendamento.Agendado);
+            comando.Parameters.AddWithValue("@id", id);
+
+            if (comando.ExecuteNonQuery() == 0)
+                throw new Exception("Só um agendamento em aberto pode ser marcado como falta.");
+        }
+
         public void Excluir(int id)
         {
             using var conexao = _conexao.GetConnection();

@@ -21,8 +21,14 @@
         <label>Nome</label>
         <input class="form-control" placeholder="Buscar plano" @bind="busca" @bind:event="oninput" />
     </div>
+    <div class="campo">
+        <label>Situação</label>
+        <Seletor TItem="Opcao" TValor="string" Itens="OpcoesSituacao"
+                 @bind-Valor="situacao" TextoDe="o => o.Rotulo" ValorDe="o => o.Valor"
+                 PontoDe="o => o.Cor" />
+    </div>
     <div class="campo-acoes">
-        <button type="button" class="btn btn-outline-secondary" @onclick="() => busca = string.Empty">Limpar</button>
+        <button type="button" class="btn btn-outline-secondary" @onclick="Limpar">Limpar</button>
     </div>
 </section>
 
@@ -32,8 +38,10 @@
         <tr>
             <th>Nome</th>
             <th class="al-dir">Valor</th>
+            <th class="opcional">Periodicidade</th>
             <th class="opcional">Serviços incluídos</th>
             <th class="al-dir opcional">Assinantes ativos</th>
+            <th>Situação</th>
             <th class="col-acoes">Ações</th>
         </tr>
     </thead>
@@ -43,14 +51,9 @@
             foreach (var plano in Filtrados)
             {
                 <tr>
-                    <td>
-                        @plano.NomePlano
-                        @if (!plano.Ativo)
-                        {
-                            <span class="status cancelada"><i></i>inativo</span>
-                        }
-                    </td>
+                    <td>@plano.NomePlano</td>
                     <td class="al-dir">@((plano.Valor ?? 0).ToString("C"))</td>
+                    <td class="opcional">@Periodicidade.Rotulo(plano.Periodicidade)</td>
                     <td class="opcional">
                         @if (plano.TotalServicos > 0)
                         {
@@ -62,6 +65,9 @@
                         }
                     </td>
                     <td class="al-dir opcional">@plano.AssinantesAtivos</td>
+                    <td>
+                        <span class="status @(plano.Ativo ? "pago" : "cancelada")"><i></i>@(plano.Ativo ? "Ativo" : "Inativo")</span>
+                    </td>
                     <td class="col-acoes">
                         <AcoesLinha OnVisualizar="() => Visualizar(plano)"
                                     OnEditar="() => Editar(plano)"
@@ -73,7 +79,7 @@
         else
         {
             <tr>
-                <td colspan="5" class="text-center text-muted">Nenhum plano encontrado.</td>
+                <td colspan="7" class="text-center text-muted">Nenhum plano encontrado.</td>
             </tr>
         }
     </tbody>
@@ -158,12 +164,27 @@
     private List<PlanoItem> itensVisualizados = new();
 
     private string busca = "";
+    private string situacao = "";
 
     private List<Plano> Filtrados =>
         listaPlano
             .Where(p => string.IsNullOrWhiteSpace(busca)
                         || (p.NomePlano ?? "").Contains(busca.Trim(), StringComparison.OrdinalIgnoreCase))
+            .Where(p => situacao == "" || p.Ativo == (situacao == "ATIVO"))
             .ToList();
+
+    private static readonly List<Opcao> OpcoesSituacao = new()
+    {
+        new("", "Todos"),
+        new("ATIVO", "Ativos", "var(--ok)"),
+        new("INATIVO", "Inativos", "var(--texto-fraco)")
+    };
+
+    private void Limpar()
+    {
+        busca = "";
+        situacao = "";
+    }
 
     protected override void OnInitialized()
     {

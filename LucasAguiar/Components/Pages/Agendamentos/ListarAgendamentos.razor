@@ -81,6 +81,12 @@
         <span class="rotulo">Concluídos</span>
         <strong class="valor">@agendamentos.Count(a => a.Status == StatusAgendamento.Concluido)</strong>
     </div>
+    @* Marcadas como falta e agendados com horario ja passado, a mesma
+       regra do relatorio de faltas (RelatoriosDAO.Faltas). *@
+    <div class="cartao-resumo prejuizo">
+        <span class="rotulo">Faltas</span>
+        <strong class="valor">@agendamentos.Count(Faltou)</strong>
+    </div>
     <div class="cartao-resumo">
         <span class="rotulo">Cancelados</span>
         <strong class="valor">@agendamentos.Count(a => a.Status == StatusAgendamento.Cancelado)</strong>
@@ -93,7 +99,7 @@
             <tr>
                 <th class="col-horario">Hora</th>
                 <th>Cliente</th>
-                <th class="opcional">Serviço</th>
+                <th class="opcional">Serviços</th>
                 <th class="opcional">Profissional</th>
                 <th class="al-dir opcional">Duração</th>
                 <th class="al-dir">Valor</th>
@@ -110,7 +116,7 @@
                         <td colspan="8">
                             <span class="grupo-dia-titulo">@RotuloDoDia(dia.Key)</span>
                             <span class="grupo-dia-resumo">
-                                @dia.Count() horário(s) · @dia.Where(a => a.Status != StatusAgendamento.Cancelado).Sum(a => a.PrecoServico).ToString("C")
+                                @dia.Count() horário(s) · @dia.Where(a => a.Status != StatusAgendamento.Cancelado && a.Status != StatusAgendamento.Faltou).Sum(a => a.PrecoServico).ToString("C")
                             </span>
                         </td>
                     </tr>
@@ -134,6 +140,16 @@
                             <td class="col-acoes">
                                 <AcoesLinha OnVisualizar="() => Visualizar(a)" OnEditar="() => Editar(a)"
                                             OnExcluir="() => excluindo = a">
+                                    @if (a.Aberto && a.DataHora < DateTime.Now)
+                                    {
+                                        <button type="button" class="btn-acao perigo" title="Marcar falta" aria-label="Marcar falta"
+                                                @onclick="() => MarcarFalta(a)">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                                                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                                <circle cx="12" cy="8" r="4" /><path d="M4 21c0-4 4-6 8-6M16 16l5 5M21 16l-5 5" />
+                                            </svg>
+                                        </button>
+                                    }
                                     @if (a.Aberto)
                                     {
                                         <BotaoWhatsApp Telefone="@a.TelefoneCliente"
@@ -289,8 +305,27 @@
         new("", "Todos"),
         new(StatusAgendamento.Agendado, "Agendado", "var(--alerta)"),
         new(StatusAgendamento.Concluido, "Concluído", "var(--ok)"),
-        new(StatusAgendamento.Cancelado, "Cancelado", "var(--texto-fraco)")
+        new(StatusAgendamento.Cancelado, "Cancelado", "var(--texto-fraco)"),
+        new(StatusAgendamento.Faltou, "Faltou", "var(--perigo)")
     };
+
+    private static bool Faltou(Agendamento a) =>
+        a.Status == StatusAgendamento.Faltou
+        || (a.Status == StatusAgendamento.Agendado && a.DataHora < DateTime.Now);
+
+    private void MarcarFalta(Agendamento a)
+    {
+        try
+        {
+            erro = null;
+            agendamentoDAO.MarcarFalta(a.IdAgendamento);
+            Carregar();
+        }
+        catch (Exception ex)
+        {
+            erro = ex.Message;
+        }
+    }
 
     protected override void OnInitialized()
     {
@@ -383,6 +418,7 @@
     {
         StatusAgendamento.Agendado => "pendente",
         StatusAgendamento.Concluido => "pago",
+        StatusAgendamento.Faltou => "erro",
         _ => "cancelada"
     };
 

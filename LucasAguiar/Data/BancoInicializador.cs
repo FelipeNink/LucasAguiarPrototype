@@ -674,6 +674,11 @@ namespace LucasAguiar.Data
             GarantirColuna(conexao, "compras", "parcelas", "int NOT NULL DEFAULT 1");
             GarantirColuna(conexao, "compras", "vencimento_primeira", "date DEFAULT NULL");
 
+            // Compra aguardando entrega nao da entrada no estoque ate ser recebida.
+            // DEFAULT 1: as compras antigas ja entraram no estoque ao serem lancadas.
+            GarantirColuna(conexao, "compras", "recebida", "tinyint(1) NOT NULL DEFAULT 1");
+            GarantirColuna(conexao, "compras", "data_recebimento", "date DEFAULT NULL");
+
             CriarTabela(conexao, "compra_item", @"
                 CREATE TABLE IF NOT EXISTS `compra_item` (
                   `id_comp_item` int NOT NULL AUTO_INCREMENT,

@@ -35,6 +35,10 @@ namespace LucasAguiar.Models
         public int Parcelas { get; set; } = 1;
         public DateTime? VencimentoPrimeira { get; set; }
 
+        /// <summary>Falso enquanto a mercadoria não chega: o estoque só entra no recebimento.</summary>
+        public bool Recebida { get; set; } = true;
+        public DateTime? DataRecebimento { get; set; }
+
         public List<CompraItem> Itens { get; set; } = new();
 
         // Preenchidos por join

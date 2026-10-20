@@ -6,6 +6,7 @@
 @using Microsoft.AspNetCore.WebUtilities
 @inject DespesaDAO despesaDAO
 @inject FornecedorDAO fornecedorDAO
+@inject FuncionarioDAO funcionarioDAO
 @inject CategoriaDAO categoriaDAO
 @inject NavigationManager Navigation
 
@@ -42,9 +43,9 @@
         <input class="form-control" placeholder="Buscar despesa" @bind="filtroDescricao" />
     </div>
     <div class="campo">
-        <label>Fornecedor</label>
-        <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesFornecedorFiltro"
-                 @bind-Valor="filtroFornecedor" TextoDe="o => o.Rotulo" ValorDe="o => o.Id" />
+        <label>Favorecido</label>
+        <Seletor TItem="Opcao" TValor="string" Itens="OpcoesFavorecidoFiltro"
+                 @bind-Valor="filtroFavorecido" TextoDe="o => o.Rotulo" ValorDe="o => o.Valor" />
     </div>
     <div class="campo">
         <label>Situação</label>
@@ -105,7 +106,9 @@
             <th>Categoria</th>
             <th>Favorecido</th>
             <th>Pagamento</th>
+            <th>Parcela</th>
             <th class="dir">Valor</th>
+            <th>Pago em</th>
             <th>Situação</th>
             <th class="col-acao">Ações</th>
         </tr>
@@ -116,12 +119,14 @@
             @foreach (var d in Filtradas)
             {
                 <tr>
-                    <td>@d.DataDespesa.ToString("dd/MM/yyyy")</td>
+                    <td>@((d.DataVencimento ?? d.DataDespesa).ToString("dd/MM/yyyy"))</td>
                     <td>@d.Descricao</td>
                     <td>@d.RotuloCategoria</td>
                     <td>@(!string.IsNullOrWhiteSpace(d.NomeFornecedor) ? d.NomeFornecedor : d.NomeFuncionario ?? "—")</td>
                     <td>@FormaPagamento.Rotulo(d.FormaPagamentoDespesa)</td>
+                    <td>@(d.Parcelas > 1 ? $"{d.Parcelas}×" : "—")</td>
                     <td class="dir">@d.Valor.ToString("C")</td>
+                    <td>@(d.Pago ? d.DataPagamento?.ToString("dd/MM/yyyy") ?? "—" : "—")</td>
                     <td>
                         <span class="status @ClasseSituacao(d)"><i></i>@RotuloSituacao(d)</span>
                     </td>
@@ -136,7 +141,7 @@
         else
         {
             <tr>
-                <td colspan="8" class="text-center text-muted">Nenhuma despesa encontrada.</td>
+                <td colspan="10" class="text-center text-muted">Nenhuma despesa encontrada.</td>
             </tr>
         }
     </tbody>
@@ -177,6 +182,7 @@
 @code {
     private List<Despesa> despesas = new();
     private List<Fornecedor> fornecedores = new();
+    private List<Funcionario> funcionarios = new();
 
     // Opcoes dos seletores. O "Todas"/"Nenhum" entra como item da lista,
     // porque o Seletor nao tem <option> solta como o select nativo.
@@ -225,7 +231,8 @@
 
     // Filtros aplicados em memoria sobre o que o DAO devolveu.
     private string filtroDescricao = "";
-    private int filtroFornecedor;
+    /// <summary>"F:id" para fornecedor, "U:id" para funcionário.</summary>
+    private string filtroFavorecido = "";
     private string filtroSituacao = "";
 
     private const string SituacaoPaga = "PAGA";
@@ -259,15 +266,18 @@
         despesas
             .Where(d => string.IsNullOrWhiteSpace(filtroDescricao)
                         || d.Descricao.Contains(filtroDescricao.Trim(), StringComparison.OrdinalIgnoreCase))
-            .Where(d => filtroFornecedor == 0 || d.IdFornecedor == filtroFornecedor)
+            .Where(d => filtroFavorecido == ""
+                        || filtroFavorecido == $"F:{d.IdFornecedor}"
+                        || filtroFavorecido == $"U:{d.IdFuncionario}")
             .Where(d => filtroSituacao == ""
                         // "Em aberto" inclui as vencidas: as duas estao por pagar.
                         || (filtroSituacao == SituacaoAberta ? !d.Pago : Situacao(d) == filtroSituacao))
             .ToList();
 
-    private List<OpcaoId> OpcoesFornecedorFiltro =>
-        new List<OpcaoId> { new(0, "Todos") }
-            .Concat(fornecedores.Select(f => new OpcaoId(f.IdFornecedor, f.NomeFornecedor ?? "Sem nome")))
+    private List<Opcao> OpcoesFavorecidoFiltro =>
+        new List<Opcao> { new("", "Todos") }
+            .Concat(fornecedores.Select(f => new Opcao($"F:{f.IdFornecedor}", f.NomeFornecedor ?? "Sem nome")))
+            .Concat(funcionarios.Select(f => new Opcao($"U:{f.IdFuncionario}", $"{f.NomeFuncionario ?? "Sem nome"} (funcionário)")))
             .ToList();
 
     private static readonly List<Opcao> OpcoesSituacao = new()
@@ -296,6 +306,7 @@
         try
         {
             fornecedores = fornecedorDAO.ListarTodos() ?? new();
+            funcionarios = funcionarioDAO.ListarTodos();
             categorias = categoriaDAO.Listar(TipoCategoria.Despesa);
         }
         catch (Exception ex)
@@ -355,7 +366,7 @@
         filtroCategoria = "";
         filtroForma = "";
         filtroDescricao = "";
-        filtroFornecedor = 0;
+        filtroFavorecido = "";
         filtroSituacao = "";
         Carregar();
     }

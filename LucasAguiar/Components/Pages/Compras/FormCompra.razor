@@ -143,6 +143,12 @@
                             <label class="form-check-label" for="cmp-pago">@(pago ? "Já foi paga" : "A pagar")</label>
                         </div>
                     </Campo>
+                    <Campo Rotulo="Mercadoria" Para="cmp-recebida" Colunas="3">
+                        <div class="form-check form-switch campo-switch">
+                            <input id="cmp-recebida" class="form-check-input" type="checkbox" role="switch" @bind="Modelo.Recebida" />
+                            <label class="form-check-label" for="cmp-recebida">@(Modelo.Recebida ? "Já recebida" : "Aguardando entrega")</label>
+                        </div>
+                    </Campo>
                 }
                 else
                 {
@@ -168,8 +174,8 @@
             {
                 <p class="aviso-form">
                     A compra lança uma <strong>despesa</strong> na categoria Produtos e dá
-                    <strong>entrada no estoque</strong> dos produtos da grade; o custo de cada item
-                    vira o preço de custo do produto.
+                    <strong>entrada no estoque</strong> dos produtos da grade@(Modelo.Recebida ? "" : " quando for recebida, pela listagem de compras");
+                    o custo de cada item vira o preço de custo do produto.
                     @if (pago && Modelo.FormaPagamento == FormaPagamento.Dinheiro && caixaAberto != null)
                     {
                         <text> O valor sai da gaveta do caixa #@caixaAberto.IdCaixa.</text>

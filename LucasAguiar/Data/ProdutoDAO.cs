@@ -227,6 +227,7 @@ namespace LucasAguiar.Data
                 Sku = TextoOuNulo("sku"),
                 Unidade = leitor.GetString("unidade"),
                 PrecoCusto = DecimalOuNulo("preco_custo"),
+                EstoqueMinimo = DAOHelper.IsNull(leitor, "estoque_min_prod") ? 0 : leitor.GetInt32("estoque_min_prod"),
                 Comissao = DecimalOuNulo("comissao_prod"),
                 Ativo = leitor.GetBoolean("ativo_prod")
             };

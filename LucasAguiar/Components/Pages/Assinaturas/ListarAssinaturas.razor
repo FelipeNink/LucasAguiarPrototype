@@ -54,6 +54,10 @@
         <span class="rotulo">Vencidas</span>
         <strong class="valor">@Filtradas.Count(a => Situacao(a) == SituacaoVencida)</strong>
     </div>
+    <div class="cartao-resumo">
+        <span class="rotulo">Receita mensal recorrente</span>
+        <strong class="valor">@ReceitaMensal.ToString("C")</strong>
+    </div>
 </div>
 
 <div class="tabela">
@@ -63,7 +67,7 @@
             <th>Cliente</th>
             <th>Plano</th>
             <th>Início</th>
-            <th>Vencimento</th>
+            <th>Próximo vencimento</th>
             <th class="opcional">Dia de cobrança</th>
             <th class="col-num">Valor</th>
             <th>Situação</th>
@@ -124,7 +128,7 @@
     {
         SituacaoAtiva => "Ativa",
         SituacaoVencida => "Vencida",
-        _ => "Encerrada"
+        _ => "Cancelada"
     };
 
     private static string ClasseDaSituacao(string s) => s switch
@@ -144,6 +148,16 @@
             .Where(a => situacao == "" || Situacao(a) == situacao)
             .ToList();
 
+    /// <summary>
+    /// Ativas em dia, com o valor pago trazido para 30 dias pela
+    /// periodicidade do plano (trimestral / 3, anual / 12...).
+    /// </summary>
+    private decimal ReceitaMensal =>
+        Filtradas
+            .Where(a => Situacao(a) == SituacaoAtiva)
+            .Sum(a => a.ValorPago * 30m
+                      / Periodicidade.Dias(planos.FirstOrDefault(p => p.IdPlano == a.IdPlano)?.Periodicidade));
+
     private List<OpcaoId> OpcoesPlano =>
         new List<OpcaoId> { new(0, "Todos") }
             .Concat(planos.Select(p => new OpcaoId(p.IdPlano, p.NomePlano ?? "Sem nome")))
@@ -154,7 +168,7 @@
         new("", "Todas"),
         new(SituacaoAtiva, "Ativa", "var(--ok)"),
         new(SituacaoVencida, "Vencida", "var(--perigo)"),
-        new(SituacaoEncerrada, "Encerrada", "var(--texto-fraco)")
+        new(SituacaoEncerrada, "Cancelada", "var(--texto-fraco)")
     };
 
     protected override void OnInitialized()

@@ -6,11 +6,15 @@ namespace LucasAguiar.Models
         public const string Concluido = "CONCLUIDO";
         public const string Cancelado = "CANCELADO";
 
+        /// <summary>Cliente não apareceu. Diferente de cancelado, que avisou.</summary>
+        public const string Faltou = "FALTOU";
+
         public static readonly (string Valor, string Rotulo)[] Todos =
         {
             (Agendado, "Agendado"),
             (Concluido, "Concluído"),
-            (Cancelado, "Cancelado")
+            (Cancelado, "Cancelado"),
+            (Faltou, "Faltou")
         };
 
         public static string Rotulo(string? status) =>
