@@ -46,6 +46,8 @@ namespace LucasAguiar.Data
                 MigrarAcessos(conexao);
 
                 MigrarCadastros(conexao);
+
+                MigrarAtributos(conexao);
             }
             catch (Exception ex)
             {
@@ -421,7 +423,327 @@ namespace LucasAguiar.Data
             GarantirTamanho(conexao, "funcionario", "telefone_fun", 20, "varchar(20) DEFAULT NULL");
         }
 
+        // =============================================================
+        // ATRIBUTOS NOVOS DOS CADASTROS E MOVIMENTOS
+        //
+        // Mesma regra: so acrescenta. Os preenchimentos (UPDATE/INSERT ...
+        // SELECT) so tocam linhas que ainda nao foram migradas, entao rodar
+        // de novo nao muda nada.
+        // =============================================================
+
+        private void MigrarAtributos(MySqlConnection conexao)
+        {
+            // ---------- categorias, uma tabela por tipo ----------
+            CriarTabela(conexao, "categoria_servico", @"
+                CREATE TABLE IF NOT EXISTS `categoria_servico` (
+                  `id_cat_serv` int NOT NULL AUTO_INCREMENT,
+                  `nome_cat` varchar(60) NOT NULL,
+                  `ativo_cat` tinyint(1) NOT NULL DEFAULT 1,
+                  PRIMARY KEY (`id_cat_serv`),
+                  UNIQUE KEY `uk_categoria_servico_nome` (`nome_cat`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci");
+
+            CriarTabela(conexao, "categoria_produto", @"
+                CREATE TABLE IF NOT EXISTS `categoria_produto` (
+                  `id_cat_prod` int NOT NULL AUTO_INCREMENT,
+                  `nome_cat` varchar(60) NOT NULL,
+                  `ativo_cat` tinyint(1) NOT NULL DEFAULT 1,
+                  PRIMARY KEY (`id_cat_prod`),
+                  UNIQUE KEY `uk_categoria_produto_nome` (`nome_cat`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci");
+
+            // despesa.categoria guarda o codigo: as despesas antigas continuam
+            // validas sem migrar dado, e os filtros por categoria seguem iguais.
+            CriarTabela(conexao, "categoria_despesa", @"
+                CREATE TABLE IF NOT EXISTS `categoria_despesa` (
+                  `id_cat_desp` int NOT NULL AUTO_INCREMENT,
+                  `codigo_cat` varchar(40) NOT NULL,
+                  `nome_cat` varchar(60) NOT NULL,
+                  `ativo_cat` tinyint(1) NOT NULL DEFAULT 1,
+                  PRIMARY KEY (`id_cat_desp`),
+                  UNIQUE KEY `uk_categoria_despesa_codigo` (`codigo_cat`),
+                  UNIQUE KEY `uk_categoria_despesa_nome` (`nome_cat`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci");
+
+            foreach (var (codigo, rotulo) in Models.CategoriaDespesa.Todas)
+            {
+                using var semear = new MySqlCommand(
+                    "INSERT IGNORE INTO categoria_despesa (codigo_cat, nome_cat) VALUES (@c, @n)", conexao);
+                semear.Parameters.AddWithValue("@c", codigo);
+                semear.Parameters.AddWithValue("@n", rotulo);
+                semear.ExecuteNonQuery();
+            }
+
+            // ---------- cliente ----------
+            GarantirColuna(conexao, "cliente", "email_cli", "varchar(100) DEFAULT NULL");
+            GarantirColuna(conexao, "cliente", "origem_cli", "varchar(30) DEFAULT NULL");
+            GarantirColuna(conexao, "cliente", "observacoes_cli", "varchar(500) DEFAULT NULL");
+            GarantirColuna(conexao, "cliente", "id_fun_pref_fk", "int DEFAULT NULL");
+            GarantirColuna(conexao, "cliente", "ativo_cli", "tinyint(1) NOT NULL DEFAULT 1");
+            GarantirChave(conexao, "cliente", "fk_cliente_profissional_pref",
+                "FOREIGN KEY (`id_fun_pref_fk`) REFERENCES `funcionario` (`id_fun`) ON DELETE SET NULL");
+
+            // ---------- funcionario ----------
+            GarantirColuna(conexao, "funcionario", "cargo_fun", "varchar(20) DEFAULT NULL");
+            GarantirColuna(conexao, "funcionario", "comissao_serv_padrao", "decimal(5,2) NOT NULL DEFAULT 0");
+            GarantirColuna(conexao, "funcionario", "comissao_prod_padrao", "decimal(5,2) NOT NULL DEFAULT 0");
+            GarantirColuna(conexao, "funcionario", "data_admissao", "date DEFAULT NULL");
+            GarantirColuna(conexao, "funcionario", "data_desligamento", "date DEFAULT NULL");
+            GarantirColuna(conexao, "funcionario", "chave_pix", "varchar(100) DEFAULT NULL");
+            GarantirColuna(conexao, "funcionario", "dados_bancarios", "varchar(300) DEFAULT NULL");
+            GarantirColuna(conexao, "funcionario", "cor_agenda", "varchar(7) DEFAULT NULL");
+            GarantirColuna(conexao, "funcionario", "ativo_fun", "tinyint(1) NOT NULL DEFAULT 1");
+
+            // A foto fica fora de funcionario: as listagens fazem SELECT * e
+            // carregariam a imagem de todo mundo a cada tela.
+            CriarTabela(conexao, "funcionario_foto", @"
+                CREATE TABLE IF NOT EXISTS `funcionario_foto` (
+                  `id_fun_fk` int NOT NULL,
+                  `tipo` varchar(50) NOT NULL,
+                  `conteudo` mediumblob NOT NULL,
+                  PRIMARY KEY (`id_fun_fk`),
+                  CONSTRAINT `fk_funcionario_foto` FOREIGN KEY (`id_fun_fk`)
+                      REFERENCES `funcionario` (`id_fun`) ON DELETE CASCADE
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci");
+
+            // Servicos que o profissional faz, com comissao e preco proprios.
+            // Nulo nos dois e "usa o do servico".
+            CriarTabela(conexao, "funcionario_servico", @"
+                CREATE TABLE IF NOT EXISTS `funcionario_servico` (
+                  `id_fun_fk` int NOT NULL,
+                  `id_serv_fk` int NOT NULL,
+                  `comissao` decimal(10,2) DEFAULT NULL,
+                  `preco` decimal(10,2) DEFAULT NULL,
+                  PRIMARY KEY (`id_fun_fk`,`id_serv_fk`),
+                  KEY `fk_funcionario_servico_servico` (`id_serv_fk`),
+                  CONSTRAINT `fk_funcionario_servico_funcionario` FOREIGN KEY (`id_fun_fk`)
+                      REFERENCES `funcionario` (`id_fun`) ON DELETE CASCADE,
+                  CONSTRAINT `fk_funcionario_servico_servico` FOREIGN KEY (`id_serv_fk`)
+                      REFERENCES `servico` (`id_serv`) ON DELETE CASCADE
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci");
+
+            // ---------- servico ----------
+            // comis_funcionario_cli continua sendo o valor da comissao; o tipo
+            // nasce FIXO porque e assim que ela sempre foi gravada (em R$).
+            GarantirColuna(conexao, "servico", "id_cat_serv_fk", "int DEFAULT NULL");
+            GarantirColuna(conexao, "servico", "tipo_comissao", "varchar(10) NOT NULL DEFAULT 'FIXO'");
+            GarantirColuna(conexao, "servico", "custo_estimado", "decimal(10,2) DEFAULT NULL");
+            GarantirColuna(conexao, "servico", "ativo_serv", "tinyint(1) NOT NULL DEFAULT 1");
+            GarantirChave(conexao, "servico", "fk_servico_categoria",
+                "FOREIGN KEY (`id_cat_serv_fk`) REFERENCES `categoria_servico` (`id_cat_serv`) ON DELETE SET NULL");
+
+            // ---------- produto ----------
+            // valor_prod e o preco de venda e quantidade_prod o estoque atual.
+            GarantirColuna(conexao, "produto", "id_cat_prod_fk", "int DEFAULT NULL");
+            GarantirColuna(conexao, "produto", "codigo_barras", "varchar(50) DEFAULT NULL");
+            GarantirColuna(conexao, "produto", "sku", "varchar(50) DEFAULT NULL");
+            GarantirColuna(conexao, "produto", "unidade", "varchar(10) NOT NULL DEFAULT 'UN'");
+            GarantirColuna(conexao, "produto", "preco_custo", "decimal(10,2) DEFAULT NULL");
+            GarantirColuna(conexao, "produto", "comissao_prod", "decimal(5,2) DEFAULT NULL");
+            GarantirColuna(conexao, "produto", "ativo_prod", "tinyint(1) NOT NULL DEFAULT 1");
+            GarantirChave(conexao, "produto", "fk_produto_categoria",
+                "FOREIGN KEY (`id_cat_prod_fk`) REFERENCES `categoria_produto` (`id_cat_prod`) ON DELETE SET NULL");
+
+            // ---------- plano e assinatura ----------
+            GarantirColuna(conexao, "plano", "periodicidade", "varchar(12) NOT NULL DEFAULT 'MENSAL'");
+            GarantirColuna(conexao, "plano", "regra_comissao_assinante", "varchar(12) NOT NULL DEFAULT 'NORMAL'");
+            GarantirColuna(conexao, "plano", "ativo_plan", "tinyint(1) NOT NULL DEFAULT 1");
+            // Quantidade nula e item ilimitado no plano e no credito.
+            GarantirNulo(conexao, "plano_item", "quantidade", "int DEFAULT NULL");
+            GarantirNulo(conexao, "assinatura_saldo", "quantidade_total", "int DEFAULT NULL");
+            // data_fim continua sendo o vencimento.
+            GarantirColuna(conexao, "assinatura", "dia_cobranca", "tinyint DEFAULT NULL");
+
+            // ---------- fornecedor ----------
+            // nome_forn e o nome/razao social; documento_forn o CPF/CNPJ.
+            GarantirColuna(conexao, "fornecedor", "tipo_pessoa", "char(2) NOT NULL DEFAULT 'PJ'");
+            GarantirColuna(conexao, "fornecedor", "nome_fantasia", "varchar(200) DEFAULT NULL");
+            GarantirColuna(conexao, "fornecedor", "contato_forn", "varchar(100) DEFAULT NULL");
+            GarantirColuna(conexao, "fornecedor", "cep_forn", "varchar(9) DEFAULT NULL");
+            GarantirColuna(conexao, "fornecedor", "estado_forn", "varchar(200) DEFAULT NULL");
+            GarantirColuna(conexao, "fornecedor", "cidade_forn", "varchar(200) DEFAULT NULL");
+            GarantirColuna(conexao, "fornecedor", "bairro_forn", "varchar(200) DEFAULT NULL");
+            GarantirColuna(conexao, "fornecedor", "rua_forn", "varchar(200) DEFAULT NULL");
+            GarantirColuna(conexao, "fornecedor", "numero_forn", "varchar(200) DEFAULT NULL");
+            GarantirColuna(conexao, "fornecedor", "observacoes_forn", "varchar(500) DEFAULT NULL");
+            GarantirColuna(conexao, "fornecedor", "ativo_forn", "tinyint(1) NOT NULL DEFAULT 1");
+
+            // ---------- agendamento: varios servicos ----------
+            // agendamento.id_serv_fk continua com o primeiro servico, para o
+            // que ja le esta coluna (relatorios, exportacao) seguir valendo.
+            CriarTabela(conexao, "agendamento_servico", @"
+                CREATE TABLE IF NOT EXISTS `agendamento_servico` (
+                  `id_agend_fk` int NOT NULL,
+                  `id_serv_fk` int NOT NULL,
+                  `ordem` int NOT NULL DEFAULT 0,
+                  PRIMARY KEY (`id_agend_fk`,`id_serv_fk`),
+                  KEY `fk_agendamento_servico_servico` (`id_serv_fk`),
+                  CONSTRAINT `fk_agendamento_servico_agendamento` FOREIGN KEY (`id_agend_fk`)
+                      REFERENCES `agendamento` (`id_agend`) ON DELETE CASCADE,
+                  CONSTRAINT `fk_agendamento_servico_servico` FOREIGN KEY (`id_serv_fk`)
+                      REFERENCES `servico` (`id_serv`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci");
+
+            Executar(conexao, "agendamento_servico preenchido", @"
+                INSERT INTO agendamento_servico (id_agend_fk, id_serv_fk, ordem)
+                SELECT a.id_agend, a.id_serv_fk, 0
+                  FROM agendamento a
+                 WHERE NOT EXISTS (SELECT 1 FROM agendamento_servico s WHERE s.id_agend_fk = a.id_agend)");
+
+            // ---------- venda: profissional e desconto por item ----------
+            GarantirColuna(conexao, "venda_item", "id_fun_fk", "int DEFAULT NULL");
+            GarantirColuna(conexao, "venda_item", "desconto", "decimal(10,2) NOT NULL DEFAULT 0");
+            GarantirChave(conexao, "venda_item", "fk_venda_item_funcionario",
+                "FOREIGN KEY (`id_fun_fk`) REFERENCES `funcionario` (`id_fun`)");
+
+            // Itens antigos ficam com o profissional da venda: a comissao
+            // passa a ser apurada por item e nao pode mudar de dono.
+            Executar(conexao, "venda_item.id_fun_fk preenchido", @"
+                UPDATE venda_item vi
+                  JOIN venda v ON v.id_vend = vi.id_vend_fk
+                   SET vi.id_fun_fk = v.id_fun_fk
+                 WHERE vi.id_fun_fk IS NULL AND v.id_fun_fk IS NOT NULL");
+
+            // ---------- venda: grade de pagamentos ----------
+            CriarTabela(conexao, "venda_pagamento", @"
+                CREATE TABLE IF NOT EXISTS `venda_pagamento` (
+                  `id_vend_pag` int NOT NULL AUTO_INCREMENT,
+                  `id_vend_fk` int NOT NULL,
+                  `forma` varchar(20) NOT NULL,
+                  `valor` decimal(10,2) NOT NULL,
+                  `parcelas` int DEFAULT NULL,
+                  PRIMARY KEY (`id_vend_pag`),
+                  KEY `idx_venda_pagamento_venda` (`id_vend_fk`),
+                  CONSTRAINT `fk_venda_pagamento_venda` FOREIGN KEY (`id_vend_fk`)
+                      REFERENCES `venda` (`id_vend`) ON DELETE CASCADE
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci");
+
+            // O caixa passa a somar pelos pagamentos: cada venda antiga vira
+            // um pagamento unico com a forma e o valor que ja tinha.
+            Executar(conexao, "venda_pagamento preenchido", @"
+                INSERT INTO venda_pagamento (id_vend_fk, forma, valor, parcelas)
+                SELECT v.id_vend, v.forma_pagamento_vend, COALESCE(v.valor_vend, 0), v.quant_parcela_vend
+                  FROM venda v
+                 WHERE v.forma_pagamento_vend IS NOT NULL
+                   AND NOT EXISTS (SELECT 1 FROM venda_pagamento p WHERE p.id_vend_fk = v.id_vend)");
+
+            // ---------- caixa ----------
+            // Sangria e suprimento antigos eram todos em dinheiro.
+            GarantirColuna(conexao, "movimento_caixa", "forma_pagamento",
+                "varchar(20) NOT NULL DEFAULT 'DINHEIRO'");
+
+            // ---------- despesa ----------
+            GarantirColuna(conexao, "despesa", "id_fun_fk", "int DEFAULT NULL");
+            GarantirColuna(conexao, "despesa", "data_vencimento", "date DEFAULT NULL");
+            GarantirColuna(conexao, "despesa", "data_pagamento", "date DEFAULT NULL");
+            GarantirColuna(conexao, "despesa", "parcelas", "int NOT NULL DEFAULT 1");
+            GarantirColuna(conexao, "despesa", "recorrente", "tinyint(1) NOT NULL DEFAULT 0");
+            GarantirChave(conexao, "despesa", "fk_despesa_funcionario",
+                "FOREIGN KEY (`id_fun_fk`) REFERENCES `funcionario` (`id_fun`) ON DELETE SET NULL");
+
+            // data_desp era o vencimento da despesa em aberto e o dia do
+            // pagamento da paga; as colunas novas nascem com esse valor.
+            Executar(conexao, "despesa.data_vencimento preenchida",
+                "UPDATE despesa SET data_vencimento = data_desp WHERE data_vencimento IS NULL");
+            Executar(conexao, "despesa.data_pagamento preenchida",
+                "UPDATE despesa SET data_pagamento = data_desp WHERE pago = 1 AND data_pagamento IS NULL");
+
+            CriarTabela(conexao, "despesa_anexo", @"
+                CREATE TABLE IF NOT EXISTS `despesa_anexo` (
+                  `id_anexo` int NOT NULL AUTO_INCREMENT,
+                  `id_desp_fk` int NOT NULL,
+                  `nome` varchar(200) NOT NULL,
+                  `tipo` varchar(100) NOT NULL,
+                  `tamanho` int NOT NULL,
+                  `conteudo` mediumblob NOT NULL,
+                  `criado_em` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                  PRIMARY KEY (`id_anexo`),
+                  KEY `idx_despesa_anexo_despesa` (`id_desp_fk`),
+                  CONSTRAINT `fk_despesa_anexo_despesa` FOREIGN KEY (`id_desp_fk`)
+                      REFERENCES `despesa` (`id_desp`) ON DELETE CASCADE
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci");
+
+            // ---------- compras: cabecalho + itens ----------
+            // compras vira o cabecalho da nota; item_comp, quantidade e
+            // id_prod_fk ficam para as compras antigas e para a listagem.
+            GarantirColuna(conexao, "compras", "numero_nota", "varchar(30) DEFAULT NULL");
+            GarantirColuna(conexao, "compras", "frete", "decimal(10,2) NOT NULL DEFAULT 0");
+            GarantirColuna(conexao, "compras", "desconto", "decimal(10,2) NOT NULL DEFAULT 0");
+            GarantirColuna(conexao, "compras", "observacao", "varchar(300) DEFAULT NULL");
+            GarantirColuna(conexao, "compras", "forma_pagamento", "varchar(20) DEFAULT NULL");
+            GarantirColuna(conexao, "compras", "parcelas", "int NOT NULL DEFAULT 1");
+            GarantirColuna(conexao, "compras", "vencimento_primeira", "date DEFAULT NULL");
+
+            CriarTabela(conexao, "compra_item", @"
+                CREATE TABLE IF NOT EXISTS `compra_item` (
+                  `id_comp_item` int NOT NULL AUTO_INCREMENT,
+                  `id_comp_fk` int NOT NULL,
+                  `id_prod_fk` int DEFAULT NULL,
+                  `descricao` varchar(200) NOT NULL,
+                  `quantidade` int NOT NULL,
+                  `custo_unit` decimal(10,2) NOT NULL,
+                  PRIMARY KEY (`id_comp_item`),
+                  KEY `idx_compra_item_compra` (`id_comp_fk`),
+                  KEY `fk_compra_item_produto` (`id_prod_fk`),
+                  CONSTRAINT `fk_compra_item_compra` FOREIGN KEY (`id_comp_fk`)
+                      REFERENCES `compras` (`id_comp`) ON DELETE CASCADE,
+                  CONSTRAINT `fk_compra_item_produto` FOREIGN KEY (`id_prod_fk`)
+                      REFERENCES `produto` (`id_prod`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci");
+
+            // Cada compra antiga era um item so: vira a primeira linha da grade.
+            Executar(conexao, "compra_item preenchido", @"
+                INSERT INTO compra_item (id_comp_fk, id_prod_fk, descricao, quantidade, custo_unit)
+                SELECT c.id_comp, c.id_prod_fk,
+                       COALESCE(NULLIF(TRIM(c.item_comp), ''), p.nome_prod, 'Item da compra'),
+                       GREATEST(COALESCE(c.quantidade, 1), 1),
+                       ROUND(COALESCE(c.valor_comp, 0) / GREATEST(COALESCE(c.quantidade, 1), 1), 2)
+                  FROM compras c
+                  LEFT JOIN produto p ON p.id_prod = c.id_prod_fk
+                 WHERE NOT EXISTS (SELECT 1 FROM compra_item i WHERE i.id_comp_fk = c.id_comp)");
+
+            Executar(conexao, "compras.forma_pagamento preenchida", @"
+                UPDATE compras c
+                  JOIN despesa d ON d.id_desp = c.id_desp_fk
+                   SET c.forma_pagamento = d.forma_pagamento
+                 WHERE c.forma_pagamento IS NULL");
+        }
+
         // ---------- apoio das migracoes ----------
+
+        /// <summary>Roda um preenchimento e so registra no log se mexeu em alguma linha.</summary>
+        private void Executar(MySqlConnection conexao, string oQue, string sql)
+        {
+            using var comando = new MySqlCommand(sql, conexao);
+            var linhas = comando.ExecuteNonQuery();
+            if (linhas > 0)
+                _log.LogWarning("Migração: {OQue} ({Linhas} linha(s)).", oQue, linhas);
+        }
+
+        /// <summary>
+        /// Libera NULL numa coluna que era NOT NULL. So age se ela ainda for
+        /// NOT NULL; os valores existentes ficam como estao.
+        /// </summary>
+        private void GarantirNulo(
+            MySqlConnection conexao, string tabela, string coluna, string definicao)
+        {
+            using (var atual = new MySqlCommand(
+                @"SELECT is_nullable FROM information_schema.columns
+                   WHERE table_schema = DATABASE()
+                     AND table_name = @t AND column_name = @c", conexao))
+            {
+                atual.Parameters.AddWithValue("@t", tabela);
+                atual.Parameters.AddWithValue("@c", coluna);
+
+                if (atual.ExecuteScalar() is not string nulo || nulo == "YES") return;
+            }
+
+            using var alterar = new MySqlCommand(
+                $"ALTER TABLE `{tabela}` MODIFY COLUMN `{coluna}` {definicao}", conexao);
+
+            alterar.ExecuteNonQuery();
+            _log.LogWarning("Coluna {Tabela}.{Coluna} passou a aceitar nulo.", tabela, coluna);
+        }
 
         /// <summary>
         /// Alarga um varchar que ficou curto. So aumenta: se a coluna ja

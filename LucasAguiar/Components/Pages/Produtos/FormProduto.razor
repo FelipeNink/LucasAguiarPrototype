@@ -4,6 +4,7 @@
 @using LucasAguiar.Services
 @inject ProdutoDAO produtoDAO
 @inject FornecedorDAO fornecedorDAO
+@inject CategoriaDAO categoriaDAO
 @inject AuthenticationService auth
 @inject NavigationManager Navigation
 
@@ -27,6 +28,31 @@
                 <Campo Rotulo="Marca" Para="prd-marca" Colunas="4">
                     <input id="prd-marca" class="form-control" maxlength="200" @bind="Modelo.Marca" />
                 </Campo>
+                <Campo Rotulo="Categoria" Colunas="4">
+                    <ChildContent>
+                        <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesCategoria"
+                                 Valor="Modelo.IdCategoria ?? 0"
+                                 ValorChanged="v => Modelo.IdCategoria = v == 0 ? null : v"
+                                 TextoDe="o => o.Rotulo" ValorDe="o => o.Id" />
+                    </ChildContent>
+                    <Acao>
+                        <button type="button" class="acao-campo" @onclick="() => modalAberto = CadastroRapido.TipoCadastro.CategoriaProduto">
+                            + Cadastrar categoria
+                        </button>
+                    </Acao>
+                </Campo>
+                <Campo Rotulo="Código de barras" Para="prd-ean" Colunas="3">
+                    <input id="prd-ean" class="form-control" maxlength="50" inputmode="numeric" @bind="Modelo.CodigoBarras" />
+                </Campo>
+                <Campo Rotulo="SKU" Para="prd-sku" Colunas="3">
+                    <input id="prd-sku" class="form-control" maxlength="50" @bind="Modelo.Sku" />
+                </Campo>
+                <Campo Rotulo="Situação" Para="prd-ativo" Colunas="2">
+                    <div class="form-check form-switch campo-switch">
+                        <input id="prd-ativo" class="form-check-input" type="checkbox" role="switch" @bind="Modelo.Ativo" />
+                        <label class="form-check-label" for="prd-ativo">@(Modelo.Ativo ? "Ativo" : "Inativo")</label>
+                    </div>
+                </Campo>
                 <Campo Rotulo="Descrição" Para="prd-descricao" Colunas="12">
                     <textarea id="prd-descricao" class="form-control" rows="3" maxlength="200"
                               @bind="Modelo.Descricao"></textarea>
@@ -37,13 +63,27 @@
         <section class="cartao secao-form">
             <h2>Estoque e preço</h2>
             <div class="grade-12">
-                <Campo Rotulo="Quantidade" Para="prd-qtd" Colunas="2"
+                <Campo Rotulo="Estoque atual" Para="prd-qtd" Colunas="2"
                        Erro="@(Modelo.Quantidade < 0 ? "Não pode ser negativa." : null)">
                     <input id="prd-qtd" type="number" min="0" class="form-control" @bind="Modelo.Quantidade" />
                 </Campo>
-                <Campo Rotulo="Preço de venda" Para="prd-valor" Colunas="3">
+                <Campo Rotulo="Unidade" Colunas="2">
+                    <Seletor TItem="Opcao" TValor="string" Itens="OpcoesUnidade"
+                             @bind-Valor="Modelo.Unidade" TextoDe="o => o.Rotulo" ValorDe="o => o.Valor" />
+                </Campo>
+                <Campo Rotulo="Preço de custo" Para="prd-custo" Colunas="3">
+                    <InputMoeda Id="prd-custo" Valor="Modelo.PrecoCusto ?? 0"
+                                ValorChanged="v => Modelo.PrecoCusto = v == 0 ? null : v" />
+                </Campo>
+                <Campo Rotulo="Preço de venda" Para="prd-valor" Colunas="3" Dica="@DicaMargem">
                     <InputMoeda Id="prd-valor" Valor="(decimal)Modelo.Valor"
                                 ValorChanged="v => Modelo.Valor = (float)v" />
+                </Campo>
+                <Campo Rotulo="Comissão (%)" Para="prd-comissao" Colunas="2"
+                       Dica="Vazio usa o % padrão do profissional."
+                       Erro="@(Modelo.Comissao > 100 ? "No máximo 100%." : null)">
+                    <InputMoeda Id="prd-comissao" Valor="Modelo.Comissao ?? 0"
+                                ValorChanged="v => Modelo.Comissao = v == 0 ? null : v" />
                 </Campo>
             </div>
         </section>
@@ -51,14 +91,14 @@
         <section class="cartao secao-form">
             <h2>Fornecedor</h2>
             <div class="grade-12">
-                <Campo Rotulo="Fornecedor" Colunas="4"
+                <Campo Rotulo="Fornecedor padrão" Colunas="4"
                        Dica="@(fornecedores.Count == 0 ? "Nenhum fornecedor cadastrado ainda." : null)">
                     <ChildContent>
                         <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesFornecedor"
                                  @bind-Valor="Modelo.IdFornecedor" TextoDe="o => o.Rotulo" ValorDe="o => o.Id" />
                     </ChildContent>
                     <Acao>
-                        <button type="button" class="acao-campo" @onclick="() => modalFornecedor = true">
+                        <button type="button" class="acao-campo" @onclick="() => modalAberto = CadastroRapido.TipoCadastro.Fornecedor">
                             + Cadastrar fornecedor
                         </button>
                     </Acao>
@@ -70,46 +110,74 @@
     </form>
 </div>
 
-<CadastroRapido Visivel="modalFornecedor"
-                Tipo="CadastroRapido.TipoCadastro.Fornecedor"
-                OnCriado="AoCriarFornecedor"
-                OnCancelado="() => modalFornecedor = false" />
+<CadastroRapido Visivel="@(modalAberto != null)"
+                Tipo="@(modalAberto ?? CadastroRapido.TipoCadastro.Fornecedor)"
+                OnCriado="AoCriarRegistro"
+                OnCancelado="() => modalAberto = null" />
 
 @code {
     [Parameter, EditorRequired] public Produto Modelo { get; set; } = new();
     [Parameter] public bool Novo { get; set; }
 
     private List<Fornecedor> fornecedores = new();
+    private List<Categoria> categorias = new();
     private string? erro;
     private bool tentouSalvar;
     private bool salvando;
-    private bool modalFornecedor;
+    private CadastroRapido.TipoCadastro? modalAberto;
 
     private List<OpcaoId> OpcoesFornecedor =>
         new List<OpcaoId> { new(0, "Nenhum") }
-            .Concat(fornecedores.Select(f => new OpcaoId(f.IdFornecedor, f.NomeFornecedor ?? "Sem nome")))
+            .Concat(fornecedores
+                .Where(f => f.Ativo || f.IdFornecedor == Modelo.IdFornecedor)
+                .Select(f => new OpcaoId(f.IdFornecedor, f.NomeFornecedor ?? "Sem nome")))
             .ToList();
+
+    private List<OpcaoId> OpcoesCategoria =>
+        new List<OpcaoId> { new(0, "Sem categoria") }
+            .Concat(categorias
+                .Where(c => c.Ativo || c.Id == Modelo.IdCategoria)
+                .Select(c => new OpcaoId(c.Id, c.Nome)))
+            .ToList();
+
+    private static readonly List<Opcao> OpcoesUnidade =
+        Produto.Unidades.Select(u => new Opcao(u, u)).ToList();
+
+    private string? DicaMargem =>
+        Modelo.PrecoCusto > 0 && Modelo.Valor > 0
+            ? $"Margem de {((decimal)Modelo.Valor - Modelo.PrecoCusto.Value) / (decimal)Modelo.Valor:P1} sobre o custo."
+            : null;
 
     protected override void OnInitialized()
     {
         try
         {
             fornecedores = fornecedorDAO.ListarTodos();
+            categorias = categoriaDAO.Listar(TipoCategoria.Produto);
         }
         catch (Exception ex)
         {
-            erro = "Erro ao carregar os fornecedores: " + ex.Message;
+            erro = "Erro ao carregar os cadastros: " + ex.Message;
         }
     }
 
     /// <summary>Recarrega e já seleciona, sem perder o produto em digitação.</summary>
-    private void AoCriarFornecedor(int id)
+    private void AoCriarRegistro(int id)
     {
         try
         {
             erro = null;
-            fornecedores = fornecedorDAO.ListarTodos() ?? new();
-            Modelo.IdFornecedor = id;
+
+            if (modalAberto == CadastroRapido.TipoCadastro.CategoriaProduto)
+            {
+                categorias = categoriaDAO.Listar(TipoCategoria.Produto);
+                Modelo.IdCategoria = id;
+            }
+            else
+            {
+                fornecedores = fornecedorDAO.ListarTodos() ?? new();
+                Modelo.IdFornecedor = id;
+            }
         }
         catch (Exception ex)
         {
@@ -117,7 +185,7 @@
         }
         finally
         {
-            modalFornecedor = false;
+            modalAberto = null;
         }
     }
 
@@ -126,7 +194,7 @@
         tentouSalvar = true;
         erro = null;
 
-        if (string.IsNullOrWhiteSpace(Modelo.NomeProduto) || Modelo.Quantidade < 0)
+        if (string.IsNullOrWhiteSpace(Modelo.NomeProduto) || Modelo.Quantidade < 0 || Modelo.Comissao > 100)
         {
             erro = "Confira os campos destacados.";
             return;

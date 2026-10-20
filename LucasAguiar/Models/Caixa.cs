@@ -17,6 +17,10 @@ namespace LucasAguiar.Models
         public int IdMovimento { get; set; }
         public int IdCaixa { get; set; }
         public string Tipo { get; set; } = TipoMovimento.Sangria;
+
+        /// <summary>Só dinheiro passa pela gaveta; as outras formas ficam registradas.</summary>
+        public string FormaPagamento { get; set; } = Models.FormaPagamento.Dinheiro;
+
         public decimal Valor { get; set; }
         public string? Descricao { get; set; }
         public DateTime DataHora { get; set; } = DateTime.Now;
@@ -77,7 +81,10 @@ namespace LucasAguiar.Models
         public decimal DespesasDinheiro { get; set; }
         public decimal DespesasOutras { get; set; }
 
+        /// <summary>Só as em dinheiro: as outras não passam pela gaveta.</summary>
         public decimal Sangrias { get; set; }
+
+        /// <summary>Só os em dinheiro.</summary>
         public decimal Suprimentos { get; set; }
 
         public decimal Comissoes { get; set; }

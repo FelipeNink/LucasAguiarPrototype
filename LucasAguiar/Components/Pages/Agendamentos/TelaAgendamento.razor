@@ -48,24 +48,11 @@
             @* ================= 2. SERVICO E PROFISSIONAL ================= *@
             <section class="bloco">
                 <h2 class="bloco-titulo">
-                    <span class="passo @(Modelo.IdServico > 0 && Modelo.IdFuncionario > 0 ? "ok" : "")">@(Modelo.IdServico > 0 && Modelo.IdFuncionario > 0 ? "✓" : "2")</span>
-                    Serviço e profissional
+                    <span class="passo @(Modelo.IdsServicos.Count > 0 && Modelo.IdFuncionario > 0 ? "ok" : "")">@(Modelo.IdsServicos.Count > 0 && Modelo.IdFuncionario > 0 ? "✓" : "2")</span>
+                    Profissional e serviços
                 </h2>
 
                 <div class="grade-12">
-                    <Campo Rotulo="Serviço" Colunas="6" Obrigatorio="true"
-                           Erro="@(tentouSalvar && Modelo.IdServico <= 0 ? "Selecione o serviço." : null)">
-                        <ChildContent>
-                            <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesServico"
-                                     Valor="Modelo.IdServico" ValorChanged="EscolherServico"
-                                     TextoDe="o => o.Rotulo" ValorDe="o => o.Id" Placeholder="Selecione" />
-                        </ChildContent>
-                        <Acao>
-                            <button type="button" class="acao-campo" @onclick="() => modalAberto = CadastroRapido.TipoCadastro.Servico">
-                                + Cadastrar serviço
-                            </button>
-                        </Acao>
-                    </Campo>
                     <Campo Rotulo="Profissional" Colunas="6" Obrigatorio="true"
                            Erro="@(tentouSalvar && Modelo.IdFuncionario <= 0 ? "Selecione o profissional." : null)">
                         <ChildContent>
@@ -77,6 +64,36 @@
                         <Acao>
                             <button type="button" class="acao-campo" @onclick="() => modalAberto = CadastroRapido.TipoCadastro.Funcionario">
                                 + Cadastrar profissional
+                            </button>
+                        </Acao>
+                    </Campo>
+
+                    <Campo Rotulo="Serviços" Colunas="12" Obrigatorio="true"
+                           Dica="Clique para marcar um ou mais; a ordem do clique é a ordem do atendimento."
+                           Erro="@(tentouSalvar && Modelo.IdsServicos.Count == 0 ? "Selecione ao menos um serviço." : null)">
+                        <ChildContent>
+                            <div class="grade-servicos" role="group" aria-label="Serviços">
+                                @foreach (var s in ServicosDisponiveis)
+                                {
+                                    var ordem = Modelo.IdsServicos.IndexOf(s.IdServico);
+                                    <button type="button" class="servico-opcao @(ordem >= 0 ? "marcado" : "")"
+                                            aria-pressed="@((ordem >= 0).ToString().ToLowerInvariant())"
+                                            @onclick="() => AlternarServico(s.IdServico)">
+                                        <span class="servico-nome">
+                                            @if (ordem >= 0)
+                                            {
+                                                <span class="servico-ordem">@(ordem + 1)</span>
+                                            }
+                                            @s.NomeServico
+                                        </span>
+                                        <span class="servico-info">@PrecoDe(s).ToString("C") · @s.DuracaoServico min</span>
+                                    </button>
+                                }
+                            </div>
+                        </ChildContent>
+                        <Acao>
+                            <button type="button" class="acao-campo" @onclick="() => modalAberto = CadastroRapido.TipoCadastro.Servico">
+                                + Cadastrar serviço
                             </button>
                         </Acao>
                     </Campo>
@@ -135,8 +152,10 @@
                     <dd class="@(ClienteEscolhido == null ? "suave" : "")">@(ClienteEscolhido?.NomeCliente ?? "Não selecionado")</dd>
                 </div>
                 <div>
-                    <dt>Serviço</dt>
-                    <dd class="@(ServicoEscolhido == null ? "suave" : "")">@(ServicoEscolhido?.NomeServico ?? "Não selecionado")</dd>
+                    <dt>@(ServicosEscolhidos.Count > 1 ? "Serviços" : "Serviço")</dt>
+                    <dd class="@(ServicosEscolhidos.Count == 0 ? "suave" : "")">
+                        @(ServicosEscolhidos.Count == 0 ? "Não selecionado" : string.Join(" + ", ServicosEscolhidos.Select(s => s.NomeServico)))
+                    </dd>
                 </div>
                 <div>
                     <dt>Profissional</dt>
@@ -149,11 +168,11 @@
                 </div>
             </dl>
 
-            @if (ServicoEscolhido != null)
+            @if (ServicosEscolhidos.Count > 0)
             {
                 <div class="resumo-total">
-                    <span>Valor do serviço</span>
-                    <strong>@ServicoEscolhido.PrecoServico.ToString("C")</strong>
+                    <span>@(ServicosEscolhidos.Count > 1 ? "Valor dos serviços" : "Valor do serviço")</span>
+                    <strong>@ServicosEscolhidos.Sum(PrecoDe).ToString("C")</strong>
                 </div>
             }
 
@@ -215,21 +234,37 @@
     private List<Servico> servicos = new();
     private List<Agendamento> ocupados = new();
 
+    private Dictionary<(int IdFuncionario, int IdServico), FuncionarioServico> precosProprios = new();
+
     private Cliente? ClienteEscolhido => clientes.FirstOrDefault(c => c.IdCliente == Modelo.IdCliente);
-    private Servico? ServicoEscolhido => servicos.FirstOrDefault(s => s.IdServico == Modelo.IdServico);
     private Funcionario? ProfissionalEscolhido => funcionarios.FirstOrDefault(f => f.IdFuncionario == Modelo.IdFuncionario);
+
+    private List<Servico> ServicosEscolhidos =>
+        Modelo.IdsServicos
+            .Select(id => servicos.FirstOrDefault(s => s.IdServico == id))
+            .OfType<Servico>()
+            .ToList();
 
     private DateTime Data => Modelo.DataHora.Date;
 
+    // Inativos ficam de fora, menos o que ja esta no agendamento.
     private List<OpcaoId> OpcoesCliente =>
-        clientes.Select(c => new OpcaoId(c.IdCliente, c.Identificacao)).ToList();
+        clientes.Where(c => c.Ativo || c.IdCliente == Modelo.IdCliente)
+            .Select(c => new OpcaoId(c.IdCliente, c.Identificacao)).ToList();
 
     private List<OpcaoId> OpcoesFuncionario =>
-        funcionarios.Select(f => new OpcaoId(f.IdFuncionario, f.NomeFuncionario ?? "Sem nome")).ToList();
+        funcionarios.Where(f => f.Ativo || f.IdFuncionario == Modelo.IdFuncionario)
+            .Select(f => new OpcaoId(f.IdFuncionario, f.NomeFuncionario ?? "Sem nome")).ToList();
 
-    private List<OpcaoId> OpcoesServico =>
-        servicos.Select(s => new OpcaoId(s.IdServico,
-            $"{s.NomeServico} — {s.PrecoServico.ToString("C")} · {s.DuracaoServico} min")).ToList();
+    private List<Servico> ServicosDisponiveis =>
+        servicos.Where(s => s.Ativo || Modelo.IdsServicos.Contains(s.IdServico))
+            .OrderBy(s => s.NomeServico).ToList();
+
+    /// <summary>Preco proprio do profissional para o servico, ou o do servico.</summary>
+    private decimal PrecoDe(Servico s) =>
+        precosProprios.TryGetValue((Modelo.IdFuncionario, s.IdServico), out var proprio) && proprio.Preco is decimal preco
+            ? preco
+            : (decimal)s.PrecoServico;
 
     private static readonly List<Opcao> OpcoesStatus = new()
     {
@@ -245,6 +280,7 @@
             clientes = clienteDAO.ListarTodos();
             funcionarios = funcionarioDAO.ListarTodos();
             servicos = servicoDAO.ListarTodos();
+            precosProprios = funcionarioDAO.MapaServicos();
         }
         catch (Exception ex)
         {
@@ -254,14 +290,17 @@
         CarregarOcupados();
     }
 
-    /// <summary>Trocar o servico traz a duracao dele, que o operador ainda pode ajustar.</summary>
-    private void EscolherServico(int id)
+    /// <summary>
+    /// Marca ou desmarca o servico. A duracao vira a soma dos marcados, que o
+    /// operador ainda pode ajustar.
+    /// </summary>
+    private void AlternarServico(int id)
     {
-        Modelo.IdServico = id;
+        if (!Modelo.IdsServicos.Remove(id)) Modelo.IdsServicos.Add(id);
+        Modelo.IdServico = Modelo.IdsServicos.FirstOrDefault();
 
-        var servico = ServicoEscolhido;
-        if (servico != null && servico.DuracaoServico > 0)
-            Modelo.DuracaoMin = servico.DuracaoServico;
+        var duracao = ServicosEscolhidos.Sum(s => s.DuracaoServico);
+        if (duracao > 0) Modelo.DuracaoMin = duracao;
     }
 
     private void EscolherProfissional(int id)
@@ -332,7 +371,7 @@
 
                 case CadastroRapido.TipoCadastro.Servico:
                     servicos = servicoDAO.ListarTodos();
-                    EscolherServico(id);
+                    if (!Modelo.IdsServicos.Contains(id)) AlternarServico(id);
                     break;
             }
         }
@@ -351,7 +390,7 @@
         tentouSalvar = true;
         erro = null;
 
-        if (Modelo.IdCliente <= 0 || Modelo.IdServico <= 0 || Modelo.IdFuncionario <= 0 || Modelo.DuracaoMin <= 0)
+        if (Modelo.IdCliente <= 0 || Modelo.IdsServicos.Count == 0 || Modelo.IdFuncionario <= 0 || Modelo.DuracaoMin <= 0)
         {
             erro = "Confira os campos destacados.";
             return;

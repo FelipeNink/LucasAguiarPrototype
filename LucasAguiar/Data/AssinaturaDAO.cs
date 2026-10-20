@@ -119,7 +119,7 @@ namespace LucasAguiar.Data
                     IdReferencia = leitor.GetInt32("id_ref"),
                     Descricao = leitor.GetString("descricao"),
                     ValorReferencia = leitor.GetDecimal("valor_referencia"),
-                    QuantidadeTotal = leitor.GetInt32("quantidade_total"),
+                    QuantidadeTotal = DAOHelper.IsNull(leitor, "quantidade_total") ? null : leitor.GetInt32("quantidade_total"),
                     QuantidadeUsada = leitor.GetInt32("quantidade_usada")
                 });
             }
@@ -142,11 +142,13 @@ namespace LucasAguiar.Data
             int idAssinatura;
             using (var comando = new MySqlCommand(@"
                 INSERT INTO assinatura
-                    (id_cli_fk, id_plan_fk, data_inicio, data_fim, valor_pago, id_vend_fk, status)
+                    (id_cli_fk, id_plan_fk, data_inicio, data_fim, valor_pago, id_vend_fk, status, dia_cobranca)
                 VALUES
-                    (@idCliente, @idPlano, @inicio, @fim, @valor, @idVenda, 'ATIVA');
+                    (@idCliente, @idPlano, @inicio, @fim, @valor, @idVenda, 'ATIVA', @diaCobranca);
                 SELECT LAST_INSERT_ID();", conexao, transacao))
             {
+                // A cobranca seguinte cai no mesmo dia do mes da compra.
+                comando.Parameters.AddWithValue("@diaCobranca", DateTime.Today.Day);
                 comando.Parameters.AddWithValue("@idCliente", idCliente);
                 comando.Parameters.AddWithValue("@idPlano", idPlano);
                 comando.Parameters.AddWithValue("@inicio", DateTime.Today);
@@ -172,7 +174,8 @@ namespace LucasAguiar.Data
                 comando.Parameters.AddWithValue("@idRef", item.IdReferencia);
                 comando.Parameters.AddWithValue("@descricao", item.Descricao ?? "Item do plano");
                 comando.Parameters.AddWithValue("@valor", item.ValorUnitario);
-                comando.Parameters.AddWithValue("@qtd", Math.Max(1, item.Quantidade));
+                comando.Parameters.AddWithValue("@qtd",
+                    item.Quantidade.HasValue ? Math.Max(1, item.Quantidade.Value) : DBNull.Value);
                 comando.ExecuteNonQuery();
             }
 
@@ -190,7 +193,7 @@ namespace LucasAguiar.Data
                 UPDATE assinatura_saldo
                 SET quantidade_usada = quantidade_usada + @qtd
                 WHERE id_saldo = @idSaldo
-                  AND quantidade_usada + @qtd <= quantidade_total", conexao, transacao);
+                  AND (quantidade_total IS NULL OR quantidade_usada + @qtd <= quantidade_total)", conexao, transacao);
 
             comando.Parameters.AddWithValue("@idSaldo", idSaldo);
             comando.Parameters.AddWithValue("@qtd", quantidade);
@@ -214,6 +217,7 @@ namespace LucasAguiar.Data
                 ValorPago = leitor.GetDecimal("valor_pago"),
                 IdVenda = leitor.IsDBNull(iVenda) ? null : leitor.GetInt32(iVenda),
                 Status = leitor.GetString("status"),
+                DiaCobranca = DAOHelper.IsNull(leitor, "dia_cobranca") ? null : Convert.ToInt32(leitor.GetValue(leitor.GetOrdinal("dia_cobranca"))),
                 NomePlano = leitor.GetString("nome_plan")
             };
         }

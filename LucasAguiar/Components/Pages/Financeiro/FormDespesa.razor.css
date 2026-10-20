@@ -1,0 +1,19 @@
+.lista-anexos {
+    list-style: none;
+    margin: 0.75rem 0 0;
+    padding: 0;
+}
+
+.lista-anexos li {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.35rem 0;
+    border-top: 1px solid var(--borda-suave);
+    font-size: 0.88rem;
+}
+
+.lista-anexos .suave {
+    color: var(--texto-fraco);
+    font-size: 0.8rem;
+}

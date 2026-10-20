@@ -10,7 +10,11 @@ namespace LucasAguiar.Models
         public string TipoItem { get; set; } = Models.TipoItem.Servico;
 
         public int IdReferencia { get; set; }
-        public int Quantidade { get; set; } = 1;
+
+        /// <summary>Nulo é ilimitado.</summary>
+        public int? Quantidade { get; set; } = 1;
+
+        public bool Ilimitado => !Quantidade.HasValue;
 
         // Preenchidos por join, para exibicao
         public string? Descricao { get; set; }

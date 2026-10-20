@@ -1,6 +1,7 @@
-@* Formulario de compra, o mesmo para criar e editar. Na criacao a compra
-   lanca a despesa e da entrada no estoque; na edicao o DAO acerta os
-   dois, mas forma de pagamento e situacao nao mudam mais. *@
+@* Formulario de compra, o mesmo para criar e editar: cabecalho da nota,
+   grade de itens e pagamento. Na criacao a compra lanca a despesa e da
+   entrada no estoque; na edicao o DAO acerta os dois, mas forma de
+   pagamento e situacao nao mudam mais. *@
 
 @using LucasAguiar.Models
 @inject CompraDAO compraDAO
@@ -20,83 +21,9 @@
 
     <form @onsubmit="Salvar" novalidate>
         <section class="cartao secao-form">
-            <h2>Compra</h2>
+            <h2>Nota</h2>
             <div class="grade-12">
-                <Campo Rotulo="Item" Para="cmp-item" Colunas="7" Obrigatorio="true"
-                       Erro="@(tentouSalvar && string.IsNullOrWhiteSpace(Modelo.ItemCompra) ? "Informe o item." : null)">
-                    <input id="cmp-item" class="form-control" maxlength="200" placeholder="Ex.: Caixa de pomada"
-                           @bind="Modelo.ItemCompra" />
-                </Campo>
-                <Campo Rotulo="Data" Para="cmp-data" Colunas="3">
-                    <input id="cmp-data" type="date" class="form-control" @bind="Modelo.DataCompra" />
-                </Campo>
-                <Campo Rotulo="Quantidade" Para="cmp-qtd" Colunas="2" Obrigatorio="true"
-                       Erro="@(tentouSalvar && Modelo.Quantidade <= 0 ? "Maior que zero." : null)">
-                    <input id="cmp-qtd" type="number" min="1" class="form-control" @bind="Modelo.Quantidade" />
-                </Campo>
-            </div>
-        </section>
-
-        <section class="cartao secao-form">
-            <h2>Pagamento</h2>
-            <div class="grade-12">
-                <Campo Rotulo="Valor total pago" Para="cmp-valor" Colunas="3" Obrigatorio="true"
-                       Erro="@(tentouSalvar && Modelo.ValorCompra <= 0 ? "Informe o valor." : null)"
-                       Dica="@(Modelo.Quantidade > 1 && Modelo.ValorCompra > 0 ? $"{Modelo.ValorUnitario:C} cada." : null)">
-                    <InputMoeda Id="cmp-valor" Valor="Modelo.ValorCompra" ValorChanged="v => Modelo.ValorCompra = v" />
-                </Campo>
-
-                @if (Novo)
-                {
-                    <Campo Rotulo="Forma de pagamento" Colunas="4">
-                        <Seletor TItem="Opcao" TValor="string" Itens="OpcoesForma"
-                                 @bind-Valor="formaPagamento" TextoDe="o => o.Rotulo" ValorDe="o => o.Valor"
-                                 PontoDe="o => o.Cor" />
-                    </Campo>
-                    <Campo Rotulo="Situação" Para="cmp-pago" Colunas="3">
-                        <div class="form-check form-switch campo-switch">
-                            <input id="cmp-pago" class="form-check-input" type="checkbox" role="switch" @bind="pago" />
-                            <label class="form-check-label" for="cmp-pago">@(pago ? "Já foi paga" : "A pagar")</label>
-                        </div>
-                    </Campo>
-                }
-                else
-                {
-                    <Campo Rotulo="Forma de pagamento" Colunas="5"
-                           Dica="Já lançada na despesa. Para mudar, exclua a compra e lance de novo.">
-                        <input class="form-control" readonly value="@FormaPagamento.Rotulo(Modelo.FormaPagamentoDespesa)" />
-                    </Campo>
-                }
-            </div>
-
-            @if (Novo)
-            {
-                <p class="aviso-form">
-                    A compra lança uma <strong>despesa</strong> na categoria Produtos e dá
-                    <strong>entrada no estoque</strong> do produto escolhido.
-                    @if (pago && formaPagamento == FormaPagamento.Dinheiro && caixaAberto != null)
-                    {
-                        <text> O valor sai da gaveta do caixa #@caixaAberto.IdCaixa.</text>
-                    }
-                </p>
-            }
-        </section>
-
-        <section class="cartao secao-form">
-            <h2>Origem</h2>
-            <div class="grade-12">
-                <Campo Rotulo="Produto" Colunas="4">
-                    <ChildContent>
-                        <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesProduto"
-                                 @bind-Valor="Modelo.IdProduto" TextoDe="o => o.Rotulo" ValorDe="o => o.Id" />
-                    </ChildContent>
-                    <Acao>
-                        <button type="button" class="acao-campo" @onclick="() => modalAberto = CadastroRapido.TipoCadastro.Produto">
-                            + Cadastrar produto
-                        </button>
-                    </Acao>
-                </Campo>
-                <Campo Rotulo="Fornecedor" Colunas="4">
+                <Campo Rotulo="Fornecedor" Colunas="5">
                     <ChildContent>
                         <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesFornecedor"
                                  @bind-Valor="Modelo.IdFornecedor" TextoDe="o => o.Rotulo" ValorDe="o => o.Id" />
@@ -107,7 +34,13 @@
                         </button>
                     </Acao>
                 </Campo>
-                <Campo Rotulo="Quem comprou" Colunas="4">
+                <Campo Rotulo="Data da compra" Para="cmp-data" Colunas="3">
+                    <input id="cmp-data" type="date" class="form-control" @bind="Modelo.DataCompra" />
+                </Campo>
+                <Campo Rotulo="Número da nota" Para="cmp-nota" Colunas="4">
+                    <input id="cmp-nota" class="form-control" maxlength="30" @bind="Modelo.NumeroNota" />
+                </Campo>
+                <Campo Rotulo="Quem comprou" Colunas="5">
                     <ChildContent>
                         <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesFuncionario"
                                  @bind-Valor="Modelo.IdFuncionario" TextoDe="o => o.Rotulo" ValorDe="o => o.Id"
@@ -120,6 +53,129 @@
                     </Acao>
                 </Campo>
             </div>
+        </section>
+
+        <section class="cartao secao-form">
+            <h2>Itens</h2>
+
+            @if (tentouSalvar && Modelo.Itens.Count == 0)
+            {
+                <p class="erro-campo">Adicione ao menos um item.</p>
+            }
+
+            <div class="tabela">
+                <table class="table grade-itens">
+                    <thead>
+                        <tr>
+                            <th>Produto</th>
+                            <th>Descrição</th>
+                            <th class="al-dir">Qtd.</th>
+                            <th class="al-dir">Custo unit.</th>
+                            <th class="al-dir">Total</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Modelo.Itens)
+                        {
+                            <tr>
+                                <td>
+                                    <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesProduto"
+                                             Valor="item.IdProduto ?? 0" ValorChanged="v => EscolherProduto(item, v)"
+                                             TextoDe="o => o.Rotulo" ValorDe="o => o.Id" />
+                                </td>
+                                <td>
+                                    <input class="form-control" maxlength="200" placeholder="Ex.: Caixa de pomada"
+                                           @bind="item.Descricao" />
+                                </td>
+                                <td class="col-qtd">
+                                    <input type="number" min="1" class="form-control al-dir-campo" @bind="item.Quantidade" />
+                                </td>
+                                <td class="col-valor">
+                                    <InputMoeda Valor="item.CustoUnitario" ValorChanged="v => item.CustoUnitario = v" />
+                                </td>
+                                <td class="al-dir">@item.Total.ToString("C")</td>
+                                <td>
+                                    <button type="button" class="btn btn-link btn-sm" title="Remover item"
+                                            @onclick="() => Modelo.Itens.Remove(item)">×</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="acoes-itens">
+                <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="AdicionarItem">+ Adicionar item</button>
+                <button type="button" class="acao-campo" @onclick="() => modalAberto = CadastroRapido.TipoCadastro.Produto">
+                    + Cadastrar produto
+                </button>
+            </div>
+
+            <div class="grade-12 totais-compra">
+                <Campo Rotulo="Frete" Para="cmp-frete" Colunas="3">
+                    <InputMoeda Id="cmp-frete" Valor="Modelo.Frete" ValorChanged="v => Modelo.Frete = v" />
+                </Campo>
+                <Campo Rotulo="Desconto" Para="cmp-desconto" Colunas="3"
+                       Erro="@(Modelo.Desconto > Modelo.TotalItens + Modelo.Frete ? "Maior que a compra." : null)">
+                    <InputMoeda Id="cmp-desconto" Valor="Modelo.Desconto" ValorChanged="v => Modelo.Desconto = v" />
+                </Campo>
+                <Campo Rotulo="Total da nota" Colunas="3"
+                       Dica="@($"Itens {Modelo.TotalItens:C} + frete − desconto")">
+                    <input class="form-control al-dir-campo" readonly value="@Modelo.TotalNota.ToString("N2")" />
+                </Campo>
+            </div>
+        </section>
+
+        <section class="cartao secao-form">
+            <h2>Pagamento</h2>
+            <div class="grade-12">
+                @if (Novo)
+                {
+                    <Campo Rotulo="Forma de pagamento" Colunas="4">
+                        <Seletor TItem="Opcao" TValor="string" Itens="OpcoesForma"
+                                 @bind-Valor="Modelo.FormaPagamento" TextoDe="o => o.Rotulo" ValorDe="o => o.Valor"
+                                 PontoDe="o => o.Cor" />
+                    </Campo>
+                    <Campo Rotulo="Situação" Para="cmp-pago" Colunas="3">
+                        <div class="form-check form-switch campo-switch">
+                            <input id="cmp-pago" class="form-check-input" type="checkbox" role="switch" @bind="pago" />
+                            <label class="form-check-label" for="cmp-pago">@(pago ? "Já foi paga" : "A pagar")</label>
+                        </div>
+                    </Campo>
+                }
+                else
+                {
+                    <Campo Rotulo="Forma de pagamento" Colunas="4"
+                           Dica="Já lançada na despesa. Para mudar, exclua a compra e lance de novo.">
+                        <input class="form-control" readonly value="@FormaPagamento.Rotulo(Modelo.FormaPagamentoDespesa ?? Modelo.FormaPagamento)" />
+                    </Campo>
+                }
+                <Campo Rotulo="Parcelas" Para="cmp-parcelas" Colunas="2"
+                       Erro="@(Modelo.Parcelas is < 1 or > 120 ? "De 1 a 120." : null)">
+                    <input id="cmp-parcelas" type="number" min="1" max="120" class="form-control" @bind="Modelo.Parcelas" />
+                </Campo>
+                <Campo Rotulo="Vencimento da 1ª parcela" Para="cmp-vencimento" Colunas="3"
+                       Dica="Vazio vence na data da compra.">
+                    <input id="cmp-vencimento" type="date" class="form-control" @bind="Modelo.VencimentoPrimeira" />
+                </Campo>
+                <Campo Rotulo="Observação" Para="cmp-obs" Colunas="12">
+                    <textarea id="cmp-obs" class="form-control" rows="2" maxlength="300" @bind="Modelo.Observacao"></textarea>
+                </Campo>
+            </div>
+
+            @if (Novo)
+            {
+                <p class="aviso-form">
+                    A compra lança uma <strong>despesa</strong> na categoria Produtos e dá
+                    <strong>entrada no estoque</strong> dos produtos da grade; o custo de cada item
+                    vira o preço de custo do produto.
+                    @if (pago && Modelo.FormaPagamento == FormaPagamento.Dinheiro && caixaAberto != null)
+                    {
+                        <text> O valor sai da gaveta do caixa #@caixaAberto.IdCaixa.</text>
+                    }
+                </p>
+            }
         </section>
 
         <RodapeForm Cancelar="/compra" Salvando="salvando" />
@@ -138,26 +194,32 @@
     private List<Opcao> OpcoesForma =>
         FormaPagamento.Todas.Select(f => new Opcao(f.Valor, f.Rotulo, "var(--ok)")).ToList();
 
+    // Inativos ficam de fora, menos o que ja esta na nota.
     private List<OpcaoId> OpcoesProduto =>
-        new List<OpcaoId> { new(0, "Nenhum") }
-            .Concat(produtos.Select(p => new OpcaoId(p.IdProduto, p.NomeProduto ?? "Sem nome")))
+        new List<OpcaoId> { new(0, "Sem cadastro") }
+            .Concat(produtos
+                .Where(p => p.Ativo || Modelo.Itens.Any(i => i.IdProduto == p.IdProduto))
+                .Select(p => new OpcaoId(p.IdProduto, p.NomeProduto ?? "Sem nome")))
             .ToList();
 
     private List<OpcaoId> OpcoesFornecedor =>
         new List<OpcaoId> { new(0, "Nenhum") }
-            .Concat(fornecedores.Select(f => new OpcaoId(f.IdFornecedor, f.NomeFornecedor ?? "Sem nome")))
+            .Concat(fornecedores
+                .Where(f => f.Ativo || f.IdFornecedor == Modelo.IdFornecedor)
+                .Select(f => new OpcaoId(f.IdFornecedor, f.NomeFornecedor ?? "Sem nome")))
             .ToList();
 
     private List<OpcaoId> OpcoesFuncionario =>
         new List<OpcaoId> { new(0, "Ninguém") }
-            .Concat(funcionarios.Select(u => new OpcaoId(u.IdFuncionario, u.NomeFuncionario ?? "Sem nome")))
+            .Concat(funcionarios
+                .Where(u => u.Ativo || u.IdFuncionario == Modelo.IdFuncionario)
+                .Select(u => new OpcaoId(u.IdFuncionario, u.NomeFuncionario ?? "Sem nome")))
             .ToList();
 
     private string? erro;
     private bool tentouSalvar;
     private bool salvando;
     private CadastroRapido.TipoCadastro? modalAberto;
-    private string formaPagamento = FormaPagamento.Dinheiro;
     private bool pago = true;
     private Caixa? caixaAberto;
 
@@ -173,11 +235,28 @@
             fornecedores = fornecedorDAO.ListarTodos();
             funcionarios = funcionarioDAO.ListarTodos();
             caixaAberto = caixaDAO.BuscarAberto();
+
+            if (!Novo) Modelo.Itens = compraDAO.ListarItens(Modelo.IdCompra);
+            if (Modelo.Itens.Count == 0) AdicionarItem();
         }
         catch (Exception ex)
         {
             erro = "Erro ao carregar os cadastros: " + ex.Message;
         }
+    }
+
+    private void AdicionarItem() => Modelo.Itens.Add(new CompraItem());
+
+    /// <summary>Escolher o produto traz o nome e o ultimo custo, que ainda podem ser ajustados.</summary>
+    private void EscolherProduto(CompraItem item, int idProduto)
+    {
+        item.IdProduto = idProduto > 0 ? idProduto : null;
+
+        var produto = produtos.FirstOrDefault(p => p.IdProduto == idProduto);
+        if (produto == null) return;
+
+        item.Descricao = produto.NomeProduto ?? item.Descricao;
+        if (item.CustoUnitario == 0 && produto.PrecoCusto > 0) item.CustoUnitario = produto.PrecoCusto.Value;
     }
 
     /// <summary>Recarrega e já seleciona, sem perder a compra em digitação.</summary>
@@ -191,7 +270,10 @@
             {
                 case CadastroRapido.TipoCadastro.Produto:
                     produtos = produtoDAO.ListarTodos() ?? new();
-                    Modelo.IdProduto = id;
+                    // Vai para a primeira linha vazia, ou para uma nova.
+                    var livre = Modelo.Itens.FirstOrDefault(i => i.IdProduto is not > 0 && string.IsNullOrWhiteSpace(i.Descricao));
+                    if (livre == null) { livre = new CompraItem(); Modelo.Itens.Add(livre); }
+                    EscolherProduto(livre, id);
                     break;
 
                 case CadastroRapido.TipoCadastro.Fornecedor:
@@ -220,22 +302,27 @@
         tentouSalvar = true;
         erro = null;
 
-        if (string.IsNullOrWhiteSpace(Modelo.ItemCompra) || Modelo.Quantidade <= 0 || Modelo.ValorCompra <= 0)
+        // Linha deixada em branco e so sobra da grade.
+        Modelo.Itens.RemoveAll(i => i.IdProduto is not > 0 && string.IsNullOrWhiteSpace(i.Descricao) && i.CustoUnitario == 0);
+
+        if (Modelo.Itens.Count == 0 || Modelo.TotalNota <= 0 || Modelo.Parcelas is < 1 or > 120
+            || Modelo.Desconto > Modelo.TotalItens + Modelo.Frete)
         {
-            erro = "Confira os campos destacados.";
+            erro = Modelo.TotalNota <= 0 && Modelo.Itens.Count > 0
+                ? "Informe o custo dos itens."
+                : "Confira os campos destacados.";
+            if (Modelo.Itens.Count == 0) AdicionarItem();
             return;
         }
 
         try
         {
             salvando = true;
-            Modelo.ItemCompra = Modelo.ItemCompra.Trim();
 
             if (Novo)
             {
                 // A compra lança a despesa e dá entrada no estoque, na mesma transação.
-                compraDAO.Inserir(Modelo, caixaAberto?.IdCaixa,
-                    gerarDespesa: true, formaPagamento: formaPagamento, pago: pago);
+                compraDAO.Inserir(Modelo, caixaAberto?.IdCaixa, gerarDespesa: true, pago: pago);
             }
             else
             {

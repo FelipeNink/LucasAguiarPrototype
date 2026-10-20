@@ -116,12 +116,14 @@ else
             <h2>Sangria e suprimento</h2>
             <p class="explicacao">
                 Sangria retira dinheiro da gaveta (depósito, pagamento).
-                Suprimento coloca dinheiro (troco).
+                Suprimento coloca dinheiro (troco). Só o que é em dinheiro entra na conferência da gaveta.
             </p>
 
             <div class="grade-movimento">
                 <Seletor TItem="Opcao" TValor="string" Itens="OpcoesMovimento"
                          @bind-Valor="tipoMovimento" TextoDe="o => o.Rotulo" ValorDe="o => o.Valor" />
+                <Seletor TItem="Opcao" TValor="string" Itens="OpcoesFormaMovimento"
+                         @bind-Valor="formaMovimento" TextoDe="o => o.Rotulo" ValorDe="o => o.Valor" />
                 <input type="number" step="0.01" min="0" class="form-control"
                        placeholder="Valor" @bind="valorMovimento" />
                 <input class="form-control" placeholder="Motivo" @bind="descricaoMovimento" />
@@ -137,6 +139,10 @@ else
                             <span class="hora">@m.DataHora.ToString("HH:mm")</span>
                             <span class="descricao">
                                 <strong>@m.RotuloTipo</strong>
+                                @if (m.FormaPagamento != FormaPagamento.Dinheiro)
+                                {
+                                    <text> (@FormaPagamento.Rotulo(m.FormaPagamento))</text>
+                                }
                                 @if (!string.IsNullOrWhiteSpace(m.Descricao))
                                 {
                                     <text> — @m.Descricao</text>
@@ -347,6 +353,10 @@ else
     private decimal valorAbertura;
     private string observacaoAbertura = "";
 
+    private static readonly List<Opcao> OpcoesFormaMovimento =
+        FormaPagamento.Todas.Select(f => new Opcao(f.Valor, f.Rotulo)).ToList();
+
+    private string formaMovimento = FormaPagamento.Dinheiro;
     private string tipoMovimento = TipoMovimento.Sangria;
     private decimal valorMovimento;
     private string descricaoMovimento = "";
@@ -474,7 +484,7 @@ else
             if (caixa == null) return;
 
             caixaDAO.RegistrarMovimento(
-                caixa.IdCaixa, tipoMovimento, valorMovimento, descricaoMovimento, Usuario);
+                caixa.IdCaixa, tipoMovimento, valorMovimento, descricaoMovimento, Usuario, formaMovimento);
 
             valorMovimento = 0;
             descricaoMovimento = "";

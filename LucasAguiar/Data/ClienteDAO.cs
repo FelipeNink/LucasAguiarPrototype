@@ -27,12 +27,15 @@ namespace LucasAguiar.Data
                 using var comando = new MySqlCommand(@"
                     INSERT INTO cliente
                         (nome_cli, telefone_cli, cpf_cli, data_nasc_cli, rg_cli, cep_cli,
-                         estado_cli, cidade_cli, bairro_cli, rua_cli, numero_cli, id_plan_fk)
+                         estado_cli, cidade_cli, bairro_cli, rua_cli, numero_cli, id_plan_fk,
+                         email_cli, origem_cli, observacoes_cli, id_fun_pref_fk, ativo_cli)
                     VALUES
                         (@nome, @telefone, @cpf, @dataNasc, @rg, @cep,
-                         @estado, @cidade, @bairro, @rua, @numero, @idPlano);
+                         @estado, @cidade, @bairro, @rua, @numero, @idPlano,
+                         @email, @origem, @observacoes, @idPref, @ativo);
                     SELECT LAST_INSERT_ID();", conexao);
 
+                PreencherNovos(comando, cliente);
                 comando.Parameters.AddWithValue("@nome", cliente.NomeCliente ?? (object)DBNull.Value);
                 comando.Parameters.AddWithValue("@telefone", cliente.Telefone ?? (object)DBNull.Value);
                 comando.Parameters.AddWithValue("@cpf", cliente.CPF ?? (object)DBNull.Value);
@@ -74,8 +77,8 @@ namespace LucasAguiar.Data
 
             var sql = SelecaoPadrao +
                 (temTermo
-                    ? " WHERE c.nome_cli LIKE @termo OR c.telefone_cli LIKE @termo OR c.cpf_cli LIKE @termo"
-                    : "") +
+                    ? " WHERE c.ativo_cli = 1 AND (c.nome_cli LIKE @termo OR c.telefone_cli LIKE @termo OR c.cpf_cli LIKE @termo)"
+                    : " WHERE c.ativo_cli = 1") +
                 " ORDER BY c.nome_cli LIMIT @limite";
 
             using var conexao = _conexao.GetConnection();
@@ -136,14 +139,14 @@ namespace LucasAguiar.Data
                 FROM (
                     SELECT c.*, p.nome_plan, p.valor_plan,
                            h.ultima_visita, h.visitas, h.total_gasto,
-                           (SELECT v2.id_fun_fk
+                           COALESCE(c.id_fun_pref_fk, (SELECT v2.id_fun_fk
                               FROM venda v2
                              WHERE v2.id_cli_fk = c.id_cli
                                AND v2.id_fun_fk IS NOT NULL
                                AND v2.status_vend <> 'CANCELADA'
                              GROUP BY v2.id_fun_fk
                              ORDER BY COUNT(*) DESC, MAX(v2.data_vend) DESC
-                             LIMIT 1) AS id_fun_pref
+                             LIMIT 1)) AS id_fun_pref
                     FROM cliente c
                     LEFT JOIN plano p ON p.id_plan = c.id_plan_fk
                     LEFT JOIN (
@@ -189,9 +192,12 @@ namespace LucasAguiar.Data
                     nome_cli = @nome, telefone_cli = @telefone, cpf_cli = @cpf,
                     data_nasc_cli = @dataNasc, rg_cli = @rg, cep_cli = @cep, estado_cli = @estado,
                     cidade_cli = @cidade, bairro_cli = @bairro, rua_cli = @rua,
-                    numero_cli = @numero, id_plan_fk = @idPlano
+                    numero_cli = @numero, id_plan_fk = @idPlano,
+                    email_cli = @email, origem_cli = @origem, observacoes_cli = @observacoes,
+                    id_fun_pref_fk = @idPref, ativo_cli = @ativo
                 WHERE id_cli = @id", conexao);
 
+            PreencherNovos(comando, cliente);
             comando.Parameters.AddWithValue("@nome", cliente.NomeCliente ?? (object)DBNull.Value);
             comando.Parameters.AddWithValue("@telefone", cliente.Telefone ?? (object)DBNull.Value);
             comando.Parameters.AddWithValue("@cpf", cliente.CPF ?? (object)DBNull.Value);
@@ -228,6 +234,18 @@ namespace LucasAguiar.Data
             }
         }
 
+        private static void PreencherNovos(MySqlCommand comando, Cliente cliente)
+        {
+            comando.Parameters.AddWithValue("@email", cliente.Email ?? (object)DBNull.Value);
+            comando.Parameters.AddWithValue("@origem", cliente.Origem ?? (object)DBNull.Value);
+            comando.Parameters.AddWithValue("@observacoes", cliente.Observacoes ?? (object)DBNull.Value);
+            comando.Parameters.AddWithValue("@idPref",
+                cliente.IdProfissionalPreferidoCadastro is > 0
+                    ? cliente.IdProfissionalPreferidoCadastro.Value
+                    : (object)DBNull.Value);
+            comando.Parameters.AddWithValue("@ativo", cliente.Ativo ? 1 : 0);
+        }
+
         private static Cliente Ler(MySqlDataReader leitor)
         {
             string? Texto(string coluna)
@@ -240,6 +258,7 @@ namespace LucasAguiar.Data
             var iNomePlano = leitor.GetOrdinal("nome_plan");
             var iValorPlano = leitor.GetOrdinal("valor_plan");
             var iNasc = leitor.GetOrdinal("data_nasc_cli");
+            var iPrefCadastro = leitor.GetOrdinal("id_fun_pref_fk");
 
             return new Cliente
             {
@@ -256,6 +275,11 @@ namespace LucasAguiar.Data
                 Rua = Texto("rua_cli"),
                 Numero = Texto("numero_cli"),
                 IdPlano = leitor.IsDBNull(iPlano) ? null : leitor.GetInt32(iPlano),
+                Email = Texto("email_cli"),
+                Origem = Texto("origem_cli"),
+                Observacoes = Texto("observacoes_cli"),
+                IdProfissionalPreferidoCadastro = leitor.IsDBNull(iPrefCadastro) ? null : leitor.GetInt32(iPrefCadastro),
+                Ativo = leitor.GetBoolean("ativo_cli"),
                 NomePlano = leitor.IsDBNull(iNomePlano) ? null : leitor.GetString(iNomePlano),
                 // valor_plan e FLOAT no banco: converte em vez de GetDecimal.
                 ValorPlano = leitor.IsDBNull(iValorPlano) ? 0m : Convert.ToDecimal(leitor.GetValue(iValorPlano))

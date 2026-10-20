@@ -2,6 +2,7 @@
 
 @using LucasAguiar.Models
 @inject ServicoDAO servicoDAO
+@inject CategoriaDAO categoriaDAO
 @inject NavigationManager Navigation
 
 <div class="form-pagina">
@@ -26,6 +27,26 @@
                     <input id="srv-duracao" type="number" min="0" step="5" class="form-control"
                            @bind="Modelo.DuracaoServico" />
                 </Campo>
+                <Campo Rotulo="Situação" Para="srv-ativo" Colunas="2">
+                    <div class="form-check form-switch campo-switch">
+                        <input id="srv-ativo" class="form-check-input" type="checkbox" role="switch" @bind="Modelo.Ativo" />
+                        <label class="form-check-label" for="srv-ativo">@(Modelo.Ativo ? "Ativo" : "Inativo")</label>
+                    </div>
+                </Campo>
+
+                <Campo Rotulo="Categoria" Colunas="4">
+                    <ChildContent>
+                        <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesCategoria"
+                                 Valor="Modelo.IdCategoria ?? 0"
+                                 ValorChanged="v => Modelo.IdCategoria = v == 0 ? null : v"
+                                 TextoDe="o => o.Rotulo" ValorDe="o => o.Id" />
+                    </ChildContent>
+                    <Acao>
+                        <button type="button" class="acao-campo" @onclick="() => modalCategoria = true">
+                            + Cadastrar categoria
+                        </button>
+                    </Acao>
+                </Campo>
             </div>
         </section>
 
@@ -36,8 +57,18 @@
                     <InputMoeda Id="srv-preco" Valor="(decimal)Modelo.PrecoServico"
                                 ValorChanged="v => Modelo.PrecoServico = (float)v" />
                 </Campo>
-                <Campo Rotulo="Comissão do profissional" Para="srv-comissao" Colunas="3"
-                       Dica="@DicaComissao">
+                <Campo Rotulo="Custo estimado" Para="srv-custo" Colunas="3"
+                       Dica="Insumos por atendimento (lâmina, produto).">
+                    <InputMoeda Id="srv-custo" Valor="Modelo.CustoEstimado ?? 0"
+                                ValorChanged="v => Modelo.CustoEstimado = v == 0 ? null : v" />
+                </Campo>
+                <Campo Rotulo="Tipo de comissão" Colunas="3">
+                    <Seletor TItem="Opcao" TValor="string" Itens="OpcoesTipoComissao"
+                             @bind-Valor="Modelo.TipoComissao" TextoDe="o => o.Rotulo" ValorDe="o => o.Valor" />
+                </Campo>
+                <Campo Rotulo="@(Modelo.ComissaoPercentual ? "Comissão (%)" : "Comissão (R$)")" Para="srv-comissao" Colunas="3"
+                       Dica="@DicaComissao"
+                       Erro="@(Modelo.ComissaoPercentual && Modelo.ComissaoServico > 100 ? "No máximo 100%." : null)">
                     <InputMoeda Id="srv-comissao" Valor="(decimal)Modelo.ComissaoServico"
                                 ValorChanged="v => Modelo.ComissaoServico = (float)v" />
                 </Campo>
@@ -48,6 +79,11 @@
     </form>
 </div>
 
+<CadastroRapido Visivel="modalCategoria"
+                Tipo="CadastroRapido.TipoCadastro.CategoriaServico"
+                OnCriado="AoCriarCategoria"
+                OnCancelado="() => modalCategoria = false" />
+
 @code {
     [Parameter, EditorRequired] public Servico Modelo { get; set; } = new();
     [Parameter] public bool Novo { get; set; }
@@ -55,19 +91,66 @@
     private string? erro;
     private bool tentouSalvar;
     private bool salvando;
+    private bool modalCategoria;
+    private List<Categoria> categorias = new();
 
-    /// <summary>A comissao e gravada em R$; o % ajuda a conferir.</summary>
+    private static readonly List<Opcao> OpcoesTipoComissao = new()
+    {
+        new(TipoComissao.Fixo, "Valor fixo (R$)"),
+        new(TipoComissao.Percentual, "Percentual (%)")
+    };
+
+    private List<OpcaoId> OpcoesCategoria =>
+        new List<OpcaoId> { new(0, "Sem categoria") }
+            .Concat(categorias
+                .Where(c => c.Ativo || c.Id == Modelo.IdCategoria)
+                .Select(c => new OpcaoId(c.Id, c.Nome)))
+            .ToList();
+
+    /// <summary>Mostra o outro lado da conta: o % do valor fixo, ou o R$ do percentual.</summary>
     private string? DicaComissao =>
         Modelo.PrecoServico > 0 && Modelo.ComissaoServico > 0
-            ? $"{Modelo.ComissaoServico / Modelo.PrecoServico:P1} do preço, por atendimento."
-            : "Valor em R$ pago por atendimento.";
+            ? (Modelo.ComissaoPercentual
+                ? $"{(decimal)Modelo.PrecoServico * (decimal)Modelo.ComissaoServico / 100m:C} por atendimento, no preço cheio."
+                : $"{Modelo.ComissaoServico / Modelo.PrecoServico:P1} do preço, por atendimento.")
+            : "Zero usa o % padrão do profissional.";
+
+    protected override void OnInitialized()
+    {
+        try
+        {
+            categorias = categoriaDAO.Listar(TipoCategoria.Servico);
+        }
+        catch (Exception ex)
+        {
+            erro = "Erro ao carregar as categorias: " + ex.Message;
+        }
+    }
+
+    private void AoCriarCategoria(int id)
+    {
+        try
+        {
+            categorias = categoriaDAO.Listar(TipoCategoria.Servico);
+            Modelo.IdCategoria = id;
+        }
+        catch (Exception ex)
+        {
+            erro = ex.Message;
+        }
+        finally
+        {
+            modalCategoria = false;
+        }
+    }
 
     private void Salvar()
     {
         tentouSalvar = true;
         erro = null;
 
-        if (string.IsNullOrWhiteSpace(Modelo.NomeServico) || Modelo.DuracaoServico < 0)
+        if (string.IsNullOrWhiteSpace(Modelo.NomeServico) || Modelo.DuracaoServico < 0
+            || (Modelo.ComissaoPercentual && Modelo.ComissaoServico > 100))
         {
             erro = "Confira os campos destacados.";
             return;

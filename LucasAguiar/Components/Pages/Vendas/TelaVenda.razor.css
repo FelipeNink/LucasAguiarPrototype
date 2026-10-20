@@ -1065,3 +1065,72 @@
     font-size: 17px;
     font-variant-numeric: tabular-nums;
 }
+
+/* ---------- grade de pagamentos ---------- */
+
+.pagamentos {
+    list-style: none;
+    margin: 0.75rem 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.pagamentos li {
+    display: grid;
+    grid-template-columns: 9rem 1fr auto auto;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.pagamento-forma {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--texto);
+}
+
+.pagamentos-resumo {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.pagamentos-resumo.aberto {
+    color: var(--perigo);
+}
+
+.pagamentos-resumo.fechado {
+    color: var(--ok);
+}
+
+/* ---------- ajustes do item na comanda ---------- */
+
+.linha-ajustes {
+    display: grid;
+    grid-template-columns: 1fr 5.5rem 5.5rem;
+    gap: 0.35rem;
+    margin-top: 0.4rem;
+}
+
+.linha-ajustes .ajuste {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    margin: 0;
+}
+
+.linha-ajustes .ajuste span {
+    font-size: 0.68rem;
+    color: var(--texto-fraco);
+}
+
+.linha-ajustes .form-select,
+.linha-ajustes .form-control {
+    font-size: 0.78rem;
+    padding: 0.2rem 0.4rem;
+}

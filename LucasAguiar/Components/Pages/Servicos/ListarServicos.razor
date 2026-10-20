@@ -44,10 +44,16 @@
             foreach (var servico in Filtrados)
             {
                 <tr>
-                    <td>@servico.NomeServico</td>
+                    <td>
+                        @servico.NomeServico
+                        @if (!servico.Ativo)
+                        {
+                            <span class="status cancelada"><i></i>inativo</span>
+                        }
+                    </td>
                     <td class="al-dir opcional">@servico.DuracaoServico min</td>
                     <td class="al-dir">@servico.PrecoServico.ToString("C")</td>  @* mostra como moeda *@
-                    <td class="al-dir opcional">@servico.ComissaoServico.ToString("C")</td>
+                    <td class="al-dir opcional">@servico.ComissaoEmReais.ToString("C")</td>
                     <td class="al-dir opcional">@PercentualComissao(servico)</td>
                     <td class="col-acoes">
                         <AcoesLinha OnVisualizar="() => visualizando = servico"
@@ -81,7 +87,10 @@
             <dl class="ficha">
                 <div><dt>Preço</dt><dd>@visualizando.PrecoServico.ToString("C")</dd></div>
                 <div><dt>Duração</dt><dd>@visualizando.DuracaoServico min</dd></div>
-                <div><dt>Comissão</dt><dd>@visualizando.ComissaoServico.ToString("C")</dd></div>
+                <div><dt>Comissão</dt><dd>@visualizando.ComissaoTexto</dd></div>
+                <div><dt>Categoria</dt><dd>@(visualizando.NomeCategoria ?? "—")</dd></div>
+                <div><dt>Custo estimado</dt><dd>@(visualizando.CustoEstimado?.ToString("C") ?? "—")</dd></div>
+                <div><dt>Situação</dt><dd>@(visualizando.Ativo ? "Ativo" : "Inativo")</dd></div>
             </dl>
         }
     </ChildContent>
@@ -133,7 +142,7 @@
 
     /// <summary>A comissão é gravada em R$; o % sai sobre o preço do serviço.</summary>
     private static string PercentualComissao(Servico s) =>
-        s.PrecoServico > 0 ? (s.ComissaoServico / s.PrecoServico).ToString("P1") : "—";
+        s.PrecoServico > 0 ? (s.ComissaoEmReais / (decimal)s.PrecoServico).ToString("P1") : "—";
 
     protected override void OnInitialized()
     {

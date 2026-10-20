@@ -44,15 +44,20 @@ namespace LucasAguiar.Data
 
         public void Inserir(Servico servico)
         {
+            Validar(servico);
+
             try
             {
-                using (var comando = _conexao.CreateCommand(@"INSERT INTO servico (nome_serv, preco_serv, duracao_min, comis_funcionario_cli) VALUES (@_nome, @_preco, @_duracao, @_comissao)
+                using (var comando = _conexao.CreateCommand(@"INSERT INTO servico (nome_serv, preco_serv, duracao_min, comis_funcionario_cli,
+                        tipo_comissao, id_cat_serv_fk, custo_estimado, ativo_serv)
+                    VALUES (@_nome, @_preco, @_duracao, @_comissao, @tipo, @idCategoria, @custo, @ativo)
                 "))
                 {
                     comando.Parameters.AddWithValue("@_nome", servico.NomeServico ?? (object)DBNull.Value);
                     comando.Parameters.AddWithValue("@_preco", servico.PrecoServico);
                     comando.Parameters.AddWithValue("@_duracao", servico.DuracaoServico);
                     comando.Parameters.AddWithValue("@_comissao", servico.ComissaoServico);
+                    PreencherNovos(comando, servico);
 
                     comando.ExecuteNonQuery();
                 }
@@ -66,32 +71,24 @@ namespace LucasAguiar.Data
         public Servico? BuscarPorId(int id)
         {
             using var conexao = _conexao.GetConnection();
-            using var comando = new MySqlCommand("SELECT * FROM servico WHERE id_serv = @id", conexao);
+            using var comando = new MySqlCommand(SelecaoPadrao + " WHERE s.id_serv = @id", conexao);
             comando.Parameters.AddWithValue("@id", id);
 
             using var leitor = comando.ExecuteReader();
-            if (!leitor.Read()) return null;
-
-            return new Servico
-            {
-                IdServico = leitor.GetInt32("id_serv"),
-                NomeServico = leitor.IsDBNull(leitor.GetOrdinal("nome_serv")) ? "" : leitor.GetString("nome_serv"),
-                PrecoServico = leitor.IsDBNull(leitor.GetOrdinal("preco_serv")) ? 0f : leitor.GetFloat(leitor.GetOrdinal("preco_serv")),
-                DuracaoServico = leitor.IsDBNull(leitor.GetOrdinal("duracao_min")) ? 0 : leitor.GetInt32("duracao_min"),
-                ComissaoServico = leitor.IsDBNull(leitor.GetOrdinal("comis_funcionario_cli")) ? 0f : leitor.GetFloat(leitor.GetOrdinal("comis_funcionario_cli"))
-            };
+            return leitor.Read() ? Ler(leitor) : null;
         }
 
         public void Atualizar(Servico servico)
         {
-            if (servico.PrecoServico < 0) throw new Exception("O preço não pode ser negativo.");
-            if (servico.ComissaoServico < 0) throw new Exception("A comissão não pode ser negativa.");
+            Validar(servico);
 
             using var conexao = _conexao.GetConnection();
             using var comando = new MySqlCommand(@"
                 UPDATE servico SET
                     nome_serv = @nome, preco_serv = @preco,
-                    duracao_min = @duracao, comis_funcionario_cli = @comissao
+                    duracao_min = @duracao, comis_funcionario_cli = @comissao,
+                    tipo_comissao = @tipo, id_cat_serv_fk = @idCategoria,
+                    custo_estimado = @custo, ativo_serv = @ativo
                 WHERE id_serv = @id", conexao);
 
             comando.Parameters.AddWithValue("@nome", servico.NomeServico ?? (object)DBNull.Value);
@@ -99,8 +96,52 @@ namespace LucasAguiar.Data
             comando.Parameters.AddWithValue("@duracao", servico.DuracaoServico);
             comando.Parameters.AddWithValue("@comissao", servico.ComissaoServico);
             comando.Parameters.AddWithValue("@id", servico.IdServico);
+            PreencherNovos(comando, servico);
 
             comando.ExecuteNonQuery();
+        }
+
+        private static void Validar(Servico servico)
+        {
+            if (servico.PrecoServico < 0) throw new Exception("O preço não pode ser negativo.");
+            if (servico.ComissaoServico < 0) throw new Exception("A comissão não pode ser negativa.");
+            if (servico.CustoEstimado < 0) throw new Exception("O custo estimado não pode ser negativo.");
+            if (servico.ComissaoPercentual && servico.ComissaoServico > 100)
+                throw new Exception("A comissão em % não pode passar de 100%.");
+        }
+
+        private static void PreencherNovos(MySqlCommand comando, Servico servico)
+        {
+            comando.Parameters.AddWithValue("@tipo", servico.TipoComissao);
+            comando.Parameters.AddWithValue("@idCategoria",
+                servico.IdCategoria is > 0 ? servico.IdCategoria.Value : (object)DBNull.Value);
+            comando.Parameters.AddWithValue("@custo", servico.CustoEstimado ?? (object)DBNull.Value);
+            comando.Parameters.AddWithValue("@ativo", servico.Ativo ? 1 : 0);
+        }
+
+        private const string SelecaoPadrao = @"
+            SELECT s.*, cs.nome_cat
+            FROM servico s
+            LEFT JOIN categoria_servico cs ON cs.id_cat_serv = s.id_cat_serv_fk";
+
+        private static Servico Ler(MySqlDataReader leitor)
+        {
+            var iCusto = leitor.GetOrdinal("custo_estimado");
+            var iCategoria = leitor.GetOrdinal("id_cat_serv_fk");
+
+            return new Servico
+            {
+                IdServico = leitor.GetInt32("id_serv"),
+                NomeServico = leitor.IsDBNull(leitor.GetOrdinal("nome_serv")) ? "" : leitor.GetString("nome_serv"),
+                PrecoServico = leitor.IsDBNull(leitor.GetOrdinal("preco_serv")) ? 0f : leitor.GetFloat(leitor.GetOrdinal("preco_serv")),
+                DuracaoServico = leitor.IsDBNull(leitor.GetOrdinal("duracao_min")) ? 0 : leitor.GetInt32("duracao_min"),
+                ComissaoServico = leitor.IsDBNull(leitor.GetOrdinal("comis_funcionario_cli")) ? 0f : leitor.GetFloat(leitor.GetOrdinal("comis_funcionario_cli")),
+                TipoComissao = leitor.GetString("tipo_comissao"),
+                IdCategoria = leitor.IsDBNull(iCategoria) ? null : leitor.GetInt32(iCategoria),
+                CustoEstimado = leitor.IsDBNull(iCusto) ? null : leitor.GetDecimal(iCusto),
+                Ativo = leitor.GetBoolean("ativo_serv"),
+                NomeCategoria = DAOHelper.IsNull(leitor, "nome_cat") ? null : leitor.GetString("nome_cat")
+            };
         }
 
         public void Excluir(int id)
@@ -123,22 +164,10 @@ namespace LucasAguiar.Data
         {
             var lista = new List<Servico>();
 
-            using (var comando = _conexao.CreateCommand("SELECT * FROM servico"))
+            using (var comando = _conexao.CreateCommand(SelecaoPadrao))
             using (var leitor = comando.ExecuteReader())
             {
-                while (leitor.Read())
-                {
-                    var servico = new Servico
-                    {
-                        IdServico = leitor.GetInt32("id_serv"),
-                        NomeServico = leitor.IsDBNull(leitor.GetOrdinal("nome_serv")) ? "" : leitor.GetString("nome_serv"),
-                        PrecoServico = leitor.IsDBNull(leitor.GetOrdinal("preco_serv")) ? 0f : leitor.GetFloat(leitor.GetOrdinal("preco_serv")),
-                        DuracaoServico = leitor.GetInt32("duracao_min"),
-                        ComissaoServico = leitor.IsDBNull(leitor.GetOrdinal("comis_funcionario_cli")) ? 0f : leitor.GetFloat(leitor.GetOrdinal("comis_funcionario_cli"))
-                    };
-
-                    lista.Add(servico);
-                }
+                while (leitor.Read()) lista.Add(Ler(leitor));
             }
 
             return lista;

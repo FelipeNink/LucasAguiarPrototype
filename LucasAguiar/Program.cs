@@ -50,6 +50,7 @@ builder.Services.AddScoped<ProdutoDAO>();
 builder.Services.AddScoped<CompraDAO>();
 builder.Services.AddScoped<ClienteDAO>();
 builder.Services.AddScoped<PlanoDAO>();
+builder.Services.AddScoped<CategoriaDAO>();
 builder.Services.AddScoped<VendaDAO>();
 builder.Services.AddScoped<AgendamentoDAO>();
 builder.Services.AddScoped<AssinaturaDAO>();

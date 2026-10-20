@@ -19,13 +19,15 @@ namespace LucasAguiar.Data
             {
                 using var conexao = _conexao.GetConnection();
                 using var comando = new MySqlCommand(@"
-                    INSERT INTO plano (nome_plan, descricao_plan, valor_plan)
-                    VALUES (@nome, @descricao, @valor);
+                    INSERT INTO plano (nome_plan, descricao_plan, valor_plan,
+                                       periodicidade, regra_comissao_assinante, ativo_plan)
+                    VALUES (@nome, @descricao, @valor, @periodicidade, @regra, @ativo);
                     SELECT LAST_INSERT_ID();", conexao);
 
                 comando.Parameters.AddWithValue("@nome", plano.NomePlano ?? (object)DBNull.Value);
                 comando.Parameters.AddWithValue("@descricao", plano.Descricao ?? (object)DBNull.Value);
                 comando.Parameters.AddWithValue("@valor", plano.Valor);
+                PreencherNovos(comando, plano);
 
                 return Convert.ToInt32(comando.ExecuteScalar());
             }
@@ -75,13 +77,15 @@ namespace LucasAguiar.Data
         {
             using var conexao = _conexao.GetConnection();
             using var comando = new MySqlCommand(@"
-                UPDATE plano SET nome_plan = @nome, descricao_plan = @descricao, valor_plan = @valor
+                UPDATE plano SET nome_plan = @nome, descricao_plan = @descricao, valor_plan = @valor,
+                    periodicidade = @periodicidade, regra_comissao_assinante = @regra, ativo_plan = @ativo
                 WHERE id_plan = @id", conexao);
 
             comando.Parameters.AddWithValue("@nome", plano.NomePlano ?? (object)DBNull.Value);
             comando.Parameters.AddWithValue("@descricao", plano.Descricao ?? (object)DBNull.Value);
             comando.Parameters.AddWithValue("@valor", plano.Valor ?? (object)DBNull.Value);
             comando.Parameters.AddWithValue("@id", plano.IdPlano);
+            PreencherNovos(comando, plano);
 
             comando.ExecuteNonQuery();
         }
@@ -143,7 +147,7 @@ namespace LucasAguiar.Data
                     IdPlano = leitor.GetInt32("id_plan_fk"),
                     TipoItem = leitor.GetString("tipo_item"),
                     IdReferencia = leitor.GetInt32("id_ref"),
-                    Quantidade = leitor.GetInt32("quantidade"),
+                    Quantidade = DAOHelper.IsNull(leitor, "quantidade") ? null : leitor.GetInt32("quantidade"),
                     Descricao = leitor.IsDBNull(iDescricao) ? "(item removido)" : leitor.GetString(iDescricao),
                     ValorUnitario = leitor.IsDBNull(iValor) ? 0m : Convert.ToDecimal(leitor.GetValue(iValor))
                 });
@@ -175,7 +179,8 @@ namespace LucasAguiar.Data
                     inserir.Parameters.AddWithValue("@idPlano", idPlano);
                     inserir.Parameters.AddWithValue("@tipo", item.TipoItem);
                     inserir.Parameters.AddWithValue("@idRef", item.IdReferencia);
-                    inserir.Parameters.AddWithValue("@qtd", Math.Max(1, item.Quantidade));
+                    inserir.Parameters.AddWithValue("@qtd",
+                        item.Quantidade.HasValue ? Math.Max(1, item.Quantidade.Value) : DBNull.Value);
                     inserir.ExecuteNonQuery();
                 }
 
@@ -186,6 +191,13 @@ namespace LucasAguiar.Data
                 transacao.Rollback();
                 throw new Exception("Erro ao salvar os itens do plano: " + ex.Message);
             }
+        }
+
+        private static void PreencherNovos(MySqlCommand comando, Plano plano)
+        {
+            comando.Parameters.AddWithValue("@periodicidade", plano.Periodicidade);
+            comando.Parameters.AddWithValue("@regra", plano.RegraComissaoAssinante);
+            comando.Parameters.AddWithValue("@ativo", plano.Ativo ? 1 : 0);
         }
 
         private static Plano Ler(MySqlDataReader leitor)
@@ -199,7 +211,10 @@ namespace LucasAguiar.Data
                 IdPlano = leitor.GetInt32("id_plan"),
                 NomePlano = leitor.IsDBNull(iNome) ? "" : leitor.GetString(iNome),
                 Descricao = leitor.IsDBNull(iDesc) ? "" : leitor.GetString(iDesc),
-                Valor = leitor.IsDBNull(iValor) ? 0f : leitor.GetFloat(iValor)
+                Valor = leitor.IsDBNull(iValor) ? 0f : leitor.GetFloat(iValor),
+                Periodicidade = leitor.GetString("periodicidade"),
+                RegraComissaoAssinante = leitor.GetString("regra_comissao_assinante"),
+                Ativo = leitor.GetBoolean("ativo_plan")
             };
         }
     }

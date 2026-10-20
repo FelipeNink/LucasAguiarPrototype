@@ -129,10 +129,11 @@ namespace LucasAguiar.Data
 
             using var conexao = _conexao.GetConnection();
             using var comando = new MySqlCommand(@"
-                SELECT forma_pagamento_vend forma, COALESCE(SUM(valor_vend), 0) total
-                FROM venda
-                WHERE data_vend >= @de AND data_vend < @ate AND status_vend <> 'CANCELADA'
-                GROUP BY forma_pagamento_vend", conexao);
+                SELECT p.forma, COALESCE(SUM(p.valor), 0) total
+                FROM venda_pagamento p
+                JOIN venda v ON v.id_vend = p.id_vend_fk
+                WHERE v.data_vend >= @de AND v.data_vend < @ate AND v.status_vend <> 'CANCELADA'
+                GROUP BY p.forma", conexao);
 
             comando.Parameters.AddWithValue("@de", de);
             comando.Parameters.AddWithValue("@ate", ate);

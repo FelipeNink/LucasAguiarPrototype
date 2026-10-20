@@ -129,7 +129,7 @@
                             }
                         </td>
                         <td class="col-acoes">
-                            <AcoesLinha OnVisualizar="() => visualizando = compra"
+                            <AcoesLinha OnVisualizar="() => Visualizar(compra)"
                                         OnEditar="() => Editar(compra)"
                                         OnExcluir="() => excluindo = compra" />
                         </td>
@@ -160,11 +160,21 @@
         {
             <dl class="ficha">
                 <div><dt>Data</dt><dd>@visualizando.DataCompra.ToString("dd/MM/yyyy")</dd></div>
-                <div><dt>Item</dt><dd>@Valor(visualizando.ItemCompra)</dd></div>
+                <div><dt>Nota</dt><dd>@Valor(visualizando.NumeroNota)</dd></div>
                 <div><dt>Valor total</dt><dd>@visualizando.ValorCompra.ToString("C")</dd></div>
-                <div><dt>Quantidade</dt><dd>@visualizando.Quantidade (@visualizando.ValorUnitario.ToString("C") cada)</dd></div>
-                <div><dt>Produto</dt><dd>@Valor(visualizando.NomeProduto)</dd></div>
+                <div><dt>Frete / desconto</dt><dd>@visualizando.Frete.ToString("C") / @visualizando.Desconto.ToString("C")</dd></div>
+                <div><dt>Parcelas</dt><dd>@visualizando.Parcelas@(visualizando.VencimentoPrimeira.HasValue ? $" · 1ª em {visualizando.VencimentoPrimeira:dd/MM/yyyy}" : "")</dd></div>
                 <div><dt>Fornecedor</dt><dd>@Valor(visualizando.NomeFornecedor)</dd></div>
+                <div class="largo">
+                    <dt>Itens</dt>
+                    <dd>
+                        @foreach (var i in itensVisualizados)
+                        {
+                            <div>@i.Quantidade× @i.Descricao — @i.CustoUnitario.ToString("C") cada</div>
+                        }
+                    </dd>
+                </div>
+                <div class="largo"><dt>Observação</dt><dd>@Valor(visualizando.Observacao)</dd></div>
                 <div><dt>Funcionário</dt><dd>@Valor(visualizando.NomeFuncionario)</dd></div>
                 <div>
                     <dt>Despesa</dt>
@@ -233,7 +243,7 @@
     private List<Compra> Filtradas =>
         listaCompras
             .Where(c => filtroFornecedor == 0 || c.IdFornecedor == filtroFornecedor)
-            .Where(c => filtroProduto == 0 || c.IdProduto == filtroProduto)
+            .Where(c => filtroProduto == 0 || c.IdProduto == filtroProduto || c.IdsProdutos.Contains(filtroProduto))
             .Where(c => filtroSituacao == ""
                         || (filtroSituacao == "PAGA" ? c.Pago == true : c.Pago == false))
             .ToList();
@@ -322,5 +332,20 @@
     private void Editar(Compra c) => Navigation.NavigateTo($"/compra/{c.IdCompra}");
 
     private void Fechar() => visualizando = null;
+
+    private List<CompraItem> itensVisualizados = new();
+
+    private void Visualizar(Compra compra)
+    {
+        try
+        {
+            itensVisualizados = compraDAO.ListarItens(compra.IdCompra);
+        }
+        catch
+        {
+            itensVisualizados = new();
+        }
+        visualizando = compra;
+    }
 
 }

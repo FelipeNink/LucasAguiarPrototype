@@ -23,6 +23,15 @@ namespace LucasAguiar.Services
 
         public static void MapearRelatorios(this WebApplication app)
         {
+            // Anexo de despesa: quem ve a tela de despesas pode baixar.
+            app.MapGet("/despesa/anexo/{id:int}", (int id, DespesaDAO dao) =>
+            {
+                var anexo = dao.BuscarAnexo(id);
+                return anexo?.Conteudo == null
+                    ? Results.NotFound()
+                    : Results.File(anexo.Conteudo, anexo.Tipo, anexo.Nome);
+            }).RequireAuthorization(Politicas.Despesas);
+
             app.MapGet("/relatorio/fornecedores", (RelatorioPdf rel, FornecedorDAO dao) =>
             {
                 var itens = dao.ListarTodos() ?? new List<Fornecedor>();
@@ -54,7 +63,7 @@ namespace LucasAguiar.Services
                     {
                         (i + 1).ToString(), s.NomeServico ?? "",
                         s.PrecoServico.ToString("C"), $"{s.DuracaoServico} min",
-                        s.ComissaoServico.ToString("C")
+                        s.ComissaoTexto
                     }).ToList());
                 return Results.File(pdf, TipoPdf, NomeArquivo("servicos"));
             });

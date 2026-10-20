@@ -25,7 +25,7 @@
                     <input id="pln-nome" class="form-control" maxlength="200" placeholder="Ex.: Plano Híbrido"
                            @bind="Modelo.NomePlano" />
                 </Campo>
-                <Campo Rotulo="Valor mensal" Para="pln-valor" Colunas="3" Obrigatorio="true"
+                <Campo Rotulo="Valor" Para="pln-valor" Colunas="3" Obrigatorio="true"
                        Erro="@(tentouSalvar && valor <= 0 ? "Informe o valor do plano." : null)">
                     <InputMoeda Id="pln-valor" @bind-Valor="valor" />
                 </Campo>
@@ -33,6 +33,23 @@
                 <Campo Rotulo="Descrição" Para="pln-descricao" Colunas="8">
                     <input id="pln-descricao" class="form-control" maxlength="200"
                            placeholder="Ex.: 4 cortes e 4 barbas por mês" @bind="Modelo.Descricao" />
+                </Campo>
+                <Campo Rotulo="Periodicidade" Colunas="4"
+                       Dica="@($"Os créditos valem {Periodicidade.Dias(Modelo.Periodicidade)} dias.")">
+                    <Seletor TItem="Opcao" TValor="string" Itens="OpcoesPeriodicidade"
+                             @bind-Valor="Modelo.Periodicidade" TextoDe="o => o.Rotulo" ValorDe="o => o.Valor" />
+                </Campo>
+
+                <Campo Rotulo="Comissão no atendimento do assinante" Colunas="6">
+                    <Seletor TItem="Opcao" TValor="string" Itens="OpcoesRegraComissao"
+                             @bind-Valor="Modelo.RegraComissaoAssinante" TextoDe="o => o.Rotulo" ValorDe="o => o.Valor" />
+                </Campo>
+                <Campo Rotulo="Situação" Para="pln-ativo" Colunas="3"
+                       Dica="Inativo não é mais vendido; assinaturas existentes continuam.">
+                    <div class="form-check form-switch campo-switch">
+                        <input id="pln-ativo" class="form-check-input" type="checkbox" role="switch" @bind="Modelo.Ativo" />
+                        <label class="form-check-label" for="pln-ativo">@(Modelo.Ativo ? "Ativo" : "Inativo")</label>
+                    </div>
                 </Campo>
             </div>
 
@@ -116,12 +133,25 @@
                             </div>
 
                             <div class="contador">
-                                <button type="button" @onclick="() => Ajustar(item, -1)" disabled="@(item.Quantidade <= 1)">−</button>
-                                <span>@item.Quantidade</span>
-                                <button type="button" @onclick="() => Ajustar(item, 1)">+</button>
+                                @if (item.Ilimitado)
+                                {
+                                    <span title="Ilimitado">∞</span>
+                                }
+                                else
+                                {
+                                    <button type="button" @onclick="() => Ajustar(item, -1)" disabled="@(item.Quantidade <= 1)">−</button>
+                                    <span>@item.Quantidade</span>
+                                    <button type="button" @onclick="() => Ajustar(item, 1)">+</button>
+                                }
                             </div>
 
-                            <span class="item-total">@((item.ValorUnitario * item.Quantidade).ToString("C"))</span>
+                            <label class="item-ilimitado">
+                                <input type="checkbox" class="form-check-input" checked="@item.Ilimitado"
+                                       @onchange="e => item.Quantidade = e.Value is true ? null : 1" />
+                                ilimitado
+                            </label>
+
+                            <span class="item-total">@(item.Ilimitado ? "—" : (item.ValorUnitario * item.Quantidade!.Value).ToString("C"))</span>
 
                             <button type="button" class="remover" title="Remover" @onclick="() => itens.Remove(item)">×</button>
                         </li>
@@ -168,10 +198,16 @@
     /// <summary>Servicos ou produtos, conforme o tipo escolhido, com o preco no rotulo.</summary>
     private List<OpcaoId> OpcoesItem =>
         tipo == TipoItem.Servico
-            ? servicos.Select(s => new OpcaoId(s.IdServico,
+            ? servicos.Where(s => s.Ativo).Select(s => new OpcaoId(s.IdServico,
                 $"{s.NomeServico} — {s.PrecoServico.ToString("C")}")).ToList()
-            : produtos.Select(p => new OpcaoId(p.IdProduto,
+            : produtos.Where(p => p.Ativo).Select(p => new OpcaoId(p.IdProduto,
                 $"{p.NomeProduto} — {p.Valor.ToString("C")}")).ToList();
+
+    private static readonly List<Opcao> OpcoesPeriodicidade =
+        Periodicidade.Todas.Select(p => new Opcao(p.Valor, p.Rotulo)).ToList();
+
+    private static readonly List<Opcao> OpcoesRegraComissao =
+        RegraComissaoAssinante.Todas.Select(r => new Opcao(r.Valor, r.Rotulo)).ToList();
 
     private CadastroRapido.TipoCadastro? modalAberto;
     private decimal valor;
@@ -187,7 +223,8 @@
     private int idEscolhido;
     private int quantidade = 1;
 
-    private decimal SomaItens => itens.Sum(i => i.ValorUnitario * i.Quantidade);
+    /// <summary>Item ilimitado nao tem preco avulso somavel: fica fora da comparacao.</summary>
+    private decimal SomaItens => itens.Where(i => !i.Ilimitado).Sum(i => i.ValorUnitario * i.Quantidade!.Value);
     private decimal Diferenca => SomaItens - valor;
 
     protected override void OnInitialized()
@@ -247,7 +284,10 @@
 
     private void AjustarNovo(int delta) => quantidade = Math.Max(1, quantidade + delta);
 
-    private void Ajustar(PlanoItem item, int delta) => item.Quantidade = Math.Max(1, item.Quantidade + delta);
+    private void Ajustar(PlanoItem item, int delta)
+    {
+        if (item.Quantidade is int atual) item.Quantidade = Math.Max(1, atual + delta);
+    }
 
     private void UsarSomaComoPreco() => valor = SomaItens;
 

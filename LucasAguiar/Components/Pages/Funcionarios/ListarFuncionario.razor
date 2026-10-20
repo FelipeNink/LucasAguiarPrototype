@@ -42,7 +42,13 @@
             foreach (var funcionario in Filtrados)
             {
                 <tr>
-                    <td>@funcionario.NomeFuncionario</td>
+                    <td>
+                        @funcionario.NomeFuncionario
+                        @if (!funcionario.Ativo)
+                        {
+                            <span class="status cancelada"><i></i>inativo</span>
+                        }
+                    </td>
                     <td>@Valor(funcionario.Telefone)</td>
                     <td class="al-dir">@funcionario.SalarioFixo.ToString("C")</td>
                     <td class="col-acoes">
@@ -82,6 +88,14 @@
                 <div><dt>CTPS</dt><dd>@Valor(visualizando.CTPS)</dd></div>
                 <div><dt>Nascimento</dt><dd>@Valor(visualizando.DataNascimento?.ToString("dd/MM/yyyy"))</dd></div>
                 <div><dt>Salário fixo</dt><dd>@visualizando.SalarioFixo.ToString("C")</dd></div>
+                <div><dt>Cargo</dt><dd>@(visualizando.Cargo == null ? "—" : CargoFuncionario.Rotulo(visualizando.Cargo))</dd></div>
+                <div><dt>Admissão</dt><dd>@Valor(visualizando.DataAdmissao?.ToString("dd/MM/yyyy"))</dd></div>
+                <div><dt>Desligamento</dt><dd>@Valor(visualizando.DataDesligamento?.ToString("dd/MM/yyyy"))</dd></div>
+                <div><dt>Comissão padrão</dt><dd>@($"{visualizando.ComissaoServicoPadrao:0.##}% serviços · {visualizando.ComissaoProdutoPadrao:0.##}% produtos")</dd></div>
+                <div><dt>Chave PIX</dt><dd>@Valor(visualizando.ChavePix)</dd></div>
+                <div><dt>Login</dt><dd>@Valor(visualizando.LoginVinculado)</dd></div>
+                <div><dt>Situação</dt><dd>@(visualizando.Ativo ? "Ativo" : "Inativo")</dd></div>
+                <div class="largo"><dt>Dados bancários</dt><dd>@Valor(visualizando.DadosBancarios)</dd></div>
                 <div class="largo">
                     <dt>Endereço</dt>
                     <dd>@Valor(string.Join(", ", new[] { visualizando.Rua, visualizando.Numero, visualizando.Bairro, visualizando.Cidade, visualizando.Estado }.Where(p => !string.IsNullOrWhiteSpace(p))))</dd>

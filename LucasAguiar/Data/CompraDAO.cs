@@ -18,14 +18,12 @@ namespace LucasAguiar.Data
         /// estoque — tudo numa transação. Uma compra é saída de dinheiro:
         /// sem a despesa, o valor não apareceria em nenhum relatório financeiro.
         /// </summary>
-        public int Inserir(Compra compra, int? idCaixaAberto = null, bool gerarDespesa = true,
-                           string formaPagamento = FormaPagamento.Dinheiro, bool pago = true)
+        public int Inserir(Compra compra, int? idCaixaAberto = null, bool gerarDespesa = true, bool pago = true)
         {
-            if (compra.ValorCompra <= 0)
-                throw new Exception("O valor da compra deve ser maior que zero.");
+            Preparar(compra);
 
-            if (compra.Quantidade <= 0)
-                throw new Exception("A quantidade deve ser maior que zero.");
+            if (!FormaPagamento.Todas.Any(f => f.Valor == compra.FormaPagamento))
+                throw new Exception("Selecione a forma de pagamento.");
 
             using var conexao = _conexao.GetConnection();
             using var transacao = conexao.BeginTransaction();
@@ -35,30 +33,34 @@ namespace LucasAguiar.Data
 
                 if (gerarDespesa)
                 {
-                    var descricao = string.IsNullOrWhiteSpace(compra.ItemCompra)
-                        ? "Compra de mercadoria"
-                        : $"Compra: {compra.ItemCompra}";
+                    var vencimento = (compra.VencimentoPrimeira ?? compra.DataCompra).Date;
 
                     using var cmdDespesa = new MySqlCommand(@"
                         INSERT INTO despesa
                             (data_desp, descricao, categoria, valor, forma_pagamento,
-                             pago, id_forn_fk, id_caixa_fk, observacao)
+                             pago, id_forn_fk, id_caixa_fk, observacao,
+                             data_vencimento, data_pagamento, parcelas)
                         VALUES
                             (@data, @descricao, 'PRODUTOS', @valor, @forma,
-                             @pago, @idFornecedor, @idCaixa, 'Gerada automaticamente pela tela de Compras');
+                             @pago, @idFornecedor, @idCaixa, 'Gerada automaticamente pela tela de Compras',
+                             @vencimento, @pagamento, @parcelas);
                         SELECT LAST_INSERT_ID();", conexao, transacao);
 
-                    cmdDespesa.Parameters.AddWithValue("@data", compra.DataCompra.Date);
-                    cmdDespesa.Parameters.AddWithValue("@descricao", descricao);
+                    // Mesma regra da despesa: paga vale o dia do pagamento, em aberto o vencimento.
+                    cmdDespesa.Parameters.AddWithValue("@data", pago ? compra.DataCompra.Date : vencimento);
+                    cmdDespesa.Parameters.AddWithValue("@descricao", DescricaoDespesa(compra));
                     cmdDespesa.Parameters.AddWithValue("@valor", compra.ValorCompra);
-                    cmdDespesa.Parameters.AddWithValue("@forma", formaPagamento);
+                    cmdDespesa.Parameters.AddWithValue("@forma", compra.FormaPagamento);
                     cmdDespesa.Parameters.AddWithValue("@pago", pago ? 1 : 0);
                     cmdDespesa.Parameters.AddWithValue("@idFornecedor",
                         compra.IdFornecedor > 0 ? compra.IdFornecedor : (object)DBNull.Value);
                     // Só amarra ao caixa se o dinheiro sair mesmo da gaveta.
                     cmdDespesa.Parameters.AddWithValue("@idCaixa",
-                        (pago && formaPagamento == FormaPagamento.Dinheiro && idCaixaAberto > 0)
+                        (pago && compra.FormaPagamento == FormaPagamento.Dinheiro && idCaixaAberto > 0)
                             ? idCaixaAberto!.Value : (object)DBNull.Value);
+                    cmdDespesa.Parameters.AddWithValue("@vencimento", vencimento);
+                    cmdDespesa.Parameters.AddWithValue("@pagamento", pago ? compra.DataCompra.Date : DBNull.Value);
+                    cmdDespesa.Parameters.AddWithValue("@parcelas", compra.Parcelas);
 
                     idDespesa = Convert.ToInt32(cmdDespesa.ExecuteScalar());
                 }
@@ -67,38 +69,25 @@ namespace LucasAguiar.Data
                 using (var cmdCompra = new MySqlCommand(@"
                     INSERT INTO compras
                         (data_comp, valor_comp, item_comp, quantidade,
-                         id_prod_fk, id_forn_fk, id_fun_fk, id_desp_fk)
+                         id_prod_fk, id_forn_fk, id_fun_fk, id_desp_fk,
+                         numero_nota, frete, desconto, observacao,
+                         forma_pagamento, parcelas, vencimento_primeira)
                     VALUES
                         (@data, @valor, @item, @quantidade,
-                         @idProduto, @idFornecedor, @idFuncionario, @idDespesa);
+                         @idProduto, @idFornecedor, @idFuncionario, @idDespesa,
+                         @nota, @frete, @desconto, @observacao,
+                         @forma, @parcelas, @vencimento);
                     SELECT LAST_INSERT_ID();", conexao, transacao))
                 {
-                    cmdCompra.Parameters.AddWithValue("@data", compra.DataCompra.Date);
-                    cmdCompra.Parameters.AddWithValue("@valor", compra.ValorCompra);
-                    cmdCompra.Parameters.AddWithValue("@item",
-                        string.IsNullOrWhiteSpace(compra.ItemCompra) ? (object)DBNull.Value : compra.ItemCompra);
-                    cmdCompra.Parameters.AddWithValue("@quantidade", compra.Quantidade);
-                    cmdCompra.Parameters.AddWithValue("@idProduto",
-                        compra.IdProduto > 0 ? compra.IdProduto : (object)DBNull.Value);
-                    cmdCompra.Parameters.AddWithValue("@idFornecedor",
-                        compra.IdFornecedor > 0 ? compra.IdFornecedor : (object)DBNull.Value);
-                    cmdCompra.Parameters.AddWithValue("@idFuncionario",
-                        compra.IdFuncionario > 0 ? compra.IdFuncionario : (object)DBNull.Value);
+                    PreencherCabecalho(cmdCompra, compra);
                     cmdCompra.Parameters.AddWithValue("@idDespesa", (object?)idDespesa ?? DBNull.Value);
+                    cmdCompra.Parameters.AddWithValue("@forma", compra.FormaPagamento);
 
                     idCompra = Convert.ToInt32(cmdCompra.ExecuteScalar());
                 }
 
                 // Compra de produto dá entrada no estoque.
-                if (compra.IdProduto > 0)
-                {
-                    MoverEstoque(
-                        compra.IdProduto, compra.Quantidade, conexao, transacao,
-                        $"Compra #{idCompra}"
-                        + (string.IsNullOrWhiteSpace(compra.NomeFornecedor)
-                            ? "" : $" — {compra.NomeFornecedor}"),
-                        idCompra);
-                }
+                GravarItens(idCompra, compra.Itens, conexao, transacao);
 
                 transacao.Commit();
                 return idCompra;
@@ -122,8 +111,20 @@ namespace LucasAguiar.Data
                 WHERE c.id_comp = @id", conexao);
             comando.Parameters.AddWithValue("@id", id);
 
-            using var leitor = comando.ExecuteReader();
-            return leitor.Read() ? Ler(leitor) : null;
+            Compra? compra;
+            using (var leitor = comando.ExecuteReader())
+            {
+                compra = leitor.Read() ? Ler(leitor) : null;
+            }
+
+            if (compra != null) compra.Itens = ListarItens(id, conexao, null);
+            return compra;
+        }
+
+        public List<CompraItem> ListarItens(int idCompra)
+        {
+            using var conexao = _conexao.GetConnection();
+            return ListarItens(idCompra, conexao, null);
         }
 
         /// <summary>
@@ -132,11 +133,7 @@ namespace LucasAguiar.Data
         /// </summary>
         public void Atualizar(Compra compra)
         {
-            if (compra.ValorCompra <= 0)
-                throw new Exception("O valor da compra deve ser maior que zero.");
-
-            if (compra.Quantidade <= 0)
-                throw new Exception("A quantidade deve ser maior que zero.");
+            Preparar(compra);
 
             using var conexao = _conexao.GetConnection();
             using var transacao = conexao.BeginTransaction();
@@ -152,44 +149,49 @@ namespace LucasAguiar.Data
                         "A despesa desta compra já entrou num caixa fechado: o valor não pode mais ser alterado.");
                 }
 
-                MoverEstoque(anterior.IdProduto, -anterior.Quantidade, conexao, transacao);
-                MoverEstoque(compra.IdProduto, compra.Quantidade, conexao, transacao);
+                foreach (var item in ListarItens(compra.IdCompra, conexao, transacao))
+                    MoverEstoque(item.IdProduto ?? 0, -item.Quantidade, conexao, transacao);
 
+                using (var limpar = new MySqlCommand(
+                    "DELETE FROM compra_item WHERE id_comp_fk = @id", conexao, transacao))
+                {
+                    limpar.Parameters.AddWithValue("@id", compra.IdCompra);
+                    limpar.ExecuteNonQuery();
+                }
+
+                GravarItens(compra.IdCompra, compra.Itens, conexao, transacao);
+
+                // Forma de pagamento nao muda aqui: ja esta na despesa.
                 using (var cmdCompra = new MySqlCommand(@"
                     UPDATE compras SET
                         data_comp = @data, valor_comp = @valor, item_comp = @item,
                         quantidade = @quantidade, id_prod_fk = @idProduto,
-                        id_forn_fk = @idFornecedor, id_fun_fk = @idFuncionario
+                        id_forn_fk = @idFornecedor, id_fun_fk = @idFuncionario,
+                        numero_nota = @nota, frete = @frete, desconto = @desconto,
+                        observacao = @observacao, parcelas = @parcelas, vencimento_primeira = @vencimento
                     WHERE id_comp = @id", conexao, transacao))
                 {
-                    cmdCompra.Parameters.AddWithValue("@data", compra.DataCompra.Date);
-                    cmdCompra.Parameters.AddWithValue("@valor", compra.ValorCompra);
-                    cmdCompra.Parameters.AddWithValue("@item",
-                        string.IsNullOrWhiteSpace(compra.ItemCompra) ? (object)DBNull.Value : compra.ItemCompra);
-                    cmdCompra.Parameters.AddWithValue("@quantidade", compra.Quantidade);
-                    cmdCompra.Parameters.AddWithValue("@idProduto",
-                        compra.IdProduto > 0 ? compra.IdProduto : (object)DBNull.Value);
-                    cmdCompra.Parameters.AddWithValue("@idFornecedor",
-                        compra.IdFornecedor > 0 ? compra.IdFornecedor : (object)DBNull.Value);
-                    cmdCompra.Parameters.AddWithValue("@idFuncionario",
-                        compra.IdFuncionario > 0 ? compra.IdFuncionario : (object)DBNull.Value);
+                    PreencherCabecalho(cmdCompra, compra);
                     cmdCompra.Parameters.AddWithValue("@id", compra.IdCompra);
                     cmdCompra.ExecuteNonQuery();
                 }
 
                 if (anterior.IdDespesa.HasValue)
                 {
+                    var vencimento = (compra.VencimentoPrimeira ?? compra.DataCompra).Date;
+
                     using var cmdDespesa = new MySqlCommand(@"
                         UPDATE despesa SET
-                            data_desp = @data, descricao = @descricao,
-                            valor = @valor, id_forn_fk = @idFornecedor
+                            data_desp = CASE WHEN pago = 1 THEN @data ELSE @vencimento END,
+                            data_pagamento = CASE WHEN pago = 1 THEN @data ELSE data_pagamento END,
+                            data_vencimento = @vencimento, parcelas = @parcelas,
+                            descricao = @descricao, valor = @valor, id_forn_fk = @idFornecedor
                         WHERE id_desp = @idDespesa", conexao, transacao);
 
                     cmdDespesa.Parameters.AddWithValue("@data", compra.DataCompra.Date);
-                    cmdDespesa.Parameters.AddWithValue("@descricao",
-                        string.IsNullOrWhiteSpace(compra.ItemCompra)
-                            ? "Compra de mercadoria"
-                            : $"Compra: {compra.ItemCompra}");
+                    cmdDespesa.Parameters.AddWithValue("@vencimento", vencimento);
+                    cmdDespesa.Parameters.AddWithValue("@parcelas", compra.Parcelas);
+                    cmdDespesa.Parameters.AddWithValue("@descricao", DescricaoDespesa(compra));
                     cmdDespesa.Parameters.AddWithValue("@valor", compra.ValorCompra);
                     cmdDespesa.Parameters.AddWithValue("@idFornecedor",
                         compra.IdFornecedor > 0 ? compra.IdFornecedor : (object)DBNull.Value);
@@ -226,9 +228,11 @@ namespace LucasAguiar.Data
                         "A despesa desta compra já entrou num caixa fechado: a compra não pode mais ser excluída.");
                 }
 
-                MoverEstoque(compra.IdProduto, -compra.Quantidade, conexao, transacao);
+                foreach (var item in ListarItens(id, conexao, transacao))
+                    MoverEstoque(item.IdProduto ?? 0, -item.Quantidade, conexao, transacao);
 
                 // A compra sai antes da despesa: compras.id_desp_fk aponta para ela.
+                // Os itens saem junto, pelo ON DELETE CASCADE de compra_item.
                 using (var cmdCompra = new MySqlCommand(
                     "DELETE FROM compras WHERE id_comp = @id", conexao, transacao))
                 {
@@ -251,6 +255,131 @@ namespace LucasAguiar.Data
                 transacao.Rollback();
                 throw new Exception("Erro ao excluir a compra: " + ex.Message);
             }
+        }
+
+        /// <summary>
+        /// Confere a grade e calcula o cabecalho: total da nota e o resumo
+        /// (item_comp, quantidade, id_prod_fk) que a listagem e as
+        /// exportacoes leem.
+        /// </summary>
+        private static void Preparar(Compra compra)
+        {
+            if (compra.Itens.Count == 0)
+                throw new Exception("Adicione ao menos um item à compra.");
+
+            foreach (var item in compra.Itens)
+            {
+                if (string.IsNullOrWhiteSpace(item.Descricao)) throw new Exception("Informe a descrição de cada item.");
+                if (item.Quantidade <= 0) throw new Exception($"A quantidade de {item.Descricao} deve ser maior que zero.");
+                if (item.CustoUnitario < 0) throw new Exception($"O custo de {item.Descricao} não pode ser negativo.");
+                item.Descricao = item.Descricao.Trim();
+            }
+
+            if (compra.Frete < 0) throw new Exception("O frete não pode ser negativo.");
+            if (compra.Desconto < 0) throw new Exception("O desconto não pode ser negativo.");
+            if (compra.Desconto > compra.TotalItens + compra.Frete)
+                throw new Exception("O desconto é maior que o valor da compra.");
+            if (compra.Parcelas is < 1 or > 120) throw new Exception("As parcelas devem ficar entre 1 e 120.");
+
+            compra.ValorCompra = compra.TotalNota;
+            if (compra.ValorCompra <= 0)
+                throw new Exception("O valor da compra deve ser maior que zero.");
+
+            var resumo = string.Join(", ", compra.Itens.Select(i =>
+                i.Quantidade > 1 ? $"{i.Quantidade}x {i.Descricao}" : i.Descricao));
+            compra.ItemCompra = resumo.Length <= 200 ? resumo : resumo[..197] + "...";
+            compra.Quantidade = compra.Itens.Sum(i => i.Quantidade);
+            compra.IdProduto = compra.Itens.FirstOrDefault(i => i.IdProduto > 0)?.IdProduto ?? 0;
+        }
+
+        private static string DescricaoDespesa(Compra compra) =>
+            (string.IsNullOrWhiteSpace(compra.NumeroNota) ? "Compra: " : $"Compra NF {compra.NumeroNota.Trim()}: ")
+            + (string.IsNullOrWhiteSpace(compra.ItemCompra) ? "mercadoria" : compra.ItemCompra);
+
+        private static void PreencherCabecalho(MySqlCommand comando, Compra compra)
+        {
+            comando.Parameters.AddWithValue("@data", compra.DataCompra.Date);
+            comando.Parameters.AddWithValue("@valor", compra.ValorCompra);
+            comando.Parameters.AddWithValue("@item",
+                string.IsNullOrWhiteSpace(compra.ItemCompra) ? (object)DBNull.Value : compra.ItemCompra);
+            comando.Parameters.AddWithValue("@quantidade", compra.Quantidade);
+            comando.Parameters.AddWithValue("@idProduto",
+                compra.IdProduto > 0 ? compra.IdProduto : (object)DBNull.Value);
+            comando.Parameters.AddWithValue("@idFornecedor",
+                compra.IdFornecedor > 0 ? compra.IdFornecedor : (object)DBNull.Value);
+            comando.Parameters.AddWithValue("@idFuncionario",
+                compra.IdFuncionario > 0 ? compra.IdFuncionario : (object)DBNull.Value);
+            comando.Parameters.AddWithValue("@nota",
+                string.IsNullOrWhiteSpace(compra.NumeroNota) ? (object)DBNull.Value : compra.NumeroNota.Trim());
+            comando.Parameters.AddWithValue("@frete", compra.Frete);
+            comando.Parameters.AddWithValue("@desconto", compra.Desconto);
+            comando.Parameters.AddWithValue("@observacao",
+                string.IsNullOrWhiteSpace(compra.Observacao) ? (object)DBNull.Value : compra.Observacao.Trim());
+            comando.Parameters.AddWithValue("@parcelas", compra.Parcelas);
+            comando.Parameters.AddWithValue("@vencimento", compra.VencimentoPrimeira?.Date ?? (object)DBNull.Value);
+        }
+
+        /// <summary>
+        /// Grava os itens e da entrada no estoque. O custo do item vira o
+        /// preco de custo do produto: e o ultimo preco pago a ele.
+        /// </summary>
+        private static void GravarItens(
+            int idCompra, IEnumerable<CompraItem> itens, MySqlConnection conexao, MySqlTransaction transacao)
+        {
+            foreach (var item in itens)
+            {
+                using (var inserir = new MySqlCommand(@"
+                    INSERT INTO compra_item (id_comp_fk, id_prod_fk, descricao, quantidade, custo_unit)
+                    VALUES (@idCompra, @idProduto, @descricao, @quantidade, @custo)", conexao, transacao))
+                {
+                    inserir.Parameters.AddWithValue("@idCompra", idCompra);
+                    inserir.Parameters.AddWithValue("@idProduto", item.IdProduto > 0 ? item.IdProduto : (object)DBNull.Value);
+                    inserir.Parameters.AddWithValue("@descricao", item.Descricao);
+                    inserir.Parameters.AddWithValue("@quantidade", item.Quantidade);
+                    inserir.Parameters.AddWithValue("@custo", item.CustoUnitario);
+                    inserir.ExecuteNonQuery();
+                }
+
+                if (item.IdProduto is not > 0) continue;
+
+                // Com o numero da compra: no extrato do produto, a entrada
+                // diz de onde veio em vez de so "compra recebida".
+                MoverEstoque(
+                    item.IdProduto.Value, item.Quantidade, conexao, transacao,
+                    $"Compra #{idCompra}: {item.Descricao}", idCompra);
+
+                using var custo = new MySqlCommand(
+                    "UPDATE produto SET preco_custo = @custo WHERE id_prod = @idProduto", conexao, transacao);
+                custo.Parameters.AddWithValue("@custo", item.CustoUnitario);
+                custo.Parameters.AddWithValue("@idProduto", item.IdProduto.Value);
+                custo.ExecuteNonQuery();
+            }
+        }
+
+        private static List<CompraItem> ListarItens(int idCompra, MySqlConnection conexao, MySqlTransaction? transacao)
+        {
+            var lista = new List<CompraItem>();
+
+            using var comando = new MySqlCommand(
+                "SELECT * FROM compra_item WHERE id_comp_fk = @id ORDER BY id_comp_item", conexao, transacao);
+            comando.Parameters.AddWithValue("@id", idCompra);
+
+            using var leitor = comando.ExecuteReader();
+            var iProduto = leitor.GetOrdinal("id_prod_fk");
+
+            while (leitor.Read())
+            {
+                lista.Add(new CompraItem
+                {
+                    IdItem = leitor.GetInt32("id_comp_item"),
+                    IdProduto = leitor.IsDBNull(iProduto) ? null : leitor.GetInt32(iProduto),
+                    Descricao = leitor.GetString("descricao"),
+                    Quantidade = leitor.GetInt32("quantidade"),
+                    CustoUnitario = leitor.GetDecimal("custo_unit")
+                });
+            }
+
+            return lista;
         }
 
         /// <summary>Lê a compra travando a linha até o fim da transação.</summary>
@@ -309,7 +438,10 @@ namespace LucasAguiar.Data
             using var conexao = _conexao.GetConnection();
             using var comando = new MySqlCommand($@"
                 SELECT c.*, p.nome_prod, f.nome_forn, u.nome_fun,
-                       d.forma_pagamento AS forma_desp, d.pago AS pago_desp
+                       d.forma_pagamento AS forma_desp, d.pago AS pago_desp,
+                       (SELECT GROUP_CONCAT(CAST(ci.id_prod_fk AS CHAR))
+                          FROM compra_item ci
+                         WHERE ci.id_comp_fk = c.id_comp AND ci.id_prod_fk IS NOT NULL) AS ids_prod
                 FROM compras c
                 LEFT JOIN produto p ON c.id_prod_fk = p.id_prod
                 LEFT JOIN fornecedor f ON c.id_forn_fk = f.id_forn
@@ -324,12 +456,16 @@ namespace LucasAguiar.Data
             using var leitor = comando.ExecuteReader();
             var iForma = leitor.GetOrdinal("forma_desp");
             var iPago = leitor.GetOrdinal("pago_desp");
+            var iIds = leitor.GetOrdinal("ids_prod");
 
             while (leitor.Read())
             {
                 var compra = Ler(leitor);
                 compra.FormaPagamentoDespesa = leitor.IsDBNull(iForma) ? null : leitor.GetString(iForma);
                 compra.Pago = leitor.IsDBNull(iPago) ? null : leitor.GetBoolean(iPago);
+                compra.IdsProdutos = leitor.IsDBNull(iIds)
+                    ? new()
+                    : leitor.GetString(iIds).Split(',', StringSplitOptions.RemoveEmptyEntries).Select(int.Parse).ToList();
                 lista.Add(compra);
             }
             return lista;
@@ -364,6 +500,13 @@ namespace LucasAguiar.Data
                 IdFornecedor = Inteiro("id_forn_fk"),
                 IdFuncionario = Inteiro("id_fun_fk"),
                 IdDespesa = leitor.IsDBNull(iDesp) ? null : leitor.GetInt32(iDesp),
+                NumeroNota = Texto("numero_nota"),
+                Frete = leitor.GetDecimal("frete"),
+                Desconto = leitor.GetDecimal("desconto"),
+                Observacao = Texto("observacao"),
+                FormaPagamento = Texto("forma_pagamento") ?? FormaPagamento.Dinheiro,
+                Parcelas = Inteiro("parcelas"),
+                VencimentoPrimeira = DAOHelper.GetDateTime(leitor, "vencimento_primeira"),
                 NomeProduto = Texto("nome_prod"),
                 NomeFornecedor = Texto("nome_forn"),
                 NomeFuncionario = Texto("nome_fun")

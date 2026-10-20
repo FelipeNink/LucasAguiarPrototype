@@ -22,12 +22,11 @@ namespace LucasAguiar.Data
             if (venda.Itens == null || venda.Itens.Count == 0)
                 throw new Exception("A venda precisa de pelo menos um item.");
 
-            if (string.IsNullOrWhiteSpace(venda.FormaPagamentoVenda))
-                throw new Exception("Selecione a forma de pagamento.");
-
             // O negocio trabalha com comissao: sem profissional nao ha a quem pagar.
             if (!venda.IdFuncionario.HasValue || venda.IdFuncionario.Value <= 0)
                 throw new Exception("Selecione o profissional que realizou o atendimento.");
+
+            Preparar(venda);
 
             using var conexao = _conexao.GetConnection();
             using var transacao = conexao.BeginTransaction();
@@ -72,6 +71,7 @@ namespace LucasAguiar.Data
                 }
 
                 GravarItens(conexao, transacao, idVenda, venda.Itens, venda.Usuario);
+                GravarPagamentos(conexao, transacao, idVenda, venda.Pagamentos);
 
                 // Venda de plano gera a assinatura com os creditos.
                 if (venda.PlanoVendido != null && venda.IdCliente.HasValue)
@@ -82,7 +82,8 @@ namespace LucasAguiar.Data
                         venda.PlanoVendido.IdPlano,
                         venda.PlanoVendido.ValorPago,
                         idVenda,
-                        venda.PlanoVendido.Componentes);
+                        venda.PlanoVendido.Componentes,
+                        venda.PlanoVendido.ValidadeDias);
                 }
 
                 transacao.Commit();
@@ -160,11 +161,15 @@ namespace LucasAguiar.Data
                 using (var comando = new MySqlCommand(@"
                     INSERT INTO venda_item
                         (id_vend_fk, tipo_item, id_ref, descricao, quantidade,
-                         valor_unit, valor_total, comissao, coberto_plano, id_saldo_fk)
+                         valor_unit, valor_total, comissao, coberto_plano, id_saldo_fk,
+                         id_fun_fk, desconto)
                     VALUES
                         (@idVenda, @tipo, @idRef, @descricao, @qtd,
-                         @unit, @total, @comissao, @coberto, @idSaldo)", conexao, transacao))
+                         @unit, @total, @comissao, @coberto, @idSaldo,
+                         @idFuncionario, @desconto)", conexao, transacao))
                 {
+                    comando.Parameters.AddWithValue("@idFuncionario", item.IdFuncionario ?? (object)DBNull.Value);
+                    comando.Parameters.AddWithValue("@desconto", item.Desconto);
                     comando.Parameters.AddWithValue("@idVenda", idVenda);
                     comando.Parameters.AddWithValue("@tipo", item.TipoItem);
                     comando.Parameters.AddWithValue("@idRef", item.IdReferencia ?? (object)DBNull.Value);
@@ -199,6 +204,78 @@ namespace LucasAguiar.Data
                         $"Venda de {item.Descricao}", idVenda, usuario);
                 }
             }
+        }
+
+        private static void GravarPagamentos(
+            MySqlConnection conexao, MySqlTransaction transacao, int idVenda, IEnumerable<VendaPagamento> pagamentos)
+        {
+            foreach (var p in pagamentos)
+            {
+                using var comando = new MySqlCommand(@"
+                    INSERT INTO venda_pagamento (id_vend_fk, forma, valor, parcelas)
+                    VALUES (@idVenda, @forma, @valor, @parcelas)", conexao, transacao);
+                comando.Parameters.AddWithValue("@idVenda", idVenda);
+                comando.Parameters.AddWithValue("@forma", p.Forma);
+                comando.Parameters.AddWithValue("@valor", p.Valor);
+                comando.Parameters.AddWithValue("@parcelas", p.Parcelas ?? (object)DBNull.Value);
+                comando.ExecuteNonQuery();
+            }
+        }
+
+        /// <summary>
+        /// Confere e completa a venda antes de gravar: cada item fica com o
+        /// seu profissional (o da venda, quando nao escolhido) e os pagamentos
+        /// tem de fechar o total. Sem grade, a forma unica vira um pagamento
+        /// so do total -- e o caminho de quem ainda manda so a forma.
+        /// </summary>
+        private static void Preparar(Venda venda)
+        {
+            foreach (var item in venda.Itens)
+            {
+                if (item.Desconto < 0)
+                    throw new Exception($"O desconto de {item.Descricao} não pode ser negativo.");
+                if (item.Desconto > Math.Round(item.ValorUnitario * item.Quantidade, 2))
+                    throw new Exception($"O desconto de {item.Descricao} é maior que o valor do item.");
+
+                if (!(item.IdFuncionario > 0)) item.IdFuncionario = venda.IdFuncionario;
+            }
+
+            var total = venda.Total;
+
+            if (venda.Pagamentos.Count == 0)
+            {
+                if (string.IsNullOrWhiteSpace(venda.FormaPagamentoVenda))
+                    throw new Exception("Selecione a forma de pagamento.");
+
+                venda.Pagamentos.Add(new VendaPagamento
+                {
+                    Forma = venda.FormaPagamentoVenda,
+                    Valor = total,
+                    Parcelas = venda.QuantidadeParcelas
+                });
+            }
+
+            // Linha zerada numa venda com valor e so sobra da grade.
+            if (total > 0) venda.Pagamentos.RemoveAll(p => p.Valor == 0);
+
+            var formasValidas = FormaPagamento.Todas.Select(f => f.Valor).Append(FormaPagamento.Plano);
+            foreach (var p in venda.Pagamentos)
+            {
+                if (!formasValidas.Contains(p.Forma)) throw new Exception("Forma de pagamento inválida.");
+                if (p.Valor < 0) throw new Exception("O valor do pagamento não pode ser negativo.");
+                p.Parcelas = p.Forma == FormaPagamento.Credito ? Math.Clamp(p.Parcelas ?? 1, 1, 12) : null;
+            }
+
+            if (venda.Pagamentos.Count == 0)
+                throw new Exception("Informe o pagamento.");
+
+            var pago = venda.Pagamentos.Sum(p => p.Valor);
+            if (pago != total)
+                throw new Exception($"Os pagamentos somam {pago:C}, mas o total da venda é {total:C}.");
+
+            var formas = venda.Pagamentos.Select(p => p.Forma).Distinct().ToList();
+            venda.FormaPagamentoVenda = formas.Count == 1 ? formas[0] : FormaPagamento.Misto;
+            venda.QuantidadeParcelas = venda.Pagamentos.Where(p => p.Parcelas.HasValue).Max(p => p.Parcelas);
         }
 
         /// <summary>
@@ -288,7 +365,9 @@ namespace LucasAguiar.Data
                 SELECT v.status_vend, v.id_caixa_fk, c.status AS status_caixa,
                        DATE_FORMAT(v.data_vend, '%m/%Y') AS mes,
                        EXISTS (SELECT 1 FROM folha_pagamento fp
-                                WHERE fp.id_fun_fk = v.id_fun_fk
+                                WHERE (fp.id_fun_fk = v.id_fun_fk
+                                       OR fp.id_fun_fk IN (SELECT vi.id_fun_fk FROM venda_item vi
+                                                            WHERE vi.id_vend_fk = v.id_vend))
                                   AND fp.competencia = DATE_FORMAT(v.data_vend, '%Y-%m')) AS folha_paga,
                        EXISTS (SELECT 1 FROM venda_item vi
                                 WHERE vi.id_vend_fk = v.id_vend AND vi.tipo_item = 'PLANO') AS tem_plano
@@ -339,14 +418,13 @@ namespace LucasAguiar.Data
             if (venda.Itens == null || venda.Itens.Count == 0)
                 throw new Exception("A venda precisa de pelo menos um item.");
 
-            if (string.IsNullOrWhiteSpace(venda.FormaPagamentoVenda))
-                throw new Exception("Selecione a forma de pagamento.");
-
             if (!venda.IdFuncionario.HasValue || venda.IdFuncionario.Value <= 0)
                 throw new Exception("Selecione o profissional que realizou o atendimento.");
 
             if (venda.Itens.Any(i => i.TipoItem == TipoItem.Plano))
                 throw new Exception("Venda de plano não pode ser editada por aqui.");
+
+            Preparar(venda);
 
             using var conexao = _conexao.GetConnection();
             using var transacao = conexao.BeginTransaction();
@@ -360,8 +438,9 @@ namespace LucasAguiar.Data
 
                 DevolverConsumo(conexao, transacao, venda.IdVenda, venda.Usuario);
 
-                using (var limpar = new MySqlCommand(
-                    "DELETE FROM venda_item WHERE id_vend_fk = @id", conexao, transacao))
+                using (var limpar = new MySqlCommand(@"
+                    DELETE FROM venda_item WHERE id_vend_fk = @id;
+                    DELETE FROM venda_pagamento WHERE id_vend_fk = @id;", conexao, transacao))
                 {
                     limpar.Parameters.AddWithValue("@id", venda.IdVenda);
                     limpar.ExecuteNonQuery();
@@ -392,6 +471,7 @@ namespace LucasAguiar.Data
                 }
 
                 GravarItens(conexao, transacao, venda.IdVenda, venda.Itens, venda.Usuario);
+                GravarPagamentos(conexao, transacao, venda.IdVenda, venda.Pagamentos);
 
                 transacao.Commit();
             }
@@ -417,6 +497,21 @@ namespace LucasAguiar.Data
                 var situacao = SituacaoParaEditar(conexao, transacao, idVenda);
                 if (situacao.Modo == ModoEdicao.Bloqueada)
                     throw new Exception(situacao.Motivo);
+
+                // Os itens que eram do profissional da venda vao com ele; item
+                // feito por outro profissional fica com quem o fez. Roda antes
+                // do UPDATE da venda, que ainda guarda o profissional antigo.
+                if (situacao.PodeTrocarProfissional)
+                {
+                    using var itens = new MySqlCommand(@"
+                        UPDATE venda_item vi
+                          JOIN venda v ON v.id_vend = vi.id_vend_fk
+                           SET vi.id_fun_fk = @idFuncionario
+                         WHERE vi.id_vend_fk = @id AND vi.id_fun_fk <=> v.id_fun_fk", conexao, transacao);
+                    itens.Parameters.AddWithValue("@idFuncionario", idFuncionario);
+                    itens.Parameters.AddWithValue("@id", idVenda);
+                    itens.ExecuteNonQuery();
+                }
 
                 using var comando = new MySqlCommand(@"
                     UPDATE venda SET id_cli_fk = @idCliente"
@@ -482,8 +577,14 @@ namespace LucasAguiar.Data
             if (filtro.De.HasValue) condicoes += " AND v.data_vend >= @de";
             if (filtro.Ate.HasValue) condicoes += " AND v.data_vend < @ate";
             if (!string.IsNullOrWhiteSpace(filtro.Cliente)) condicoes += " AND c.nome_cli LIKE @cliente";
-            if ((filtro.IdFuncionario ?? 0) > 0) condicoes += " AND v.id_fun_fk = @idFuncionario";
-            if (!string.IsNullOrWhiteSpace(filtro.FormaPagamento)) condicoes += " AND v.forma_pagamento_vend = @forma";
+            if ((filtro.IdFuncionario ?? 0) > 0)
+                condicoes += @" AND (v.id_fun_fk = @idFuncionario
+                                 OR EXISTS (SELECT 1 FROM venda_item fi
+                                             WHERE fi.id_vend_fk = v.id_vend AND fi.id_fun_fk = @idFuncionario))";
+            // Venda mista aparece no filtro de cada forma que ela usou.
+            if (!string.IsNullOrWhiteSpace(filtro.FormaPagamento))
+                condicoes += @" AND EXISTS (SELECT 1 FROM venda_pagamento fp
+                                             WHERE fp.id_vend_fk = v.id_vend AND fp.forma = @forma)";
 
             using var conexao = _conexao.GetConnection();
             using var comando = new MySqlCommand($@"
@@ -541,8 +642,35 @@ namespace LucasAguiar.Data
                 }
             }
 
-            if (venda != null) venda.Itens = ListarItens(conexao, id);
+            if (venda != null)
+            {
+                venda.Itens = ListarItens(conexao, id);
+                venda.Pagamentos = ListarPagamentos(conexao, id);
+            }
             return venda;
+        }
+
+        private static List<VendaPagamento> ListarPagamentos(MySqlConnection conexao, int idVenda)
+        {
+            var lista = new List<VendaPagamento>();
+
+            using var comando = new MySqlCommand(
+                "SELECT forma, valor, parcelas FROM venda_pagamento WHERE id_vend_fk = @id ORDER BY id_vend_pag",
+                conexao);
+            comando.Parameters.AddWithValue("@id", idVenda);
+
+            using var leitor = comando.ExecuteReader();
+            while (leitor.Read())
+            {
+                lista.Add(new VendaPagamento
+                {
+                    Forma = leitor.GetString(0),
+                    Valor = leitor.GetDecimal(1),
+                    Parcelas = leitor.IsDBNull(2) ? null : leitor.GetInt32(2)
+                });
+            }
+
+            return lista;
         }
 
         public List<VendaItem> ListarItens(int idVenda)
@@ -555,13 +683,18 @@ namespace LucasAguiar.Data
         {
             var itens = new List<VendaItem>();
 
-            using var comando = new MySqlCommand(
-                "SELECT * FROM venda_item WHERE id_vend_fk = @id ORDER BY id_vend_item", conexao);
+            using var comando = new MySqlCommand(@"
+                SELECT vi.*, f.nome_fun
+                FROM venda_item vi
+                LEFT JOIN funcionario f ON f.id_fun = vi.id_fun_fk
+                WHERE vi.id_vend_fk = @id ORDER BY vi.id_vend_item", conexao);
             comando.Parameters.AddWithValue("@id", idVenda);
 
             using var leitor = comando.ExecuteReader();
             var iRef = leitor.GetOrdinal("id_ref");
             var iSaldo = leitor.GetOrdinal("id_saldo_fk");
+            var iFun = leitor.GetOrdinal("id_fun_fk");
+            var iNomeFun = leitor.GetOrdinal("nome_fun");
 
             while (leitor.Read())
             {
@@ -576,7 +709,10 @@ namespace LucasAguiar.Data
                     ValorUnitario = leitor.GetDecimal("valor_unit"),
                     ComissaoUnitaria = leitor.GetDecimal("comissao"),
                     CobertoPlano = leitor.GetBoolean("coberto_plano"),
-                    IdSaldo = leitor.IsDBNull(iSaldo) ? null : leitor.GetInt32(iSaldo)
+                    IdSaldo = leitor.IsDBNull(iSaldo) ? null : leitor.GetInt32(iSaldo),
+                    IdFuncionario = leitor.IsDBNull(iFun) ? null : leitor.GetInt32(iFun),
+                    NomeFuncionario = leitor.IsDBNull(iNomeFun) ? null : leitor.GetString(iNomeFun),
+                    Desconto = leitor.GetDecimal("desconto")
                 });
             }
 

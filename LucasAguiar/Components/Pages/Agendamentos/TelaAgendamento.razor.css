@@ -194,3 +194,59 @@
         position: static;
     }
 }
+
+/* ---------- grade de servicos ---------- */
+
+.grade-servicos {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: 0.5rem;
+}
+
+.servico-opcao {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    padding: 0.6rem 0.75rem;
+    background: var(--superficie);
+    border: 1px solid var(--borda);
+    border-radius: var(--raio-cartao);
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+}
+
+.servico-opcao:hover {
+    border-color: var(--marca);
+}
+
+.servico-opcao.marcado {
+    background: var(--selecionado-fundo);
+    border-color: var(--marca);
+}
+
+.servico-nome {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--texto);
+}
+
+.servico-ordem {
+    display: inline-grid;
+    place-items: center;
+    min-width: 1.2rem;
+    height: 1.2rem;
+    border-radius: 50%;
+    background: var(--marca);
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 700;
+}
+
+.servico-info {
+    font-size: 0.75rem;
+    color: var(--texto-3);
+}
