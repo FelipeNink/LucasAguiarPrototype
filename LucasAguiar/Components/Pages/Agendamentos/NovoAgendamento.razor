@@ -10,6 +10,13 @@
     [SupplyParameterFromQuery(Name = "data")]
     private DateTime? DataInicial { get; set; }
 
+    /// <summary>Clique num horario livre da agenda do painel: hora e profissional ja vem escolhidos.</summary>
+    [SupplyParameterFromQuery(Name = "hora")]
+    private string? HoraInicial { get; set; }
+
+    [SupplyParameterFromQuery(Name = "profissional")]
+    private int? IdProfissional { get; set; }
+
     private readonly Agendamento agendamento = new();
 
     protected override void OnInitialized()
@@ -18,6 +25,13 @@
         agendamento.DataHora = DataInicial is { } dia && dia.Date >= DateTime.Today
             ? dia.Date.AddHours(9)
             : ProximaMeiaHora();
+
+        // Horario ja passado nao serve: fica a sugestao acima.
+        if (DataInicial is { } data && TimeSpan.TryParse(HoraInicial, out var hora)
+            && data.Date + hora > DateTime.Now)
+            agendamento.DataHora = data.Date + hora;
+
+        if (IdProfissional is > 0) agendamento.IdFuncionario = IdProfissional.Value;
     }
 
     /// <summary>Sugere o proximo horario redondo de meia hora.</summary>

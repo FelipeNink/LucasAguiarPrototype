@@ -4,6 +4,7 @@
 
 .topo-agenda {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
     gap: 12px;
@@ -17,6 +18,13 @@
 .sub {
     font-size: 13px;
     color: var(--texto-3);
+}
+
+.controles {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
 }
 
 .navegacao {
@@ -45,14 +53,261 @@
     background: var(--superficie-3);
 }
 
-.corpo-agenda {
-    display: grid;
-    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
-    gap: 1.5rem;
-    align-items: start;
+/* ---------- Dia / Semana / Mes ---------- */
+
+.visoes {
+    display: inline-flex;
+    gap: 2px;
+    padding: 3px;
+    background: var(--superficie-3);
+    border-radius: 10px;
 }
 
-/* ---------- grade ---------- */
+.visoes button {
+    height: 30px;
+    padding: 0 14px;
+    background: transparent;
+    border: none;
+    border-radius: var(--raio);
+    font: 600 13px var(--fonte);
+    color: var(--texto-3);
+    cursor: pointer;
+    transition: background-color 0.15s, color 0.15s;
+}
+
+.visoes button:hover {
+    color: var(--texto);
+}
+
+.visoes button.ativa {
+    background: var(--marca);
+    color: var(--sobre-marca);
+    box-shadow: var(--sombra);
+}
+
+.visoes button:focus-visible {
+    outline: none;
+    box-shadow: var(--anel-foco);
+}
+
+/* ---------- grade de horarios (dia e semana) ---------- */
+
+.grade-rolagem {
+    max-height: 640px;
+    overflow: auto;
+    border: 1px solid var(--borda);
+    border-radius: var(--raio-cartao);
+    background: var(--superficie);
+}
+
+.grade-tempo {
+    --gutter: 56px;
+    min-width: calc(var(--gutter) + var(--colunas) * 130px);
+}
+
+.cabecalho-grade,
+.corpo-grade {
+    display: grid;
+    grid-template-columns: var(--gutter) repeat(var(--colunas), minmax(0, 1fr));
+}
+
+.cabecalho-grade {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    background: var(--superficie);
+    border-bottom: 1px solid var(--borda);
+}
+
+.canto {
+    border-right: 1px solid var(--borda);
+}
+
+.cabeca {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-width: 0;
+    padding: 12px 8px;
+    border-left: 1px solid var(--borda);
+    font-size: 14px;
+    color: var(--texto);
+}
+
+.cabeca strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.avatar {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    font-size: 13px;
+    font-weight: 700;
+    color: #fff;
+}
+
+.dia-semana {
+    font-size: 11.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--texto-3);
+}
+
+.dia-numero {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    font-variant-numeric: tabular-nums;
+}
+
+.cabeca.hoje .dia-numero {
+    background: var(--marca);
+    color: var(--sobre-marca);
+}
+
+.corpo-grade {
+    position: relative;
+}
+
+.horas {
+    position: relative;
+    border-right: 1px solid var(--borda);
+}
+
+.horas span {
+    position: absolute;
+    right: 8px;
+    transform: translateY(-50%);
+    font-size: 12px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--texto-3);
+}
+
+.horas span:first-child {
+    transform: translateY(4px);
+}
+
+/* Linha cheia na hora, clara na meia hora. 66px = AlturaHora no .razor. */
+.coluna {
+    position: relative;
+    border-left: 1px solid var(--borda);
+    background-image:
+        linear-gradient(to bottom, var(--borda) 1px, transparent 1px),
+        linear-gradient(to bottom, var(--superficie-3) 1px, transparent 1px);
+    background-size: 100% 66px, 100% 33px;
+    cursor: copy;
+}
+
+.coluna.hoje {
+    background-color: var(--superficie-2);
+}
+
+.bloco {
+    position: absolute;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+    padding: 6px 9px;
+    overflow: hidden;
+    background: linear-gradient(160deg, var(--cor), color-mix(in srgb, var(--cor) 82%, #000));
+    border-radius: 10px;
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--cor) 35%, transparent);
+    text-decoration: none;
+    line-height: 1.2;
+    cursor: pointer;
+    transition: transform 0.12s, box-shadow 0.12s;
+}
+
+.bloco:hover {
+    z-index: 2;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px color-mix(in srgb, var(--cor) 45%, transparent);
+}
+
+.bloco:focus-visible {
+    outline: none;
+    box-shadow: var(--anel-foco);
+}
+
+.bloco strong,
+.bloco span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.bloco strong {
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.bloco span {
+    font-size: 12px;
+    opacity: 0.88;
+}
+
+/* Meia hora: nome e servico na mesma linha nao cabem, fica so o nome. */
+.bloco.curto {
+    padding-top: 4px;
+    padding-bottom: 4px;
+}
+
+.bloco.curto span {
+    display: none;
+}
+
+.bloco.concluido {
+    opacity: 0.7;
+}
+
+.bloco.cancelado,
+.bloco.faltou {
+    opacity: 0.45;
+    background: repeating-linear-gradient(135deg, var(--cor) 0 8px,
+        color-mix(in srgb, var(--cor) 75%, #fff) 8px 16px);
+}
+
+.bloco.cancelado strong {
+    text-decoration: line-through;
+}
+
+.agora {
+    position: absolute;
+    left: var(--gutter);
+    right: 0;
+    z-index: 2;
+    height: 0;
+    border-top: 2px solid var(--perigo);
+    pointer-events: none;
+}
+
+.agora::before {
+    content: "";
+    position: absolute;
+    top: -6px;
+    left: -6px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--perigo);
+}
+
+/* ---------- mes ---------- */
 
 .semana,
 .dias {
@@ -114,11 +369,6 @@
     font-weight: 700;
 }
 
-.dia.selecionado {
-    border-color: var(--marca);
-    box-shadow: var(--anel-foco);
-}
-
 .dia:focus-visible {
     outline: none;
     box-shadow: var(--anel-foco);
@@ -174,84 +424,17 @@
     background: var(--ok);
 }
 
-/* ---------- dia selecionado ---------- */
-
-.detalhe-dia h3 {
-    margin: 0 0 0.75rem;
-    font-family: var(--fonte-titulo);
-    font-size: 20px;
-    font-weight: 700;
-    text-transform: uppercase;
-    color: var(--texto);
-}
-
 .vazio-dia {
     margin: 0 0 1rem;
     color: var(--texto-3);
     font-size: 14px;
 }
 
-.lista-dia {
-    margin: 0 0 1rem;
-    padding: 0;
-    list-style: none;
-}
-
-.lista-dia li {
-    display: grid;
-    grid-template-columns: 48px minmax(0, 1fr) auto;
-    align-items: center;
-    gap: 10px;
-    padding: 9px 0;
-    border-bottom: 1px solid var(--borda);
-}
-
-.lista-dia li:last-child {
-    border-bottom: none;
-}
-
-.lista-dia .hora {
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
-    color: var(--texto);
-}
-
-.lista-dia .info {
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-}
-
-.lista-dia .info strong,
-.lista-dia .info span {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.lista-dia .info span {
-    font-size: 13px;
-    color: var(--texto-3);
-}
-
-.lista-dia li.cancelado {
-    opacity: 0.6;
-}
-
-.lista-dia .status {
-    font-size: 13px;
-}
-
 .rodape-dia {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-}
-
-@media (max-width: 900px) {
-    .corpo-agenda {
-        grid-template-columns: minmax(0, 1fr);
-    }
+    margin-top: 1rem;
 }
 
 @media (max-width: 520px) {
@@ -262,5 +445,9 @@
     .contagem {
         padding: 0 4px;
         font-size: 10.5px;
+    }
+
+    .grade-tempo {
+        --gutter: 46px;
     }
 }

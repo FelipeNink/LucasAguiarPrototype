@@ -1,20 +1,34 @@
+@implements IDisposable
 @inject AgendamentoDAO agendamentoDAO
+@inject FuncionarioDAO funcionarioDAO
+@inject NavigationManager Navigation
 
 @*
-    Calendario do mes com a contagem de agendamentos de cada dia. Clicar num
-    dia mostra os horarios dele ao lado.
+    Agenda do painel em tres visoes. Dia: uma coluna por profissional, cada
+    horario na cor da agenda dele e a linha vermelha da hora atual. Semana:
+    uma coluna por dia. Mes: a contagem de cada dia; clicar abre o dia.
+    Clicar num horario vazio do Dia ja abre o agendamento nele.
 *@
 
 <section class="cartao agenda">
     <header class="topo-agenda">
         <div>
-            <h2>Agenda</h2>
-            <span class="sub">@Cultura.TextInfo.ToTitleCase(mes.ToString("MMMM 'de' yyyy", Cultura))</span>
+            <h2>@Titulo</h2>
+            <span class="sub">@Subtitulo</span>
         </div>
-        <div class="navegacao">
-            <button type="button" class="btn-acao" title="Mês anterior" aria-label="Mês anterior" @onclick="MesAnterior">‹</button>
-            <button type="button" class="btn-hoje" @onclick="Hoje">Hoje</button>
-            <button type="button" class="btn-acao" title="Próximo mês" aria-label="Próximo mês" @onclick="MesSeguinte">›</button>
+        <div class="controles">
+            <div class="navegacao">
+                <button type="button" class="btn-acao" title="Anterior" aria-label="Anterior" @onclick="() => Mover(-1)">‹</button>
+                <button type="button" class="btn-hoje" @onclick="IrParaHoje">Hoje</button>
+                <button type="button" class="btn-acao" title="Próximo" aria-label="Próximo" @onclick="() => Mover(1)">›</button>
+            </div>
+            <div class="visoes" role="tablist">
+                @foreach (var (v, rotulo) in Visoes)
+                {
+                    <button type="button" role="tab" aria-selected="@(visao == v)"
+                            class="@(visao == v ? "ativa" : "")" @onclick="() => Trocar(v)">@rotulo</button>
+                }
+            </div>
         </div>
     </header>
 
@@ -23,7 +37,8 @@
         <div class="alert alert-danger">@erro</div>
     }
 
-    <div class="corpo-agenda">
+    @if (visao == Visao.Mes)
+    {
         <div class="calendario">
             <div class="semana">
                 @foreach (var nome in new[] { "Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb" })
@@ -33,14 +48,14 @@
             </div>
 
             <div class="dias">
-                @foreach (var dia in Dias)
+                @foreach (var dia in DiasDoMes)
                 {
                     var do_dia = DoDia(dia);
                     var abertos = do_dia.Count(a => a.Status == StatusAgendamento.Agendado);
 
                     <button type="button"
-                            class="dia @(dia.Month != mes.Month ? "fora" : "") @(dia == DateTime.Today ? "hoje" : "") @(dia == selecionado ? "selecionado" : "")"
-                            @onclick="() => Selecionar(dia)">
+                            class="dia @(dia.Month != selecionado.Month ? "fora" : "") @(dia == DateTime.Today ? "hoje" : "")"
+                            title="Abrir o dia" @onclick="() => AbrirDia(dia)">
                         <span class="numero">@dia.Day</span>
                         @if (do_dia.Count > 0)
                         {
@@ -56,71 +71,172 @@
                 <span><i class="feito"></i>só concluídos/cancelados</span>
             </div>
         </div>
-
-        <div class="detalhe-dia">
-            <h3>@Cultura.TextInfo.ToTitleCase(selecionado.ToString("dddd, dd/MM", Cultura))</h3>
-
-            @if (doSelecionado.Count == 0)
-            {
-                <p class="vazio-dia">Nenhum agendamento neste dia.</p>
-            }
-            else
-            {
-                <ul class="lista-dia">
-                    @foreach (var a in doSelecionado)
+    }
+    else if (Colunas.Count == 0)
+    {
+        <p class="vazio-dia">Nenhum profissional ativo para montar a agenda.</p>
+    }
+    else
+    {
+        <div class="grade-rolagem">
+            <div class="grade-tempo" style="--colunas: @Colunas.Count">
+                <div class="cabecalho-grade">
+                    <span class="canto"></span>
+                    @foreach (var coluna in Colunas)
                     {
-                        <li class="@(a.Status == StatusAgendamento.Cancelado ? "cancelado" : "")">
-                            <span class="hora">@a.DataHora.ToString("HH:mm")</span>
-                            <div class="info">
-                                <strong>@(a.NomeCliente ?? "—")</strong>
-                                <span>@(a.NomeServico ?? "—") · @(a.NomeFuncionario ?? "—")</span>
-                            </div>
-                            <span class="status @ClasseStatus(a.Status)"><i></i>@StatusAgendamento.Rotulo(a.Status)</span>
-                        </li>
+                        <div class="cabeca @(coluna.Hoje ? "hoje" : "")">
+                            @if (coluna.Profissional != null)
+                            {
+                                <span class="avatar" style="background: @coluna.Cor">@Inicial(coluna.Profissional.NomeFuncionario)</span>
+                                <strong>@PrimeiroNome(coluna.Profissional.NomeFuncionario)</strong>
+                            }
+                            else
+                            {
+                                <span class="dia-semana">@coluna.Dia.ToString("ddd", Cultura).TrimEnd('.')</span>
+                                <strong class="dia-numero">@coluna.Dia.Day</strong>
+                            }
+                        </div>
                     }
-                </ul>
-            }
+                </div>
 
-            <div class="rodape-dia">
-                <a href="/agendamento/novo?data=@selecionado.ToString("yyyy-MM-dd")" class="btn-novo">Agendar neste dia</a>
-                <a href="/agendamentos" class="btn-pdf">Ver todos</a>
+                <div class="corpo-grade" style="height: @Px(Horas * AlturaHora)">
+                    <div class="horas">
+                        @for (var h = HoraInicio; h < HoraFim; h++)
+                        {
+                            <span style="top: @Px((h - HoraInicio) * AlturaHora)">@h.ToString("00"):00</span>
+                        }
+                    </div>
+
+                    @foreach (var coluna in Colunas)
+                    {
+                        <div class="coluna @(coluna.Hoje ? "hoje" : "")"
+                             title="@(coluna.Profissional != null ? "Clique num horário livre para agendar" : null)"
+                             @onclick="e => AgendarEm(coluna, e)">
+                            @foreach (var (a, faixa, faixas) in EmFaixas(coluna.Agendamentos))
+                            {
+                                var cor = CorDe(a.IdFuncionario);
+                                <a href="/agendamento/@a.IdAgendamento"
+                                   class="bloco @ClasseStatus(a.Status) @(a.DuracaoMin < 40 ? "curto" : "")"
+                                   style="top: @Px(Topo(a)); height: @Px(Altura(a)); left: calc(@Pct(faixa, faixas) + 3px); width: calc(@Pct(1, faixas) - 6px); --cor: @cor; color: @TextoSobre(cor)"
+                                   title="@a.DataHora.ToString("HH:mm")–@a.Fim.ToString("HH:mm") · @(a.NomeCliente ?? "—") · @(a.NomeServico ?? "—") · @StatusAgendamento.Rotulo(a.Status)"
+                                   @onclick:stopPropagation="true">
+                                    <strong>@(a.NomeCliente ?? "—")</strong>
+                                    <span>@(coluna.Profissional == null ? $"{a.DataHora:HH:mm} · {PrimeiroNome(a.NomeFuncionario)}" : a.NomeServico ?? "—")</span>
+                                </a>
+                            }
+                        </div>
+                    }
+
+                    @if (LinhaAgora is { } topo)
+                    {
+                        <div class="agora" style="top: @Px(topo)" aria-hidden="true"></div>
+                    }
+                </div>
             </div>
         </div>
+    }
+
+    <div class="rodape-dia">
+        <a href="/agendamento/novo?data=@selecionado.ToString("yyyy-MM-dd")" class="btn-novo">Agendar neste dia</a>
+        <a href="/agendamentos" class="btn-pdf">Ver todos</a>
     </div>
 </section>
 
 @code {
     private static readonly System.Globalization.CultureInfo Cultura = new("pt-BR");
 
-    private DateTime mes = new(DateTime.Today.Year, DateTime.Today.Month, 1);
+    private enum Visao { Dia, Semana, Mes }
+
+    private static readonly (Visao, string)[] Visoes =
+    {
+        (Visao.Dia, "Dia"), (Visao.Semana, "Semana"), (Visao.Mes, "Mês")
+    };
+
+    /// <summary>Pixels por hora na grade. Meia hora fica com 33px, o bastante para nome e servico.</summary>
+    private const int AlturaHora = 66;
+
+    /// <summary>Cores para quem ainda nao escolheu a sua no cadastro.</summary>
+    private static readonly string[] Paleta = { "#2f6fed", "#0f9f8f", "#e38a12", "#8b5cf6", "#e0457b", "#4b5563" };
+
+    private record Coluna(DateTime Dia, Funcionario? Profissional, string Cor, List<Agendamento> Agendamentos)
+    {
+        public bool Hoje => Dia == DateTime.Today;
+    }
+
+    private Visao visao = Visao.Dia;
     private DateTime selecionado = DateTime.Today;
-    private List<Agendamento> doMes = new();
+    private List<Agendamento> carregados = new();
+    private List<Funcionario> funcionarios = new();
     private string? erro;
+    private Timer? relogio;
+
+    protected override void OnInitialized()
+    {
+        try
+        {
+            funcionarios = funcionarioDAO.ListarTodos();
+        }
+        catch (Exception ex)
+        {
+            erro = "Erro ao carregar os profissionais: " + ex.Message;
+        }
+
+        Carregar();
+
+        // A linha da hora atual anda sozinha, uma vez por minuto.
+        relogio = new Timer(_ => InvokeAsync(StateHasChanged), null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(1));
+    }
+
+    public void Dispose() => relogio?.Dispose();
+
+    // ---------- periodo ----------
+
+    private DateTime InicioSemana => selecionado.AddDays(-(int)selecionado.DayOfWeek);
+    private DateTime InicioMes => new(selecionado.Year, selecionado.Month, 1);
 
     /// <summary>Seis semanas completas, começando no domingo, para a grade nunca mudar de altura.</summary>
-    private IEnumerable<DateTime> Dias
+    private IEnumerable<DateTime> DiasDoMes
     {
         get
         {
-            var inicio = mes.AddDays(-(int)mes.DayOfWeek);
+            var inicio = InicioMes.AddDays(-(int)InicioMes.DayOfWeek);
             return Enumerable.Range(0, 42).Select(i => inicio.AddDays(i));
         }
     }
 
-    private List<Agendamento> doSelecionado => DoDia(selecionado);
+    private (DateTime De, DateTime Ate) Periodo => visao switch
+    {
+        Visao.Dia => (selecionado, selecionado.AddDays(1)),
+        Visao.Semana => (InicioSemana, InicioSemana.AddDays(7)),
+        // Os dias cinzas da grade tambem mostram a contagem.
+        _ => (DiasDoMes.First(), DiasDoMes.Last().AddDays(1))
+    };
 
-    private List<Agendamento> DoDia(DateTime dia) =>
-        doMes.Where(a => a.DataHora.Date == dia.Date).OrderBy(a => a.DataHora).ToList();
+    private string Titulo => visao switch
+    {
+        Visao.Dia => Cultura.TextInfo.ToTitleCase(selecionado.ToString("dddd, dd/MM", Cultura)),
+        Visao.Semana => $"{InicioSemana:dd/MM} – {InicioSemana.AddDays(6):dd/MM}",
+        _ => Cultura.TextInfo.ToTitleCase(selecionado.ToString("MMMM 'de' yyyy", Cultura))
+    };
 
-    protected override void OnInitialized() => Carregar();
+    private string Subtitulo
+    {
+        get
+        {
+            var (de, ate) = Periodo;
+            var noPeriodo = carregados.Where(a => a.DataHora >= de && a.DataHora < ate).ToList();
+            var abertos = noPeriodo.Count(a => a.Status == StatusAgendamento.Agendado);
+            return noPeriodo.Count == 0 ? "Agenda livre" : $"{noPeriodo.Count} agendamento(s) · {abertos} a atender";
+        }
+    }
 
     private void Carregar()
     {
         try
         {
             erro = null;
-            // Uma semana de folga em cada ponta: os dias cinzas da grade tambem mostram a contagem.
-            doMes = agendamentoDAO.Listar(mes.AddDays(-7), mes.AddMonths(1).AddDays(7));
+            var (de, ate) = Periodo;
+            carregados = agendamentoDAO.Listar(de, ate);
         }
         catch (Exception ex)
         {
@@ -128,38 +244,185 @@
         }
     }
 
-    private void Selecionar(DateTime dia)
+    private void Trocar(Visao nova)
     {
-        selecionado = dia;
-
-        if (dia.Month != mes.Month)
-        {
-            mes = new DateTime(dia.Year, dia.Month, 1);
-            Carregar();
-        }
-    }
-
-    private void MesAnterior() => IrParaMes(mes.AddMonths(-1));
-
-    private void MesSeguinte() => IrParaMes(mes.AddMonths(1));
-
-    private void Hoje()
-    {
-        selecionado = DateTime.Today;
-        IrParaMes(new DateTime(selecionado.Year, selecionado.Month, 1));
-    }
-
-    private void IrParaMes(DateTime novo)
-    {
-        mes = new DateTime(novo.Year, novo.Month, 1);
+        visao = nova;
         Carregar();
     }
 
+    private void Mover(int passo)
+    {
+        selecionado = visao switch
+        {
+            Visao.Dia => selecionado.AddDays(passo),
+            Visao.Semana => selecionado.AddDays(7 * passo),
+            _ => InicioMes.AddMonths(passo)
+        };
+        Carregar();
+    }
+
+    private void IrParaHoje()
+    {
+        selecionado = DateTime.Today;
+        Carregar();
+    }
+
+    private void AbrirDia(DateTime dia)
+    {
+        selecionado = dia;
+        visao = Visao.Dia;
+        Carregar();
+    }
+
+    private List<Agendamento> DoDia(DateTime dia) =>
+        carregados.Where(a => a.DataHora.Date == dia.Date).OrderBy(a => a.DataHora).ToList();
+
+    // ---------- grade de horarios ----------
+
+    /// <summary>
+    /// Dia: um profissional por coluna -- os ativos, mais quem ja saiu mas
+    /// ainda tem horario no dia. Semana: um dia por coluna.
+    /// </summary>
+    private List<Coluna> Colunas
+    {
+        get
+        {
+            if (visao == Visao.Semana)
+            {
+                return Enumerable.Range(0, 7)
+                    .Select(i => InicioSemana.AddDays(i))
+                    .Select(d => new Coluna(d, null, "", DoDia(d)))
+                    .ToList();
+            }
+
+            var doDia = DoDia(selecionado);
+            return funcionarios
+                .Where(f => f.Ativo || doDia.Any(a => a.IdFuncionario == f.IdFuncionario))
+                .OrderBy(f => f.NomeFuncionario)
+                .Select(f => new Coluna(selecionado, f, CorDe(f.IdFuncionario),
+                    doDia.Where(a => a.IdFuncionario == f.IdFuncionario).ToList()))
+                .ToList();
+        }
+    }
+
+    private IEnumerable<Agendamento> NaGrade => Colunas.SelectMany(c => c.Agendamentos);
+
+    /// <summary>Das 8h as 20h, alargando se houver horario fora disso.</summary>
+    private int HoraInicio => Math.Min(8, NaGrade.Select(a => a.DataHora.Hour).DefaultIfEmpty(8).Min());
+
+    private int HoraFim => Math.Max(20, NaGrade
+        .Select(a => a.Fim.Date > a.DataHora.Date ? 24 : a.Fim.Hour + (a.Fim.Minute > 0 ? 1 : 0))
+        .DefaultIfEmpty(20).Max());
+
+    private int Horas => HoraFim - HoraInicio;
+
+    private double Topo(Agendamento a) =>
+        (a.DataHora.TimeOfDay.TotalMinutes - HoraInicio * 60) * AlturaHora / 60.0;
+
+    private static double Altura(Agendamento a) => Math.Max(22, a.DuracaoMin * AlturaHora / 60.0 - 3);
+
+    private double? LinhaAgora
+    {
+        get
+        {
+            if (!Colunas.Any(c => c.Hoje)) return null;
+            var minutos = DateTime.Now.TimeOfDay.TotalMinutes - HoraInicio * 60;
+            return minutos < 0 || minutos > Horas * 60 ? null : minutos * AlturaHora / 60.0;
+        }
+    }
+
+    /// <summary>
+    /// Horarios que se sobrepoem dividem a largura da coluna. Na semana e
+    /// comum: dois profissionais atendendo na mesma hora.
+    /// </summary>
+    private static IEnumerable<(Agendamento, int Faixa, int Faixas)> EmFaixas(List<Agendamento> agendamentos)
+    {
+        var resultado = new List<(Agendamento, int, int)>();
+        var grupo = new List<(Agendamento A, int Faixa)>();
+        var fimDasFaixas = new List<DateTime>();
+        var fimDoGrupo = DateTime.MinValue;
+
+        void Fechar()
+        {
+            resultado.AddRange(grupo.Select(g => (g.A, g.Faixa, fimDasFaixas.Count)));
+            grupo.Clear();
+            fimDasFaixas.Clear();
+        }
+
+        foreach (var a in agendamentos.OrderBy(a => a.DataHora).ThenByDescending(a => a.DuracaoMin))
+        {
+            if (grupo.Count > 0 && a.DataHora >= fimDoGrupo) Fechar();
+
+            var faixa = fimDasFaixas.FindIndex(fim => fim <= a.DataHora);
+            if (faixa < 0)
+            {
+                faixa = fimDasFaixas.Count;
+                fimDasFaixas.Add(a.Fim);
+            }
+            else fimDasFaixas[faixa] = a.Fim;
+
+            grupo.Add((a, faixa));
+            fimDoGrupo = grupo.Count == 1 ? a.Fim : (a.Fim > fimDoGrupo ? a.Fim : fimDoGrupo);
+        }
+
+        Fechar();
+        return resultado;
+    }
+
+    /// <summary>Clique no vazio da coluna do profissional: agenda na meia hora clicada.</summary>
+    private void AgendarEm(Coluna coluna, MouseEventArgs e)
+    {
+        if (coluna.Profissional == null) return;
+
+        var minutos = (int)(e.OffsetY / AlturaHora * 60) / 30 * 30;
+        var hora = TimeSpan.FromHours(HoraInicio) + TimeSpan.FromMinutes(minutos);
+
+        Navigation.NavigateTo($"/agendamento/novo?data={coluna.Dia:yyyy-MM-dd}&hora={hora:hh\\:mm}"
+            + $"&profissional={coluna.Profissional.IdFuncionario}");
+    }
+
+    // ---------- aparencia ----------
+
+    private string CorDe(int idFuncionario)
+    {
+        var cor = funcionarios.FirstOrDefault(f => f.IdFuncionario == idFuncionario)?.CorAgenda;
+        return !string.IsNullOrWhiteSpace(cor) ? cor : Paleta[Math.Abs(idFuncionario) % Paleta.Length];
+    }
+
+    /// <summary>Texto branco em cor escura, quase preto em cor clara.</summary>
+    private static string TextoSobre(string hex)
+    {
+        try
+        {
+            var h = hex.TrimStart('#');
+            var r = Convert.ToInt32(h[..2], 16);
+            var g = Convert.ToInt32(h[2..4], 16);
+            var b = Convert.ToInt32(h[4..6], 16);
+            return (0.299 * r + 0.587 * g + 0.114 * b) > 170 ? "#111827" : "#fff";
+        }
+        catch
+        {
+            return "#fff";
+        }
+    }
+
+    private static string Inicial(string? nome) =>
+        string.IsNullOrWhiteSpace(nome) ? "?" : nome.Trim()[..1].ToUpper();
+
+    private static string PrimeiroNome(string? nome) =>
+        string.IsNullOrWhiteSpace(nome) ? "—" : nome.Trim().Split(' ')[0];
+
+    private static string Px(double valor) =>
+        valor.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) + "px";
+
+    private static string Pct(int parte, int total) =>
+        (100.0 * parte / total).ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) + "%";
+
     private static string ClasseStatus(string status) => status switch
     {
-        StatusAgendamento.Agendado => "pendente",
-        StatusAgendamento.Concluido => "pago",
-        StatusAgendamento.Faltou => "erro",
-        _ => "cancelada"
+        StatusAgendamento.Concluido => "concluido",
+        StatusAgendamento.Cancelado => "cancelado",
+        StatusAgendamento.Faltou => "faltou",
+        _ => ""
     };
 }
