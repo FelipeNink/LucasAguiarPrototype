@@ -12,6 +12,9 @@ Fase 1: só serviço e plano. Produto (NFC-e) fica para a fase 2.
 3. Se a prefeitura recusar, a nota fica em `ERRO` com o motivo. Depois de corrigir o cadastro,
    use **Reenviar** em *Notas fiscais*. Falha de rede ou da Focus só adia o envio.
 4. Ao cancelar a venda, a nota é cancelada na prefeitura. Se ainda não tiver saído, ela é descartada.
+5. O botão **Nota fiscal** no detalhe da venda (e **Ver** em *Notas fiscais*) abre o cartão da nota: valor,
+   descrição, situação, PDF, e os botões **Emitir** (venda que ficou sem nota, por exemplo feita antes de ligar a
+   emissão) e **Reenviar** (nota com erro).
 
 ### O que entra na nota
 
@@ -43,7 +46,9 @@ Se a nota estiver em `ERRO`, a edição continua completa e a nota volta para a 
 
 ## Pendências
 
-- **Salão-parceiro (Lei 13.352/2016):** o cadastro do funcionário já tem "Profissional-parceiro" e o CNPJ,
-  mas a nota ainda sai inteira pelo salão. A divisão por cota-parte depende de confirmação do contador e da regra do município.
+- **Salão-parceiro (Lei 13.352/2016):** o cadastro do funcionário já tem "Profissional-parceiro" e o CNPJ.
+  O cartão da nota mostra a cota-parte de cada parceiro (= comissão dele nos serviços da nota), mas **só como
+  informação**: a nota ainda sai inteira pelo salão. Deduzir de verdade depende do contador e da regra do município
+  (`RegrasNfse.CotasDeParceiros` já calcula o valor).
 - **NFC-e de produtos:** fase 2.
 - **IBS/CBS (reforma tributária):** só vai na nota quando CST e classificação estiverem preenchidos na configuração.

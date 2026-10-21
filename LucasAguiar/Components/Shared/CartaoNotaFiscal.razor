@@ -1,0 +1,259 @@
+@using LucasAguiar.Configs
+@inject VendaDAO vendaDAO
+@inject NotaFiscalDAO notaDAO
+@inject FuncionarioDAO funcionarioDAO
+@inject Autorizacao permissao
+
+@*
+    A NFS-e de uma venda: o que vai na nota, a divisao salao/parceiro e a
+    situacao, com emitir e reenviar. Aberto pelo botao "Nota fiscal" da
+    venda e pela tela Notas fiscais.
+
+    A cota-parte do parceiro aparece so como informacao: a nota continua
+    saindo inteira pelo salao ate o contador confirmar a deducao.
+*@
+
+@if (!string.IsNullOrEmpty(erro))
+{
+    <div class="alert alert-danger">@erro</div>
+}
+
+@if (venda != null)
+{
+    <div class="cartao-nf">
+        <header class="nf-topo">
+            <span class="nf-icone" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                     stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9zM14 3v6h6M8 13h8M8 17h5" />
+                </svg>
+            </span>
+            <div>
+                <strong>Nota fiscal de serviço</strong>
+                <small>NFS-e Nacional@(cotas.Count > 0 ? " · salão parceiro" : "")</small>
+            </div>
+            <span class="nf-situacao @ClasseSituacao">@RotuloSituacao</span>
+        </header>
+
+        <div class="nf-corpo">
+            <div class="nf-servico">
+                <div>
+                    <strong>@(string.IsNullOrEmpty(descricao) ? "Sem serviço a tributar" : descricao)</strong>
+                    <small>@(venda.NomeCliente ?? "Consumidor") · com @CorProfissional.PrimeiroNome(venda.NomeFuncionario)</small>
+                </div>
+                <div class="nf-valor">
+                    <small>Valor da nota</small>
+                    <strong>@valores.Liquido.ToString("C")</strong>
+                </div>
+            </div>
+
+            <div class="nf-descricao">
+                <span class="nf-legenda">Descrição dos serviços</span>
+                <span>@(string.IsNullOrEmpty(descricao) ? "—" : descricao)</span>
+                @if (valores.Desconto > 0)
+                {
+                    <span>Desconto: @valores.Desconto.ToString("C")</span>
+                }
+                @if (cotas.Count > 0)
+                {
+                    <span>Salão parceiro: cota-parte @CotaSalao.ToString("C")</span>
+                    @foreach (var c in cotas)
+                    {
+                        var f = Parceiro(c.IdFuncionario);
+                        <span>
+                            Profissional parceiro (@CorProfissional.PrimeiroNome(f?.NomeFuncionario)@(string.IsNullOrEmpty(f?.CnpjParceiro) ? "" : $", CNPJ {f.CnpjParceiro}")):
+                            cota-parte @c.Valor.ToString("C")
+                        </span>
+                    }
+                }
+            </div>
+
+            @if (cotas.Count > 0 && valores.Liquido > 0)
+            {
+                <div class="nf-divisao" aria-label="Divisão da nota">
+                    <i class="salao" style="flex: @Peso(CotaSalao)"></i>
+                    @foreach (var c in cotas)
+                    {
+                        <i style="flex: @Peso(c.Valor); background: @CorProfissional.De(funcionarios, c.IdFuncionario)"></i>
+                    }
+                </div>
+                <div class="nf-legenda-divisao">
+                    <span><i class="salao"></i>Salão · @Percentual(CotaSalao)</span>
+                    @foreach (var c in cotas)
+                    {
+                        <span>
+                            <i style="background: @CorProfissional.De(funcionarios, c.IdFuncionario)"></i>
+                            @CorProfissional.PrimeiroNome(Parceiro(c.IdFuncionario)?.NomeFuncionario) · @Percentual(c.Valor) (comissão)
+                        </span>
+                    }
+                </div>
+
+                <div class="nf-deducao">
+                    <div>
+                        <span>Cota-parte dos parceiros</span>
+                        <small>Informativa: ainda não é deduzida da nota (aguardando o contador).</small>
+                    </div>
+                    <strong>@cotas.Sum(c => c.Valor).ToString("C")</strong>
+                </div>
+            }
+
+            @* ---------- situacao e acao ---------- *@
+            @if (nota?.Status == StatusNota.Autorizada)
+            {
+                <div class="nf-emitida">
+                    ✓ NFS-e @(nota.Numero != null ? $"nº {nota.Numero} " : "")emitida
+                    @if (nota.Ambiente == AmbienteFiscal.Homologacao)
+                    {
+                        <small>homologação</small>
+                    }
+                </div>
+                @if (nota.Cancelar)
+                {
+                    <p class="nf-aviso">Cancelamento pedido; a prefeitura responde em instantes.</p>
+                }
+                else if (!string.IsNullOrEmpty(nota.Mensagem))
+                {
+                    <p class="nf-aviso erro">@nota.Mensagem</p>
+                }
+                <div class="nf-links">
+                    @if (!string.IsNullOrEmpty(nota.UrlPdf))
+                    {
+                        <a href="@nota.UrlPdf" target="_blank" rel="noopener" class="btn btn-outline-secondary">Baixar PDF</a>
+                    }
+                    @if (!string.IsNullOrEmpty(nota.UrlConsulta))
+                    {
+                        <a href="@nota.UrlConsulta" target="_blank" rel="noopener" class="btn btn-outline-secondary">Consultar no portal</a>
+                    }
+                </div>
+            }
+            else if (nota?.Status is StatusNota.Pendente or StatusNota.Processando)
+            {
+                <div class="nf-emitindo">
+                    <span>@(nota.Status == StatusNota.Pendente ? "Na fila para emissão…" : "Aguardando a prefeitura…")</span>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="Carregar">Atualizar</button>
+                </div>
+            }
+            else if (nota?.Status == StatusNota.Erro)
+            {
+                <p class="nf-aviso erro">@nota.Mensagem</p>
+                @if (podeEditar)
+                {
+                    <button type="button" class="nf-botao" @onclick="Reenviar">Reenviar NFS-e</button>
+                }
+            }
+            else if (venda.Status == StatusVenda.Cancelada)
+            {
+                <p class="nf-aviso">Venda cancelada@(nota?.Status == StatusNota.Cancelada ? "; a nota foi cancelada junto." : ".")</p>
+            }
+            else if (valores.Liquido <= 0)
+            {
+                <p class="nf-aviso">Só produto ou serviço coberto por plano: esta venda não gera NFS-e.</p>
+            }
+            else if (podeEditar)
+            {
+                @if (nota?.Status == StatusNota.Cancelada)
+                {
+                    <p class="nf-aviso">A nota anterior desta venda foi cancelada.</p>
+                }
+                <button type="button" class="nf-botao" @onclick="Emitir">Emitir NFS-e</button>
+            }
+            else
+            {
+                <p class="nf-aviso">Esta venda ainda não tem nota fiscal.</p>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public int IdVenda { get; set; }
+
+    private Venda? venda;
+    private NotaFiscal? nota;
+    private List<Funcionario> funcionarios = new();
+    private List<RegrasNfse.Cota> cotas = new();
+    private RegrasNfse.Valores valores = new(0, 0);
+    private string descricao = "";
+    private bool podeEditar;
+    private string? erro;
+
+    private decimal CotaSalao => Math.Max(0, valores.Liquido - cotas.Sum(c => c.Valor));
+
+    protected override async Task OnInitializedAsync()
+    {
+        await permissao.CarregarAsync();
+        podeEditar = permissao.Pode("notas", Acao.Editar);
+        Carregar();
+    }
+
+    private void Carregar()
+    {
+        try
+        {
+            erro = null;
+            venda = vendaDAO.BuscarPorId(IdVenda);
+            if (venda == null)
+            {
+                erro = $"Venda #{IdVenda} não encontrada.";
+                return;
+            }
+
+            funcionarios = funcionarioDAO.ListarTodos();
+            nota = notaDAO.BuscarUltimaDaVenda(IdVenda);
+            valores = RegrasNfse.Calcular(venda);
+            descricao = RegrasNfse.Descrever(venda);
+            cotas = RegrasNfse.CotasDeParceiros(venda,
+                funcionarios.Where(f => f.Parceiro).Select(f => f.IdFuncionario).ToHashSet());
+        }
+        catch (Exception ex)
+        {
+            erro = "Erro ao carregar a nota: " + ex.Message;
+        }
+    }
+
+    private void Emitir()
+    {
+        try
+        {
+            notaDAO.EmitirManual(venda!);
+            Carregar();
+        }
+        catch (Exception ex)
+        {
+            erro = ex.Message;
+        }
+    }
+
+    private void Reenviar()
+    {
+        try
+        {
+            notaDAO.Reenviar(nota!.IdNota);
+            Carregar();
+        }
+        catch (Exception ex)
+        {
+            erro = ex.Message;
+        }
+    }
+
+    private Funcionario? Parceiro(int id) => funcionarios.FirstOrDefault(f => f.IdFuncionario == id);
+
+    private string Percentual(decimal parte) =>
+        valores.Liquido > 0 ? (parte / valores.Liquido).ToString("P0") : "—";
+
+    private static string Peso(decimal valor) =>
+        Math.Max(valor, 0.01m).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+
+    private string RotuloSituacao => nota == null
+        ? "Sem nota"
+        : nota.Status == StatusNota.Autorizada && nota.Cancelar ? "Cancelando" : StatusNota.Rotulo(nota.Status);
+
+    private string ClasseSituacao => nota?.Status switch
+    {
+        StatusNota.Autorizada => "ok",
+        StatusNota.Erro => "erro",
+        StatusNota.Pendente or StatusNota.Processando => "andamento",
+        _ => ""
+    };
+}

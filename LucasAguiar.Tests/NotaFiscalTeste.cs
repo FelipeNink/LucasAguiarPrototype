@@ -94,6 +94,43 @@ namespace LucasAguiar.Tests
         }
 
         [Fact]
+        public void Cota_do_parceiro_e_a_comissao_dos_itens_que_ele_fez()
+        {
+            var venda = new Venda
+            {
+                IdFuncionario = 7,
+                Itens =
+                {
+                    new VendaItem { TipoItem = TipoItem.Servico, Descricao = "Corte", ValorUnitario = 70, ComissaoUnitaria = 35 },
+                    new VendaItem { TipoItem = TipoItem.Servico, Descricao = "Barba", ValorUnitario = 30, ComissaoUnitaria = 12, IdFuncionario = 8 },
+                    new VendaItem { TipoItem = TipoItem.Produto, Descricao = "Pomada", ValorUnitario = 40, ComissaoUnitaria = 4 }
+                }
+            };
+
+            var cotas = RegrasNfse.CotasDeParceiros(venda, new HashSet<int> { 7 });
+
+            // So o parceiro 7 e so o servico: a barba e do 8 (nao parceiro), a pomada nao vai na NFS-e.
+            var cota = Assert.Single(cotas);
+            Assert.Equal(7, cota.IdFuncionario);
+            Assert.Equal(35m, cota.Valor);
+        }
+
+        [Fact]
+        public void Cota_nunca_passa_do_valor_da_nota()
+        {
+            var venda = new Venda
+            {
+                IdFuncionario = 7,
+                Desconto = 60,
+                Itens = { new VendaItem { TipoItem = TipoItem.Servico, Descricao = "Corte", ValorUnitario = 70, ComissaoUnitaria = 35 } }
+            };
+
+            var cota = Assert.Single(RegrasNfse.CotasDeParceiros(venda, new HashSet<int> { 7 }));
+
+            Assert.Equal(10m, cota.Valor);
+        }
+
+        [Fact]
         public void Dps_sem_cpf_sai_para_consumidor_nao_identificado()
         {
             var venda = new Venda { DataVenda = new DateTime(2026, 10, 21), Itens = { Item(TipoItem.Servico, 50) } };

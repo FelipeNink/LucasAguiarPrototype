@@ -10,6 +10,7 @@
 @inject ClienteDAO clienteDAO
 @inject NavigationManager Navigation
 @inject LucasAguiar.Services.AuthenticationService auth
+@inject Autorizacao permissao
 
 
 <h1 class="titulo-listagem">Gestão de Vendas</h1>
@@ -280,6 +281,10 @@
                         Cancelar venda
                     </button>
                 }
+                @if (podeVerNota)
+                {
+                    <button class="btn btn-outline-secondary" @onclick="AbrirNota">Nota fiscal</button>
+                }
                 @if (detalhe.Status != StatusVenda.Cancelada)
                 {
                     <BotaoWhatsApp Telefone="@detalhe.TelefoneCliente" Rotulo="Enviar comprovante"
@@ -326,6 +331,16 @@
         </div>
     </div>
 }
+
+<Janela Visivel="@(notaDaVenda != null)" Titulo="@($"Nota fiscal · venda #{notaDaVenda}")"
+        Largura="520" OnFechar="() => notaDaVenda = null">
+    <ChildContent>
+        @if (notaDaVenda is int id)
+        {
+            <CartaoNotaFiscal IdVenda="id" />
+        }
+    </ChildContent>
+</Janela>
 
 <Janela Visivel="@(editandoVenda != null)" Titulo="@($"Editar venda #{editandoVenda?.IdVenda}")"
         Largura="460" Erro="@erroEdicao" OnFechar="FecharEdicao">
@@ -423,6 +438,10 @@
             .ToList();
     private Venda? detalhe;
 
+    /// <summary>Venda com o cartao da nota fiscal aberto.</summary>
+    private int? notaDaVenda;
+    private bool podeVerNota;
+
     private Venda? editandoVenda;
     private int idFuncionarioEdicao;
     private string? erroEdicao;
@@ -463,6 +482,8 @@
     {
         // O nome de quem esta logado fica gravado no cancelamento da venda.
         await auth.PrepararAsync();
+        await permissao.CarregarAsync();
+        podeVerNota = permissao.PodeVer("notas");
 
         var query = QueryHelpers.ParseQuery(new Uri(Navigation.Uri).Query);
         if (query.TryGetValue("nova", out var valor) && int.TryParse(valor, out var id))
@@ -617,6 +638,13 @@
         {
             erroEdicao = ex.Message;
         }
+    }
+
+    /// <summary>O cartao da nota toma o lugar do detalhe; fechar volta para a lista.</summary>
+    private void AbrirNota()
+    {
+        notaDaVenda = detalhe?.IdVenda;
+        Fechar();
     }
 
     private void Fechar()

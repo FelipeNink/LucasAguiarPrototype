@@ -121,6 +121,7 @@ else if (config.Ambiente == AmbienteFiscal.Homologacao)
                     <td class="opcional"><small>@n.Mensagem</small></td>
                     <td>
                         <span class="acoes">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="() => vendaAberta = n.IdVenda">Ver</button>
                             @if (!string.IsNullOrEmpty(n.UrlPdf))
                             {
                                 <a href="@n.UrlPdf" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary">PDF</a>
@@ -152,6 +153,16 @@ else if (config.Ambiente == AmbienteFiscal.Homologacao)
 </table>
 </div>
 
+<Janela Visivel="@(vendaAberta != null)" Titulo="@($"Nota fiscal · venda #{vendaAberta}")"
+        Largura="520" OnFechar="FecharCartao">
+    <ChildContent>
+        @if (vendaAberta is int id)
+        {
+            <CartaoNotaFiscal IdVenda="id" />
+        }
+    </ChildContent>
+</Janela>
+
 <Janela Visivel="@(cancelando != null)" Titulo="@($"Cancelar NFS-e {cancelando?.Numero}")"
         Largura="480" Erro="@erroCancelamento" OnFechar="FecharCancelamento">
     <ChildContent>
@@ -181,6 +192,9 @@ else if (config.Ambiente == AmbienteFiscal.Homologacao)
     private DateTime? de = DateTime.Today.AddDays(-30);
     private DateTime? ate;
     private string situacao = "";
+
+    /// <summary>Venda com o cartao da nota aberto.</summary>
+    private int? vendaAberta;
 
     private NotaFiscal? cancelando;
     private string justificativa = "";
@@ -266,6 +280,13 @@ else if (config.Ambiente == AmbienteFiscal.Homologacao)
     }
 
     private void FecharCancelamento() => cancelando = null;
+
+    /// <summary>O cartao pode ter emitido ou reenviado: a lista volta atualizada.</summary>
+    private void FecharCartao()
+    {
+        vendaAberta = null;
+        Carregar();
+    }
 
     private void ConfirmarCancelamento()
     {

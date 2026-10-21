@@ -164,6 +164,32 @@ namespace LucasAguiar.Models
             return new Valores(bruto, Math.Min(bruto, descontoItens + parteGeral));
         }
 
+        public record Cota(int IdFuncionario, decimal Valor);
+
+        /// <summary>
+        /// Cota-parte de cada profissional-parceiro (Lei 13.352/2016): a
+        /// comissao dos itens tributaveis que ele fez. Por ora so informativa
+        /// -- a nota ainda sai inteira pelo salao ate o contador confirmar.
+        /// </summary>
+        public static List<Cota> CotasDeParceiros(Venda venda, ISet<int> parceiros)
+        {
+            var cotas = venda.Itens
+                .Where(EntraNaNota)
+                .Select(i => (Id: i.IdFuncionario ?? venda.IdFuncionario ?? 0, i.ComissaoTotal))
+                .Where(x => parceiros.Contains(x.Id))
+                .GroupBy(x => x.Id)
+                .Select(g => new Cota(g.Key, g.Sum(x => x.ComissaoTotal)))
+                .Where(c => c.Valor > 0)
+                .ToList();
+
+            // A cota nunca passa do valor da nota.
+            var liquido = Calcular(venda).Liquido;
+            var total = cotas.Sum(c => c.Valor);
+            return total <= liquido || total == 0
+                ? cotas
+                : cotas.Select(c => c with { Valor = Math.Round(c.Valor * liquido / total, 2) }).ToList();
+        }
+
         /// <summary>"Corte (2x), Barba" -- limite de 1000 caracteres da NFS-e.</summary>
         public static string Descrever(Venda venda)
         {

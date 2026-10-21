@@ -222,6 +222,38 @@ namespace LucasAguiar.Data
             return lista;
         }
 
+        /// <summary>A nota mais recente da venda, ou nulo se ela nunca entrou na fila.</summary>
+        public NotaFiscal? BuscarUltimaDaVenda(int idVenda)
+        {
+            using var conexao = _conexao.GetConnection();
+            using var comando = new MySqlCommand(
+                "SELECT * FROM nota_fiscal WHERE id_vend_fk = @id ORDER BY id_nf DESC LIMIT 1", conexao);
+            comando.Parameters.AddWithValue("@id", idVenda);
+
+            using var leitor = comando.ExecuteReader();
+            return leitor.Read() ? Ler(leitor) : null;
+        }
+
+        /// <summary>
+        /// Botao "Nota fiscal" da venda: poe na fila a venda que ficou sem
+        /// nota -- feita antes de ligar a emissao, ou com a nota cancelada.
+        /// </summary>
+        public void EmitirManual(Venda venda)
+        {
+            if (venda.Status == StatusVenda.Cancelada)
+                throw new Exception("Venda cancelada não emite nota.");
+            if (RegrasNfse.Calcular(venda).Liquido <= 0)
+                throw new Exception("Esta venda não tem serviço a tributar: produto e serviço coberto por plano ficam fora da NFS-e.");
+
+            using var conexao = _conexao.GetConnection();
+            if (!BuscarConfig(conexao, null).Ativo)
+                throw new Exception("A emissão está desligada. Ligue em Notas fiscais > Configuração.");
+
+            using var transacao = conexao.BeginTransaction();
+            EnfileirarNaTransacao(conexao, transacao, venda.IdVenda, venda);
+            transacao.Commit();
+        }
+
         /// <summary>Depois de corrigir o cadastro: volta para a fila.</summary>
         public void Reenviar(int idNota)
         {
