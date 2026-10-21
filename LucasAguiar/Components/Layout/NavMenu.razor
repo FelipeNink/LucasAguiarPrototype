@@ -61,7 +61,6 @@
                         {
                             <i class="ponto-atual" title="A página aberta está aqui"></i>
                         }
-                        <span class="grupo-contagem">@(Contagem("painel", "vendas", "agendamentos", "caixa"))</span>
                     }
                     <svg class="seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
                 </button>
@@ -134,7 +133,6 @@
                         {
                             <i class="ponto-atual" title="A página aberta está aqui"></i>
                         }
-                        <span class="grupo-contagem">@(Contagem("relatorios", "fluxo", "despesas", "comissoes", "folha", "compras", "notas"))</span>
                     }
                     <svg class="seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
                 </button>
@@ -249,8 +247,6 @@
                         {
                             <i class="ponto-atual" title="A página aberta está aqui"></i>
                         }
-                        <span class="grupo-contagem">@(Contagem("clientes", "servicos", "produtos", "estoque", "planos",
-                      "assinaturas", "funcionarios", "fornecedores"))</span>
                     }
                     <svg class="seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
                 </button>
@@ -379,7 +375,6 @@
                         {
                             <i class="ponto-atual" title="A página aberta está aqui"></i>
                         }
-                        <span class="grupo-contagem">@(Contagem("equipe", "funcoes", "logs"))</span>
                     }
                     <svg class="seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
                 </button>
@@ -505,9 +500,8 @@
         await auth.PrepararAsync();
         await permissao.CarregarAsync();
 
-        // Ao entrar, so Operacao aberta -- e a secao da pagina, se for outra.
-        abertos.Add(Catalogo.Operacao);
-        if (GrupoAtual != null) abertos.Add(GrupoAtual);
+        // Ao entrar, todas as secoes abertas; fechar e escolha de quem usa.
+        abertos.UnionWith(Catalogo.Secoes);
 
         Navigation.LocationChanged += AoNavegar;
     }
@@ -523,9 +517,6 @@
     {
         if (!abertos.Remove(grupo)) abertos.Add(grupo);
     }
-
-    /// <summary>Quantos itens a pessoa ve na secao fechada.</summary>
-    private int Contagem(params string[] telas) => telas.Count(Pode);
 
     /// <summary>Secao da pagina aberta, pelas rotas do catalogo.</summary>
     private string? GrupoAtual
