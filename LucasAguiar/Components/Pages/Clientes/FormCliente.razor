@@ -5,6 +5,7 @@
 @using LucasAguiar.Models
 @inject ClienteDAO clienteDAO
 @inject PlanoDAO planoDAO
+@inject AssinaturaDAO assinaturaDAO
 @inject FuncionarioDAO funcionarioDAO
 @inject NavigationManager Navigation
 
@@ -137,8 +138,19 @@
             .ToList();
 
 
+    /// <summary>Plano com que o cliente abriu no formulario, para saber se foi trocado.</summary>
+    private int? planoOriginal;
+
+    private bool PrecisaVenderPlano(int idCliente) =>
+        Modelo.TemPlano
+        && Modelo.IdPlano != planoOriginal
+        && !assinaturaDAO.ListarAtivasDoCliente(idCliente)
+            .Any(a => a.IdPlano == Modelo.IdPlano && !a.Vencida);
+
     protected override void OnInitialized()
     {
+        planoOriginal = Modelo.IdPlano;
+
         try
         {
             planos = planoDAO.ListarTodos();
@@ -200,19 +212,22 @@
             Modelo.Email = Vazio(Modelo.Email);
             Modelo.Observacoes = Vazio(Modelo.Observacoes);
 
-            if (Novo)
+            int idCliente;
+            if (Novo) idCliente = clienteDAO.Inserir(Modelo);
+            else
             {
-                var idCliente = clienteDAO.Inserir(Modelo);
-
-                // A assinatura nasce da venda do plano, para o pagamento entrar
-                // no caixa. Cliente novo com plano segue direto para essa venda.
-                if (Modelo.TemPlano)
-                {
-                    Navigation.NavigateTo($"/venda/nova?cliente={idCliente}&plano={Modelo.IdPlano}");
-                    return;
-                }
+                clienteDAO.Atualizar(Modelo);
+                idCliente = Modelo.IdCliente;
             }
-            else clienteDAO.Atualizar(Modelo);
+
+            // A assinatura nasce da venda do plano, para o pagamento entrar
+            // no caixa. Plano escolhido ou trocado segue direto para essa venda,
+            // a menos que o cliente ja tenha esse plano valendo.
+            if (PrecisaVenderPlano(idCliente))
+            {
+                Navigation.NavigateTo($"/venda/nova?cliente={idCliente}&plano={Modelo.IdPlano}");
+                return;
+            }
 
             Navigation.NavigateTo("/cliente");
         }
