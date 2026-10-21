@@ -4,6 +4,8 @@
 @using LucasAguiar.Models
 @inject FuncionarioDAO funcionarioDAO
 @inject ServicoDAO servicoDAO
+@inject JornadaDAO jornadaDAO
+@inject HorarioDAO horarioDAO
 @inject NavigationManager Navigation
 
 <div class="form-pagina">
@@ -193,6 +195,101 @@
         </section>
 
         <section class="cartao secao-form">
+            <h2>Jornada de trabalho</h2>
+            <p class="explicacao">
+                Dias e horários em que atende. A agenda avisa quando um horário cai fora
+                da jornada ou no almoço, sem bloquear. Começa igual ao horário da barbearia.
+            </p>
+
+            <div class="tabela">
+                <table class="table tabela-jornada">
+                    <thead>
+                        <tr>
+                            <th>Dia</th>
+                            <th>Trabalha?</th>
+                            <th>Entrada</th>
+                            <th>Saída</th>
+                            <th>Almoço (opcional)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var d in Expediente.OrdemDaSemana.Select(dia => jornada[(int)dia]))
+                        {
+                            <tr class="@(d.Trabalha ? "" : "folga")">
+                                <td>@Expediente.NomeDia[(int)d.Dia]</td>
+                                <td>
+                                    <div class="form-check form-switch">
+                                        <input id="jor-@((int)d.Dia)" class="form-check-input" type="checkbox" role="switch"
+                                               @bind="d.Trabalha" />
+                                        <label class="form-check-label" for="jor-@((int)d.Dia)">@(d.Trabalha ? "Sim" : "Folga")</label>
+                                    </div>
+                                </td>
+                                <td>
+                                    <input type="time" class="form-control" disabled="@(!d.Trabalha)"
+                                           value="@Expediente.Hora(d.Entrada)" @onchange="e => d.Entrada = Ler(e, d.Entrada)" />
+                                </td>
+                                <td>
+                                    <input type="time" class="form-control" disabled="@(!d.Trabalha)"
+                                           value="@Expediente.Hora(d.Saida)" @onchange="e => d.Saida = Ler(e, d.Saida)" />
+                                </td>
+                                <td>
+                                    <div class="almoco">
+                                        <input type="time" class="form-control" disabled="@(!d.Trabalha)" aria-label="Início do almoço"
+                                               value="@(d.AlmocoInicio is { } ai ? Expediente.Hora(ai) : "")"
+                                               @onchange="e => d.AlmocoInicio = LerOpcional(e)" />
+                                        <span class="suave">às</span>
+                                        <input type="time" class="form-control" disabled="@(!d.Trabalha)" aria-label="Fim do almoço"
+                                               value="@(d.AlmocoFim is { } af ? Expediente.Hora(af) : "")"
+                                               @onchange="e => d.AlmocoFim = LerOpcional(e)" />
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="cartao secao-form">
+            <h2>Folgas e bloqueios</h2>
+            <p class="explicacao">
+                Férias, folga avulsa, "saio às 15h hoje". A agenda avisa quem tentar marcar nesse período.
+            </p>
+
+            @if (bloqueios.Count == 0)
+            {
+                <p class="suave">Nenhum bloqueio daqui para a frente.</p>
+            }
+            else
+            {
+                <ul class="lista-bloqueios">
+                    @foreach (var b in bloqueios.OrderBy(b => b.Inicio))
+                    {
+                        <li>
+                            <span><strong>@b.Periodo</strong> @(string.IsNullOrWhiteSpace(b.Motivo) ? "" : $"· {b.Motivo}")</span>
+                            <button type="button" class="btn btn-link" @onclick="() => RemoverBloqueio(b)">Remover</button>
+                        </li>
+                    }
+                </ul>
+            }
+
+            <div class="grade-12 novo-bloqueio">
+                <Campo Rotulo="De" Colunas="3">
+                    <input type="datetime-local" class="form-control" @bind="novoInicio" />
+                </Campo>
+                <Campo Rotulo="Até" Colunas="3" Erro="@erroBloqueio">
+                    <input type="datetime-local" class="form-control" @bind="novoFim" />
+                </Campo>
+                <Campo Rotulo="Motivo" Colunas="4">
+                    <input class="form-control" maxlength="100" placeholder="Férias, médico, folga…" @bind="novoMotivo" />
+                </Campo>
+                <div class="c-2 acao-bloqueio">
+                    <button type="button" class="btn btn-outline-secondary" @onclick="AdicionarBloqueio">Adicionar</button>
+                </div>
+            </div>
+        </section>
+
+        <section class="cartao secao-form">
             <h2>Foto</h2>
             <div class="grade-12">
                 <Campo Rotulo="Foto do profissional" Colunas="6" Dica="JPG, PNG ou WebP, até 1 MB." Erro="@erroFoto">
@@ -232,6 +329,15 @@
     private bool removerFoto;
     private string? erroFoto;
 
+    // Jornada e bloqueios: tambem so vao para o banco no Salvar.
+    private List<JornadaDia> jornada = Enum.GetValues<DayOfWeek>().Select(d => new JornadaDia { Dia = d }).ToList();
+    private List<BloqueioFuncionario> bloqueios = new();
+    private List<int> bloqueiosRemovidos = new();
+    private DateTime novoInicio = DateTime.Today.AddHours(DateTime.Now.Hour + 1);
+    private DateTime novoFim = DateTime.Today.AddHours(DateTime.Now.Hour + 2);
+    private string? novoMotivo;
+    private string? erroBloqueio;
+
     private static List<Opcao> OpcoesCargo =>
         new List<Opcao> { new("", "Não informado") }
             .Concat(CargoFuncionario.Todos.Select(c => new Opcao(c.Valor, c.Rotulo)))
@@ -249,7 +355,12 @@
 
                 if (Modelo.TemFoto && funcionarioDAO.BuscarFoto(Modelo.IdFuncionario) is { } foto)
                     fotoDataUrl = $"data:{foto.Tipo};base64,{Convert.ToBase64String(foto.Conteudo)}";
+
+                bloqueios = jornadaDAO.ListarBloqueios(Modelo.IdFuncionario, DateTime.Now);
             }
+
+            jornada = (Novo ? null : jornadaDAO.Listar(Modelo.IdFuncionario))
+                      ?? Disponibilidade.CopiarDaBarbearia(horarioDAO.Listar());
         }
         catch (Exception ex)
         {
@@ -261,6 +372,38 @@
     {
         if (marcado) realiza.TryAdd(idServico, new FuncionarioServico { IdServico = idServico });
         else realiza.Remove(idServico);
+    }
+
+    private static TimeSpan Ler(ChangeEventArgs e, TimeSpan atual) =>
+        TimeSpan.TryParse(e.Value?.ToString(), out var hora) ? hora : atual;
+
+    /// <summary>Campo de hora apagado vira null (almoco sem horario).</summary>
+    private static TimeSpan? LerOpcional(ChangeEventArgs e) =>
+        TimeSpan.TryParse(e.Value?.ToString(), out var hora) ? hora : null;
+
+    private void AdicionarBloqueio()
+    {
+        erroBloqueio = null;
+
+        if (novoFim <= novoInicio)
+        {
+            erroBloqueio = "O fim deve ser depois do início.";
+            return;
+        }
+
+        bloqueios.Add(new BloqueioFuncionario
+        {
+            Inicio = novoInicio,
+            Fim = novoFim,
+            Motivo = Vazio(novoMotivo)
+        });
+        novoMotivo = null;
+    }
+
+    private void RemoverBloqueio(BloqueioFuncionario b)
+    {
+        if (b.IdBloqueio > 0) bloqueiosRemovidos.Add(b.IdBloqueio);
+        bloqueios.Remove(b);
     }
 
     private async Task EscolherFoto(InputFileChangeEventArgs e)
@@ -317,6 +460,12 @@
             return;
         }
 
+        if (Disponibilidade.ErroJornada(jornada) is string erroJornada)
+        {
+            erro = "Jornada de trabalho — " + erroJornada;
+            return;
+        }
+
         try
         {
             salvando = true;
@@ -335,6 +484,8 @@
             else funcionarioDAO.Atualizar(Modelo);
 
             funcionarioDAO.SalvarServicos(id, realiza.Values);
+            jornadaDAO.Salvar(id, jornada);
+            jornadaDAO.SalvarBloqueios(id, bloqueios, bloqueiosRemovidos);
 
             if (fotoNova is { } foto) funcionarioDAO.SalvarFoto(id, foto.Tipo, foto.Conteudo);
             else if (removerFoto) funcionarioDAO.RemoverFoto(id);

@@ -1,0 +1,51 @@
+/* ---------- jornada de trabalho ---------- */
+
+.tabela-jornada {
+    margin: 0;
+}
+
+.tabela-jornada td {
+    vertical-align: middle;
+}
+
+.tabela-jornada .form-control {
+    max-width: 8.5rem;
+}
+
+.tabela-jornada .form-switch {
+    margin: 0;
+}
+
+.tabela-jornada tr.folga td:first-child {
+    color: var(--texto-apagado);
+}
+
+.almoco {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+/* ---------- folgas e bloqueios ---------- */
+
+.lista-bloqueios {
+    margin: 0 0 1rem;
+    padding: 0;
+    list-style: none;
+}
+
+.lista-bloqueios li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.4rem 0;
+    border-bottom: 1px solid var(--superficie-3);
+    font-size: 0.9rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.acao-bloqueio {
+    display: flex;
+    align-items: flex-end;
+}

@@ -52,6 +52,8 @@ namespace LucasAguiar.Data
                 MigrarFiscal(conexao);
 
                 MigrarExpediente(conexao);
+
+                MigrarJornada(conexao);
             }
             catch (Exception ex)
             {
@@ -836,6 +838,44 @@ namespace LucasAguiar.Data
                   `data` date NOT NULL,
                   `aberto` tinyint(1) NOT NULL,
                   PRIMARY KEY (`data`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci");
+        }
+
+        // =============================================================
+        // JORNADA E BLOQUEIOS DO PROFISSIONAL
+        //
+        // Jornada: uma linha por dia da semana, so para quem ja foi
+        // configurado (sem linhas, a agenda nao avisa nada da jornada).
+        // Bloqueio: periodo em que o profissional nao atende.
+        // =============================================================
+
+        private void MigrarJornada(MySqlConnection conexao)
+        {
+            CriarTabela(conexao, "jornada_funcionario", @"
+                CREATE TABLE IF NOT EXISTS `jornada_funcionario` (
+                  `id_fun_fk` int NOT NULL,
+                  `dia_semana` tinyint NOT NULL,
+                  `trabalha` tinyint(1) NOT NULL DEFAULT 1,
+                  `entrada` time NOT NULL,
+                  `saida` time NOT NULL,
+                  `almoco_inicio` time DEFAULT NULL,
+                  `almoco_fim` time DEFAULT NULL,
+                  PRIMARY KEY (`id_fun_fk`,`dia_semana`),
+                  CONSTRAINT `fk_jornada_funcionario` FOREIGN KEY (`id_fun_fk`)
+                      REFERENCES `funcionario` (`id_fun`) ON DELETE CASCADE
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci");
+
+            CriarTabela(conexao, "bloqueio_funcionario", @"
+                CREATE TABLE IF NOT EXISTS `bloqueio_funcionario` (
+                  `id_bloq` int NOT NULL AUTO_INCREMENT,
+                  `id_fun_fk` int NOT NULL,
+                  `inicio` datetime NOT NULL,
+                  `fim` datetime NOT NULL,
+                  `motivo` varchar(100) DEFAULT NULL,
+                  PRIMARY KEY (`id_bloq`),
+                  KEY `idx_bloqueio_funcionario_periodo` (`id_fun_fk`,`fim`),
+                  CONSTRAINT `fk_bloqueio_funcionario` FOREIGN KEY (`id_fun_fk`)
+                      REFERENCES `funcionario` (`id_fun`) ON DELETE CASCADE
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci");
         }
 
