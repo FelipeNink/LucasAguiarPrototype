@@ -4,9 +4,8 @@
 
 @*
     Aniversariantes do mes no Painel, com o parabens pronto no WhatsApp.
-    Usa so a data de nascimento que o cadastro de cliente ja tem. Quem fez
-    aniversario antes de hoje aparece apagado, no fim da lista, para o dia
-    de hoje e os proximos virem primeiro.
+    Usa so a data de nascimento que o cadastro de cliente ja tem. Quem ja
+    fez aniversario no mes sai da lista: so hoje e os proximos.
 *@
 
 <section class="cartao aniversariantes">
@@ -24,7 +23,7 @@
     else if (clientes.Count == 0)
     {
         <p class="vazio">
-            Ninguém faz aniversário este mês, ou a data de nascimento não está no cadastro.
+            Ninguém mais faz aniversário este mês, ou a data de nascimento não está no cadastro.
         </p>
     }
     else
@@ -33,7 +32,7 @@
             @foreach (var cliente in Ordenados)
             {
                 var dia = cliente.DataNascimento!.Value.Day;
-                <li class="@(dia == Hoje.Day ? "hoje" : dia < Hoje.Day ? "passou" : "")">
+                <li class="@(dia == Hoje.Day ? "hoje" : "")">
                     <span class="dia">
                         <strong>@dia.ToString("00")</strong>
                         <small>@Hoje.ToString("MMM", Cultura).TrimEnd('.')</small>
@@ -63,10 +62,7 @@
     private List<Cliente> clientes = new();
     private string? erro;
 
-    // Hoje e os proximos primeiro; quem ja passou vai para o fim.
-    private IEnumerable<Cliente> Ordenados => clientes
-        .OrderBy(c => c.DataNascimento!.Value.Day < Hoje.Day)
-        .ThenBy(c => c.DataNascimento!.Value.Day);
+    private IEnumerable<Cliente> Ordenados => clientes.OrderBy(c => c.DataNascimento!.Value.Day);
 
     /// <summary>A idade que a pessoa completa neste aniversario.</summary>
     private static int Idade(Cliente cliente) => Hoje.Year - cliente.DataNascimento!.Value.Year;
@@ -75,7 +71,10 @@
     {
         try
         {
-            clientes = clienteDAO.AniversariantesDoMes(Hoje.Month);
+            // Aniversario que ja passou nao tem mais o que lembrar.
+            clientes = clienteDAO.AniversariantesDoMes(Hoje.Month)
+                .Where(c => c.DataNascimento!.Value.Day >= Hoje.Day)
+                .ToList();
         }
         catch (Exception ex)
         {

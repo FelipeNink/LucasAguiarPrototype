@@ -43,10 +43,6 @@
     box-shadow: inset 3px 0 0 var(--marca);
 }
 
-.lista-aniversariantes li.passou {
-    opacity: 0.55;
-}
-
 .dia {
     display: flex;
     flex-direction: column;
