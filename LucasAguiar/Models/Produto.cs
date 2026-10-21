@@ -16,6 +16,9 @@ namespace LucasAguiar.Models
         public string Unidade { get; set; } = "UN";
         public decimal? PrecoCusto { get; set; }
 
+        /// <summary>Estoque mínimo (produto.estoque_min_prod); 0 é sem mínimo.</summary>
+        public int EstoqueMinimo { get; set; }
+
         /// <summary>% de comissão; nulo usa o % padrão do profissional.</summary>
         public decimal? Comissao { get; set; }
 

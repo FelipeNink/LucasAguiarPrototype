@@ -28,6 +28,12 @@
                  @bind-Valor="idProfissional" TextoDe="o => o.Rotulo" ValorDe="o => o.Id"
                  ContagemDe="o => o.Contagem" ComAvatar="true" />
     </div>
+    <div class="campo">
+        <label>Situação</label>
+        <Seletor TItem="Opcao" TValor="string" Itens="OpcoesSituacao"
+                 @bind-Valor="situacao" TextoDe="o => o.Rotulo" ValorDe="o => o.Valor"
+                 PontoDe="o => o.Cor" />
+    </div>
     <div class="campo-acoes">
         <button type="button" class="btn btn-outline-secondary" @onclick="Limpar">Limpar</button>
     </div>
@@ -151,6 +157,7 @@
 
     private string busca = "";
     private int idProfissional;
+    private string situacao = "";
 
     private List<Cliente> Filtrados
     {
@@ -169,6 +176,7 @@
                                 && (new string((c.Telefone ?? "").Where(char.IsDigit).ToArray()).Contains(digitos)
                                     || new string((c.CPF ?? "").Where(char.IsDigit).ToArray()).Contains(digitos))))
                 .Where(c => idProfissional == 0 || c.IdProfissionalPreferido == idProfissional)
+                .Where(c => situacao == "" || c.Ativo == (situacao == "ATIVO"))
                 .ToList();
         }
     }
@@ -183,10 +191,18 @@
                 .Select(g => new OpcaoId(g.Key.Id, g.Key.Nome, null, g.Count().ToString())))
             .ToList();
 
+    private static readonly List<Opcao> OpcoesSituacao = new()
+    {
+        new("", "Todos"),
+        new("ATIVO", "Ativos", "var(--ok)"),
+        new("INATIVO", "Inativos", "var(--texto-fraco)")
+    };
+
     private void Limpar()
     {
         busca = "";
         idProfissional = 0;
+        situacao = "";
     }
 
     protected override void OnInitialized()

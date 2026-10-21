@@ -674,6 +674,11 @@ namespace LucasAguiar.Data
             GarantirColuna(conexao, "compras", "parcelas", "int NOT NULL DEFAULT 1");
             GarantirColuna(conexao, "compras", "vencimento_primeira", "date DEFAULT NULL");
 
+            // Compra aguardando entrega nao da entrada no estoque ate ser recebida.
+            // DEFAULT 1: as compras antigas ja entraram no estoque ao serem lancadas.
+            GarantirColuna(conexao, "compras", "recebida", "tinyint(1) NOT NULL DEFAULT 1");
+            GarantirColuna(conexao, "compras", "data_recebimento", "date DEFAULT NULL");
+
             CriarTabela(conexao, "compra_item", @"
                 CREATE TABLE IF NOT EXISTS `compra_item` (
                   `id_comp_item` int NOT NULL AUTO_INCREMENT,
@@ -707,6 +712,21 @@ namespace LucasAguiar.Data
                   JOIN despesa d ON d.id_desp = c.id_desp_fk
                    SET c.forma_pagamento = d.forma_pagamento
                  WHERE c.forma_pagamento IS NULL");
+
+            // ---------- fluxo de caixa: taxa e prazo por forma ----------
+            CriarTabela(conexao, "taxa_pagamento", @"
+                CREATE TABLE IF NOT EXISTS `taxa_pagamento` (
+                  `forma` varchar(30) NOT NULL,
+                  `taxa` decimal(5,2) NOT NULL DEFAULT 0,
+                  `dias` int NOT NULL DEFAULT 0,
+                  PRIMARY KEY (`forma`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci");
+
+            // Sem taxa ate o dono configurar; prazos usuais da maquininha.
+            Executar(conexao, "taxa_pagamento preenchida", @"
+                INSERT IGNORE INTO taxa_pagamento (forma, taxa, dias) VALUES
+                    ('DINHEIRO', 0, 0), ('PIX', 0, 0), ('DEBITO', 0, 1),
+                    ('CREDITO', 0, 30), ('CREDITO_PARCELADO', 0, 30)");
         }
 
         // ---------- apoio das migracoes ----------

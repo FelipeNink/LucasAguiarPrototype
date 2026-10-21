@@ -218,10 +218,10 @@ namespace LucasAguiar.Data
         /// <summary>
         /// Faltas do período.
         ///
-        /// O sistema não tem status "faltou": o que existe é AGENDADO,
-        /// CONCLUIDO e CANCELADO. Falta aqui é o agendamento cujo horário
-        /// já passou e que ninguém concluiu nem cancelou -- é o rastro que
-        /// um cliente que não apareceu deixa.
+        /// Falta é o agendamento marcado como FALTOU e também o que ficou
+        /// AGENDADO com o horário já passado, que ninguém concluiu nem
+        /// cancelou -- é o rastro que um cliente que não apareceu deixa
+        /// quando a falta não foi marcada.
         ///
         /// Cancelado é contado à parte, de propósito: desmarcar com aviso
         /// é outra coisa, e somar os dois esconderia justamente a
@@ -236,7 +236,7 @@ namespace LucasAguiar.Data
                 SELECT
                     SUM(status = 'CONCLUIDO') AS concluidos,
                     SUM(status = 'CANCELADO') AS cancelados,
-                    SUM(status = 'AGENDADO' AND data_hora < NOW()) AS faltas,
+                    SUM(status = 'FALTOU' OR (status = 'AGENDADO' AND data_hora < NOW())) AS faltas,
                     SUM(status = 'AGENDADO' AND data_hora >= NOW()) AS pendentes
                   FROM agendamento
                  WHERE data_hora >= @de AND data_hora < @ate", conexao);
@@ -272,7 +272,7 @@ namespace LucasAguiar.Data
                   LEFT JOIN cliente c ON c.id_cli = a.id_cli_fk
                   LEFT JOIN funcionario f ON f.id_fun = a.id_fun_fk
                  WHERE a.data_hora >= @de AND a.data_hora < @ate
-                   AND a.status = 'AGENDADO' AND a.data_hora < NOW()
+                   AND (a.status = 'FALTOU' OR (a.status = 'AGENDADO' AND a.data_hora < NOW()))
                  ORDER BY a.data_hora DESC
                  LIMIT @limite", conexao);
 

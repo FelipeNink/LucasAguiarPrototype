@@ -1,7 +1,8 @@
 /* ===========================================================
    Nova Venda
-   Paleta da marca: laranja var(--marca), grafite var(--texto),
-   cinzas var(--texto-fraco) / var(--borda) e verde var(--ok) para o que ja esta pago.
+   Duas colunas: a esquerda monta a venda (cliente, itens e a
+   tabela dos itens), a direita fecha (totais, profissional,
+   pagamento). Cores so pelos tokens, para valer nos dois temas.
    =========================================================== */
 
 /* Todos os campos da tela com o mesmo corpo de texto. Sem isto, o <select>
@@ -18,11 +19,10 @@
     color: var(--texto-apagado);
 }
 
-
 .venda {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 380px;
-    gap: 1.5rem;
+    grid-template-columns: minmax(0, 7fr) minmax(340px, 5fr);
+    gap: 1.25rem;
     align-items: start;
     margin: 1.25rem 0 2.5rem;
 }
@@ -39,53 +39,66 @@
 .bloco {
     background: var(--superficie);
     border: 1px solid var(--borda);
-    border-radius: 12px;
-    padding: 1.15rem 1.25rem 1.25rem;
+    border-radius: 14px;
+    padding: 1rem 1.15rem 1.1rem;
+    box-shadow: var(--sombra);
+}
+
+.bloco-topo {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.75rem;
 }
 
 .bloco-titulo {
     display: flex;
     align-items: center;
-    gap: 0.6rem;
-    margin: 0 0 1rem;
-    font-size: 0.82rem;
+    gap: 0.5rem;
+    margin: 0;
+    font-size: 0.8rem;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.06em;
     color: var(--texto-3);
 }
 
-.passo {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 1.4rem;
-    height: 1.4rem;
-    border-radius: 50%;
-    background: var(--borda-suave);
-    color: var(--texto-fraco);
+.bloco-dica {
     font-size: 0.72rem;
-    font-weight: 700;
-    transition: background 0.2s, color 0.2s;
+    font-weight: 500;
+    text-transform: none;
+    letter-spacing: 0;
+    color: var(--texto-fraco);
 }
 
-.passo.ok {
-    background: var(--ok);
-    color: #fff;
+.icone-titulo {
+    width: 1.05rem;
+    height: 1.05rem;
+    fill: none;
+    stroke: var(--marca);
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }
 
 .rotulo {
     display: block;
     margin-bottom: 0.35rem;
     font-size: 0.72rem;
-    font-weight: 600;
+    font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: var(--texto-fraco);
+    letter-spacing: 0.05em;
+    color: var(--texto-3);
 }
 
 .obrigatorio {
     color: var(--perigo);
+}
+
+.suave {
+    color: var(--texto-apagado);
 }
 
 /* Texto so para leitor de tela: o icone basta visualmente. */
@@ -136,31 +149,121 @@
 
 /* ---------- cliente ---------- */
 
+.acoes-cliente {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.chip-acao {
+    padding: 0.3rem 0.7rem;
+    background: var(--superficie-3);
+    border: 1px solid transparent;
+    border-radius: 8px;
+    font-size: 0.76rem;
+    font-weight: 600;
+    color: var(--texto-2);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.chip-acao:hover {
+    background: var(--morno-2);
+    color: var(--marca-escura);
+}
+
+.chip-acao.destaque {
+    background: var(--morno-2);
+    border-color: var(--morno-borda);
+    color: var(--marca-escura);
+}
+
+.chip-acao.destaque:hover {
+    background: var(--marca);
+    border-color: var(--marca);
+    color: var(--sobre-marca);
+}
+
+.busca-cliente,
+.filtro {
+    position: relative;
+}
+
+.icone-busca {
+    position: absolute;
+    left: 0.8rem;
+    top: 50%;
+    width: 0.95rem;
+    height: 0.95rem;
+    transform: translateY(-50%);
+    fill: none;
+    stroke: var(--texto-fraco);
+    stroke-width: 2;
+    stroke-linecap: round;
+    pointer-events: none;
+}
+
+.busca-cliente .icone-busca {
+    top: 1.35rem;
+}
+
 .busca {
-    font-size: 0.92rem;
+    padding-left: 2.3rem;
+    background: var(--superficie-2);
 }
 
-.resultados {
-    list-style: none;
-    margin: 0.55rem 0 0;
-    padding: 0;
+.busca:focus {
+    background: var(--superficie);
+}
+
+.lista-busca {
+    position: absolute;
+    top: calc(100% + 0.35rem);
+    left: 0;
+    right: 0;
+    z-index: 30;
+    max-height: 20rem;
+    overflow-y: auto;
+    background: var(--superficie);
     border: 1px solid var(--borda);
-    border-radius: 9px;
-    overflow: hidden;
+    border-radius: 12px;
+    box-shadow: var(--sombra-menu);
 }
 
-.resultados li + li {
-    border-top: 1px solid var(--superficie-3);
+.lista-busca-titulo {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.45rem 0.85rem;
+    background: var(--superficie-2);
+    border-bottom: 1px solid var(--borda);
+    font-size: 0.66rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--texto-fraco);
+}
+
+.lista-busca-titulo .destaque {
+    color: var(--marca-escura);
+}
+
+.lista-busca-vazia {
+    padding: 0.8rem 0.85rem;
+    font-size: 0.8rem;
+    color: var(--texto-fraco);
 }
 
 .resultado {
     display: flex;
-    flex-direction: column;
-    gap: 0.1rem;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
     width: 100%;
-    padding: 0.6rem 0.85rem;
+    padding: 0.55rem 0.85rem;
     background: none;
     border: none;
+    border-bottom: 1px solid var(--superficie-3);
     text-align: left;
     cursor: pointer;
     transition: background 0.12s;
@@ -171,14 +274,33 @@
 }
 
 .resultado-nome {
+    display: block;
     font-weight: 600;
     color: var(--texto);
-    font-size: 0.88rem;
+    font-size: 0.86rem;
 }
 
 .resultado-info {
-    font-size: 0.76rem;
+    display: block;
+    font-size: 0.74rem;
     color: var(--texto-fraco);
+}
+
+.hora-agendada {
+    flex-shrink: 0;
+    padding: 0.1rem 0.5rem;
+    border-radius: 6px;
+    background: var(--ok-fundo);
+    color: var(--ok-texto);
+    font-size: 0.74rem;
+    font-weight: 700;
+}
+
+.selecionar {
+    flex-shrink: 0;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--marca-escura);
 }
 
 .etiqueta-plano {
@@ -197,54 +319,68 @@
     justify-content: space-between;
     gap: 1rem;
     flex-wrap: wrap;
-    margin-top: 0.55rem;
     padding: 0.7rem 0.85rem;
-    background: var(--superficie-2);
-    border: 1px dashed var(--borda-2);
-    border-radius: 9px;
     font-size: 0.83rem;
     color: var(--texto-3);
 }
 
-.acoes-cliente {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    margin-top: 0.8rem;
-}
-
-.cadastro-rapido {
-    display: flex;
-    gap: 0.5rem;
-    margin-top: 0.8rem;
-    padding-top: 0.8rem;
-    border-top: 1px dashed var(--borda);
-}
-
-.cadastro-rapido .form-control {
-    flex: 1;
-}
-
+/* Faixa do cliente escolhido. */
 .cliente-escolhido {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    padding: 0.75rem 1rem;
-    background: var(--morno-2);
-    border: 1px solid var(--morno-borda);
-    border-radius: 10px;
+    gap: 0.75rem;
+    padding: 0.6rem 0.75rem;
+    background: var(--ok-fundo);
+    border: 1px solid var(--ok-borda);
+    border-radius: 12px;
 }
 
-.cliente-escolhido strong {
-    font-size: 0.95rem;
+.avatar-cliente {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 2.2rem;
+    height: 2.2rem;
+    border-radius: 9px;
+    background: var(--ok);
+    color: #fff;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.cliente-dados {
+    flex: 1;
+    min-width: 0;
+}
+
+.cliente-linha {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.cliente-linha strong {
+    font-size: 0.92rem;
     color: var(--texto);
 }
 
+.selo-agendado {
+    padding: 0.05rem 0.4rem;
+    border-radius: 5px;
+    background: var(--ok-borda);
+    color: var(--ok-texto);
+    font-size: 0.64rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
 .cliente-detalhe {
-    margin-left: 0.5rem;
-    font-size: 0.8rem;
-    color: var(--texto-fraco);
+    display: block;
+    font-size: 0.78rem;
+    color: var(--texto-3);
 }
 
 /* ---------- planos ativos ---------- */
@@ -350,27 +486,6 @@
     color: var(--marca-escura);
 }
 
-/* ---------- pago pelo plano ---------- */
-
-.pago-plano {
-    padding: 0.8rem 1rem;
-    margin-bottom: 1rem;
-    background: var(--ok-fundo);
-    border: 1px solid var(--ok-borda);
-    border-radius: 10px;
-}
-
-.pago-plano strong {
-    display: block;
-    font-size: 0.9rem;
-    color: var(--ok-escuro);
-}
-
-.pago-plano span {
-    font-size: 0.8rem;
-    color: var(--ok-texto);
-}
-
 /* Botao de baixa: so o icone de menos. */
 .btn-baixa {
     display: inline-flex;
@@ -470,7 +585,7 @@
     border-radius: 10px;
     text-align: left;
     cursor: pointer;
-    transition: border-color 0.15s, box-shadow 0.15s, transform 0.1s;
+    transition: border-color 0.15s;
 }
 
 .cartao-plano:hover:enabled {
@@ -500,102 +615,102 @@
     color: var(--texto-fraco);
 }
 
-/* ---------- catalogo ---------- */
+/* ---------- adicionar itens ---------- */
 
-.catalogo-topo {
+.filtro {
+    width: 15rem;
+    max-width: 100%;
+}
+
+.filtro .form-control {
+    padding-left: 2.1rem;
+    font-size: 0.82rem;
+    background: var(--superficie-2);
+}
+
+.categorias {
     display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    flex-wrap: wrap;
-    margin-bottom: 0.85rem;
+    gap: 0.35rem;
+    overflow-x: auto;
+    padding-bottom: 0.25rem;
+    margin-bottom: 0.65rem;
 }
 
-.abas {
-    display: inline-flex;
-    gap: 0.2rem;
-    padding: 0.22rem;
+.categoria {
+    flex-shrink: 0;
+    padding: 0.3rem 0.8rem;
     background: var(--superficie-3);
-    border-radius: 9px;
-}
-
-.aba {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    padding: 0.38rem 0.85rem;
-    background: none;
     border: none;
-    border-radius: 7px;
-    font-size: 0.83rem;
+    border-radius: 10px;
+    font-size: 0.8rem;
     font-weight: 600;
-    color: var(--texto-3);
+    color: var(--texto-2);
+    white-space: nowrap;
     cursor: pointer;
     transition: background 0.15s, color 0.15s;
 }
 
-.aba:hover {
-    color: var(--texto);
+.categoria:hover {
+    background: var(--borda-2);
 }
 
-.aba.ativa {
-    background: var(--superficie);
-    color: var(--marca-escura);
-    box-shadow: 0 1px 3px rgba(16, 24, 40, 0.1);
+.categoria.ativa {
+    background: var(--carvao);
+    color: #fff;
 }
 
-.contagem {
-    padding: 0.05rem 0.4rem;
-    border-radius: 999px;
-    background: rgba(0, 0, 0, 0.06);
-    font-size: 0.68rem;
-}
-
-.filtro {
-    flex: 1;
-    min-width: 150px;
-    max-width: 240px;
-    margin-left: auto;
-    font-size: 0.85rem;
-}
-
-.grade-catalogo {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 0.55rem;
-}
-
-.cartao-item {
-    position: relative;
+.pilulas {
     display: flex;
-    flex-direction: column;
-    gap: 0.1rem;
-    padding: 0.7rem 0.85rem;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    max-height: 11.5rem;
+    overflow-y: auto;
+    padding: 0.5rem;
+    background: var(--superficie-2);
+    border: 1px solid var(--borda);
+    border-radius: 12px;
+}
+
+.pilula {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.38rem 0.75rem;
     background: var(--superficie);
     border: 1px solid var(--borda);
     border-radius: 10px;
-    text-align: left;
-    cursor: pointer;
-    transition: border-color 0.15s, box-shadow 0.15s, transform 0.1s;
-}
-
-.cartao-item:hover {
-    border-color: var(--marca);
-}
-
-.cartao-item:active {
-}
-
-.item-titulo {
-    font-size: 0.85rem;
-    font-weight: 600;
+    font-size: 0.82rem;
+    font-weight: 500;
     color: var(--texto);
-    line-height: 1.25;
+    box-shadow: var(--sombra);
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.08s;
 }
 
-.item-preco {
-    font-size: 0.92rem;
+.pilula:hover {
+    background: var(--morno-2);
+    border-color: var(--morno-borda);
+    color: var(--marca-escura);
+}
+
+.pilula:active {
+    transform: scale(0.97);
+}
+
+.pilula strong {
     font-weight: 700;
-    color: var(--marca);
+    color: var(--marca-escura);
+}
+
+.icone-pilula {
+    width: 0.8rem;
+    height: 0.8rem;
+    fill: none;
+    stroke: var(--texto-fraco);
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }
 
 .item-estoque {
@@ -610,18 +725,18 @@
 
 .item-badge {
     position: absolute;
-    top: -0.4rem;
+    top: -0.45rem;
     right: -0.4rem;
-    min-width: 1.35rem;
-    height: 1.35rem;
+    min-width: 1.25rem;
+    height: 1.25rem;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 0 0.32rem;
+    padding: 0 0.3rem;
     border-radius: 999px;
     background: var(--ok);
     color: #fff;
-    font-size: 0.7rem;
+    font-size: 0.68rem;
     font-weight: 700;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
 }
@@ -631,73 +746,236 @@
     padding: 1.4rem;
     background: var(--superficie-2);
     border: 1px dashed var(--borda-2);
-    border-radius: 10px;
+    border-radius: 12px;
     font-size: 0.83rem;
     color: var(--texto-fraco);
     text-align: center;
 }
 
-/* ---------- pagamento ---------- */
-
-.formas {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(125px, 1fr));
-    gap: 0.5rem;
-    margin-bottom: 1rem;
+.cadastrar-itens {
+    display: flex;
+    gap: 1rem;
+    margin-top: 0.4rem;
 }
 
-.forma {
-    padding: 0.6rem 0.75rem;
-    background: var(--superficie);
-    border: 1px solid var(--borda-2);
-    border-radius: 9px;
-    font-size: 0.84rem;
-    font-weight: 600;
-    color: var(--texto-3);
-    cursor: pointer;
-    transition: all 0.15s;
+/* ---------- itens da venda ---------- */
+
+.itens-venda {
+    display: flex;
+    flex-direction: column;
+    min-height: 300px;
+    padding: 0;
+    overflow: hidden;
 }
 
-.forma:hover {
-    border-color: var(--marca-fraca);
-    color: var(--marca-escura);
-}
-
-.forma.ativa {
-    background: var(--marca);
-    border-color: var(--marca);
-    color: var(--sobre-marca);
-}
-
-.campo-parcelas {
+.itens-topo {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    flex-wrap: wrap;
-    margin-bottom: 1rem;
+    justify-content: space-between;
+    padding: 0.75rem 1.1rem;
+    background: var(--carvao);
 }
 
-.campo-parcelas .rotulo {
+.itens-topo h2 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
     margin: 0;
+    font-family: var(--fonte-titulo);
+    font-size: 1.3rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #fff;
 }
 
-.valor-parcela {
-    font-size: 0.83rem;
+.contagem-itens {
+    padding: 0.1rem 0.55rem;
+    border-radius: 999px;
+    background: var(--marca);
+    color: var(--sobre-marca);
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+.itens-vazio {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.2rem;
+    padding: 2.5rem 1rem;
+    text-align: center;
+}
+
+.itens-vazio strong {
+    font-size: 0.86rem;
+    color: var(--texto-3);
+}
+
+.itens-vazio span {
+    font-size: 0.78rem;
     color: var(--texto-fraco);
 }
 
-.grade-final {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-    gap: 1rem;
-    align-items: start;
+.tabela-itens {
+    flex: 1;
+    overflow-x: auto;
 }
 
-.aviso-desconto {
+.tabela-itens table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.84rem;
+}
+
+.tabela-itens th {
+    padding: 0.6rem 0.6rem;
+    background: var(--superficie-2);
+    border-bottom: 1px solid var(--borda);
+    font-size: 0.66rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--texto-3);
+    text-align: left;
+    white-space: nowrap;
+}
+
+.tabela-itens td {
+    padding: 0.55rem 0.6rem;
+    border-bottom: 1px solid var(--superficie-3);
+    vertical-align: middle;
+}
+
+.tabela-itens th:first-child,
+.tabela-itens td:first-child {
+    padding-left: 1.1rem;
+}
+
+.tabela-itens .dir {
+    text-align: right;
+}
+
+.tabela-itens .centro {
+    text-align: center;
+}
+
+.item-nome {
     display: block;
-    margin-top: 0.3rem;
-    font-size: 0.76rem;
-    color: var(--alerta);
+    font-weight: 600;
+    color: var(--texto);
+}
+
+.item-tipo {
+    display: block;
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--texto-fraco);
+}
+
+.selo-plano {
+    margin-left: 0.25rem;
+    padding: 0.02rem 0.4rem;
+    border-radius: 999px;
+    background: var(--ok-fundo);
+    color: var(--ok-escuro);
+    font-size: 0.64rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.tabela-itens .form-select {
+    min-width: 9.5rem;
+    font-size: 0.8rem;
+}
+
+.campo-valor {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.campo-valor ::deep .form-control {
+    width: 5.6rem;
+    padding: 0.25rem 0.45rem;
+    font-size: 0.8rem;
+}
+
+.subtotal-item {
+    font-weight: 700;
+    color: var(--marca-escura);
+    white-space: nowrap;
+}
+
+.riscado {
+    text-decoration: line-through;
+    color: var(--texto-apagado);
+}
+
+.remover {
+    width: 1.5rem;
+    height: 1.5rem;
+    background: none;
+    border: none;
+    border-radius: 50%;
+    color: var(--texto-apagado);
+    font-size: 1.1rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.remover:hover {
+    background: var(--perigo-fundo);
+    color: var(--perigo);
+}
+
+.itens-rodape {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding: 0.6rem 1.1rem;
+    background: var(--superficie-2);
+    border-top: 1px solid var(--borda);
+    font-size: 0.8rem;
+    color: var(--texto-3);
+}
+
+.limpar {
+    padding: 0;
+    background: none;
+    border: none;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--perigo);
+    cursor: pointer;
+}
+
+.limpar:hover {
+    text-decoration: underline;
+}
+
+.limpar-confirmar {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.78rem;
+    color: var(--texto-2);
+}
+
+.somas {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.somas strong {
+    color: var(--texto);
 }
 
 /* ---------- contador ---------- */
@@ -733,11 +1011,14 @@
     cursor: not-allowed;
 }
 
+/* Quantidade em condensada, como no resto do sistema. */
 .contador span {
     min-width: 2.3rem;
     text-align: center;
-    font-size: 0.86rem;
+    font-family: var(--fonte-titulo);
+    font-size: 17px;
     font-weight: 600;
+    font-variant-numeric: tabular-nums;
     color: var(--texto);
 }
 
@@ -749,176 +1030,384 @@
 
 .contador.pequeno span {
     min-width: 1.75rem;
-    font-size: 0.8rem;
 }
 
-/* ---------- nota ---------- */
+/* ---------- fechamento ---------- */
 
-.nota {
+.fechamento {
     position: sticky;
     top: 1rem;
     background: var(--superficie);
     border: 1px solid var(--borda);
-    border-radius: 12px;
-    padding: 1.15rem 1.25rem 1.25rem;
-    box-shadow: 0 6px 20px rgba(16, 24, 40, 0.07);
+    border-radius: 14px;
+    box-shadow: var(--sombra-media);
+    overflow: hidden;
 }
 
-.nota-topo {
+.fechamento-topo {
     display: flex;
+    align-items: center;
     justify-content: space-between;
-    align-items: baseline;
-    padding-bottom: 0.65rem;
-    border-bottom: 1px dashed var(--borda-2);
+    gap: 1rem;
+    padding: 1rem 1.15rem;
+    background: var(--carvao);
 }
 
-.nota-marca {
+.fechamento-marca {
+    display: block;
+    font-size: 0.66rem;
     font-weight: 700;
-    font-size: 0.84rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
     color: var(--marca);
 }
 
-.nota-data {
-    font-size: 0.72rem;
-    color: var(--texto-apagado);
+.fechamento-topo h2 {
+    margin: 0.1rem 0 0;
+    font-family: var(--fonte-titulo);
+    font-size: 1.65rem;
+    font-weight: 700;
+    line-height: 1;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: #fff;
 }
 
-.nota-cliente {
-    padding: 0.65rem 0;
-    font-size: 0.88rem;
-    color: var(--texto);
-    border-bottom: 1px solid var(--superficie-3);
+.icone-caixa {
+    width: 1.8rem;
+    height: 1.8rem;
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.3);
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }
 
-.suave {
-    color: var(--texto-apagado);
+.fechamento-corpo {
+    display: flex;
+    flex-direction: column;
+    gap: 1.1rem;
+    padding: 1.1rem 1.15rem 1.2rem;
 }
 
-.nota-vazia {
-    padding: 2.2rem 1rem;
-    text-align: center;
-    font-size: 0.83rem;
-    color: var(--texto-apagado);
+.resumo-valores {
+    padding: 0.85rem 1rem;
+    background: var(--superficie-2);
+    border: 1px solid var(--borda);
+    border-radius: 12px;
+    font-size: 0.84rem;
 }
 
-.nota-itens {
-    list-style: none;
-    margin: 0.4rem 0 0;
-    padding: 0;
-}
-
-.nota-itens li {
-    padding: 0.55rem 0;
-    border-bottom: 1px solid var(--borda);
-}
-
-.linha-nome {
+.resumo-valores .linha {
     display: flex;
     align-items: center;
-    gap: 0.4rem;
-    margin-bottom: 0.3rem;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.4rem 0;
+    color: var(--texto-2);
 }
 
-.item-nome {
+.resumo-valores .linha + .linha {
+    border-top: 1px solid var(--borda);
+}
+
+.resumo-valores .linha strong {
+    color: var(--texto);
+}
+
+/* Credito do plano e abatimento, nao receita: roxo do plano, e nao o
+   verde, que aqui leria como dinheiro entrando. */
+.resumo-valores .economia {
+    color: var(--roxo-texto);
+}
+
+.linha-desconto label {
+    margin: 0;
+}
+
+.campo-desconto {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-weight: 600;
+}
+
+.campo-desconto .form-control {
+    width: 6rem;
+    padding: 0.25rem 0.5rem;
+    text-align: right;
+    font-weight: 700;
+}
+
+.aviso-desconto {
+    display: block;
+    font-size: 0.74rem;
+    color: var(--alerta);
+}
+
+.resumo-valores .comissao {
+    font-size: 0.76rem;
+    color: var(--texto-3);
+}
+
+.resumo-valores .comissao span:last-child {
+    font-weight: 600;
+    color: var(--ok-escuro);
+}
+
+/* O total e a informacao que a pessoa confere antes de fechar. */
+.resumo-valores .total {
+    align-items: baseline;
+    margin-top: 0.3rem;
+    padding-top: 0.7rem;
+    border-top: 2px solid var(--borda-2) !important;
+}
+
+.resumo-valores .total span {
+    font-family: var(--fonte-titulo);
+    font-size: 1.45rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--texto);
+}
+
+.resumo-valores .total strong {
+    font-family: var(--fonte-titulo);
+    font-size: 2.6rem;
+    font-weight: 700;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    color: var(--marca-escura);
+}
+
+/* ---------- pagamento ---------- */
+
+.formas {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+}
+
+.forma {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.6rem 0.7rem;
+    background: var(--superficie);
+    border: 1px solid var(--borda-2);
+    border-radius: 12px;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+
+.forma:hover:enabled {
+    border-color: var(--marca-fraca);
+    background: var(--morno);
+}
+
+.forma:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.forma.ativa {
+    border-color: var(--marca);
+    background: var(--morno-2);
+    box-shadow: var(--anel-foco);
+}
+
+.forma-icone {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 8px;
+    font-size: 0.66rem;
+    font-weight: 800;
+    background: var(--superficie-3);
+    color: var(--texto-2);
+}
+
+.forma-dinheiro .forma-icone {
+    background: var(--ok-fundo);
+    color: var(--ok-texto);
+}
+
+.forma-pix .forma-icone {
+    background: var(--ok-fundo);
+    color: var(--ok-escuro);
+}
+
+.forma-debito .forma-icone,
+.forma-credito .forma-icone {
+    background: var(--info-fundo);
+    color: var(--info-texto);
+}
+
+.forma-multiplo {
+    grid-column: 1 / -1;
+}
+
+.forma-multiplo .forma-icone {
+    background: var(--alerta-fundo);
+    color: var(--alerta-texto);
+    font-size: 0.9rem;
+}
+
+.forma-texto strong {
+    display: block;
+    font-size: 0.84rem;
+    line-height: 1.2;
+    color: var(--texto);
+}
+
+.forma-texto small {
+    display: block;
+    font-size: 0.7rem;
+    color: var(--texto-fraco);
+}
+
+.detalhe-pagamento {
+    padding: 0.75rem 0.85rem;
+    background: var(--superficie-2);
+    border: 1px solid var(--borda);
+    border-radius: 12px;
+}
+
+.campo-parcelas {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.campo-parcelas .rotulo {
+    margin: 0;
+}
+
+.valor-parcela {
+    font-size: 0.83rem;
+    color: var(--texto-fraco);
+}
+
+.troco {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem 0.75rem;
+}
+
+.valor-troco {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    height: calc(100% - 1.4rem);
+    min-height: 2.3rem;
+    padding: 0 0.7rem;
+    background: var(--ok-fundo);
+    border: 1px solid var(--ok-borda);
+    border-radius: 8px;
+    font-weight: 800;
+    color: var(--ok-texto);
+}
+
+.valor-troco.falta {
+    background: var(--perigo-fundo);
+    border-color: var(--perigo-fundo);
+    color: var(--perigo);
+}
+
+.notas-rapidas {
+    grid-column: 1 / -1;
+    display: flex;
+    gap: 0.35rem;
+}
+
+.notas-rapidas button {
     flex: 1;
-    font-size: 0.86rem;
+    padding: 0.3rem;
+    background: var(--superficie);
+    border: 1px solid var(--borda-2);
+    border-radius: 7px;
+    font-size: 0.74rem;
+    font-weight: 700;
+    color: var(--texto-2);
+    cursor: pointer;
+}
+
+.notas-rapidas button:hover {
+    border-color: var(--marca-fraca);
+    color: var(--marca-escura);
+}
+
+.pagamentos {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.pagamentos li {
+    display: grid;
+    grid-template-columns: 8.5rem 1fr auto auto;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.pagamento-forma {
+    font-size: 0.84rem;
     font-weight: 600;
     color: var(--texto);
 }
 
-.selo-plano {
-    padding: 0.05rem 0.4rem;
-    border-radius: 999px;
-    background: var(--ok-fundo);
-    color: var(--ok-escuro);
-    font-size: 0.65rem;
-    font-weight: 700;
-    text-transform: uppercase;
+.pagamentos-resumo {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    font-size: 0.84rem;
+    font-weight: 600;
 }
 
-.remover {
-    width: 1.45rem;
-    height: 1.45rem;
-    background: none;
-    border: none;
-    border-radius: 50%;
-    color: var(--texto-apagado);
-    font-size: 1.05rem;
-    line-height: 1;
-    cursor: pointer;
-    transition: background 0.15s, color 0.15s;
-}
-
-.remover:hover {
-    background: var(--perigo-fundo);
+.pagamentos-resumo.aberto {
     color: var(--perigo);
 }
 
-.linha-valores {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
+.pagamentos-resumo.fechado {
+    color: var(--ok);
 }
 
-.unitario {
-    flex: 1;
-    font-size: 0.78rem;
-    color: var(--texto-apagado);
+.pago-plano {
+    padding: 0.8rem 1rem;
+    background: var(--ok-fundo);
+    border: 1px solid var(--ok-borda);
+    border-radius: 12px;
 }
 
-.riscado {
-    text-decoration: line-through;
-}
-
-.linha-total {
-    font-size: 0.88rem;
-    font-weight: 700;
-    color: var(--texto);
-    white-space: nowrap;
-}
-
-.nota-totais {
-    margin-top: 0.8rem;
-    padding-top: 0.7rem;
-    border-top: 1px dashed var(--borda-2);
-    font-size: 0.84rem;
-}
-
-.nota-totais > div {
-    display: flex;
-    justify-content: space-between;
-    padding: 0.18rem 0;
-    color: var(--texto-3);
-}
-
-.nota-totais .economia,
-.nota-totais .desconto {
+.pago-plano strong {
+    display: block;
+    font-size: 0.9rem;
     color: var(--ok-escuro);
 }
 
-.nota-totais .total {
-    margin-top: 0.4rem;
-    padding-top: 0.5rem;
-    border-top: 1px solid var(--borda);
-    font-size: 1.3rem;
-    font-weight: 700;
-    color: var(--texto);
+.pago-plano span {
+    font-size: 0.8rem;
+    color: var(--ok-texto);
 }
 
-.nota-totais .comissao {
-    margin-top: 0.35rem;
-    padding-top: 0.35rem;
-    border-top: 1px dashed var(--borda);
-    font-size: 0.75rem;
-    color: var(--texto-fraco);
-}
+/* ---------- pendencias e confirmacao ---------- */
 
 .pendencias {
     list-style: none;
-    margin: 0.9rem 0 0;
+    margin: 0;
     padding: 0.65rem 0.8rem;
     background: var(--morno);
-    border-radius: 9px;
+    border-radius: 10px;
 }
 
 .pendencias li {
@@ -940,26 +1429,44 @@
     border: 1px solid var(--alerta-borda);
 }
 
+/* CTA da tela: laranja, como as demais acoes principais. */
 .btn-confirmar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
     width: 100%;
-    margin-top: 0.9rem;
-    padding: 0.85rem;
-    background: var(--ok);
-    color: #fff;
+    height: 58px;
+    padding: 0 16px;
+    background: var(--marca);
+    color: var(--sobre-marca);
     border: none;
-    border-radius: 9px;
-    font-size: 0.92rem;
+    border-radius: 14px;
+    font-family: var(--fonte-titulo);
+    font-size: 1.35rem;
     font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
     cursor: pointer;
     transition: background 0.15s;
 }
 
+.btn-confirmar svg {
+    width: 1.35rem;
+    height: 1.35rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
 .btn-confirmar:hover:enabled {
-    background: var(--ok-escuro);
+    background: var(--marca-escura);
 }
 
 .btn-confirmar:disabled {
-    background: var(--borda-suave);
+    background: var(--superficie-3);
     color: var(--texto-apagado);
     cursor: not-allowed;
 }
@@ -969,168 +1476,18 @@
         grid-template-columns: 1fr;
     }
 
-    .nota {
+    .fechamento {
         position: static;
     }
 }
 
-/* ===========================================================
-   Acabamento de comanda
-   Vem depois para vencer as regras acima sem reescreve-las.
-   =========================================================== */
+@media (max-width: 560px) {
+    .formas,
+    .troco {
+        grid-template-columns: 1fr;
+    }
 
-/* Numero do passo em condensada, como no resto do sistema. */
-.passo {
-    width: auto;
-    min-width: 1.6rem;
-    height: auto;
-    border-radius: 0;
-    background: none;
-    font-family: var(--fonte-titulo);
-    font-size: 24px;
-    font-weight: 600;
-    color: var(--marca-escura);
-}
-
-.passo.ok {
-    background: none;
-    color: var(--ok-escuro);
-}
-
-.nota-marca {
-    font-family: var(--fonte-titulo);
-    font-size: 22px;
-    font-weight: 700;
-    text-transform: uppercase;
-    color: var(--texto);
-}
-
-/* Credito do plano e abatimento, nao receita: sai do roxo do plano
-   e nao do verde, que aqui leria como dinheiro entrando. */
-.nota-totais .economia {
-    color: var(--roxo-texto);
-}
-
-/* O total e a informacao que a pessoa confere antes de fechar. */
-.nota-totais .total {
-    align-items: baseline;
-    border-top: 1px dashed var(--borda-2);
-    font-family: var(--fonte-titulo);
-    font-size: 48px;
-    line-height: 1.05;
-    font-variant-numeric: tabular-nums;
-}
-
-.nota-totais .total span:first-child {
-    font-family: var(--fonte);
-    font-size: 11.5px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.16em;
-    color: var(--texto-3);
-}
-
-/* CTA da tela: laranja, como as demais acoes principais. O verde
-   anterior sugeria "concluido" antes de a venda existir. */
-.btn-confirmar {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    height: 54px;
-    padding: 0 16px;
-    background: var(--marca);
-    color: var(--sobre-marca);
-    border-radius: var(--raio);
-    font-size: 16px;
-}
-
-.btn-confirmar:hover:enabled {
-    background: var(--marca-escura);
-}
-
-.btn-confirmar kbd {
-    background: rgba(20, 23, 28, 0.16);
-    color: inherit;
-}
-
-.btn-confirmar:disabled {
-    background: var(--superficie-3);
-    color: var(--texto-apagado);
-}
-
-/* Quantidade do item na nota, em condensada. */
-.contador span {
-    font-family: var(--fonte-titulo);
-    font-size: 17px;
-    font-variant-numeric: tabular-nums;
-}
-
-/* ---------- grade de pagamentos ---------- */
-
-.pagamentos {
-    list-style: none;
-    margin: 0.75rem 0 0;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 0.4rem;
-}
-
-.pagamentos li {
-    display: grid;
-    grid-template-columns: 9rem 1fr auto auto;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.pagamento-forma {
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: var(--texto);
-}
-
-.pagamentos-resumo {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.5rem;
-    margin-top: 0.5rem;
-    font-size: 0.85rem;
-    font-weight: 600;
-}
-
-.pagamentos-resumo.aberto {
-    color: var(--perigo);
-}
-
-.pagamentos-resumo.fechado {
-    color: var(--ok);
-}
-
-/* ---------- ajustes do item na comanda ---------- */
-
-.linha-ajustes {
-    display: grid;
-    grid-template-columns: 1fr 5.5rem 5.5rem;
-    gap: 0.35rem;
-    margin-top: 0.4rem;
-}
-
-.linha-ajustes .ajuste {
-    display: flex;
-    flex-direction: column;
-    gap: 0.1rem;
-    margin: 0;
-}
-
-.linha-ajustes .ajuste span {
-    font-size: 0.68rem;
-    color: var(--texto-fraco);
-}
-
-.linha-ajustes .form-select,
-.linha-ajustes .form-control {
-    font-size: 0.78rem;
-    padding: 0.2rem 0.4rem;
+    .filtro {
+        width: 100%;
+    }
 }

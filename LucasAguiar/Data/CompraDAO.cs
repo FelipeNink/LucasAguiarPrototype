@@ -15,7 +15,7 @@ namespace LucasAguiar.Data
 
         /// <summary>
         /// Grava a compra, lança a despesa correspondente e dá entrada no
-        /// estoque — tudo numa transação. Uma compra é saída de dinheiro:
+        /// estoque (se já recebida) — tudo numa transação. Uma compra é saída de dinheiro:
         /// sem a despesa, o valor não apareceria em nenhum relatório financeiro.
         /// </summary>
         public int Inserir(Compra compra, int? idCaixaAberto = null, bool gerarDespesa = true, bool pago = true)
@@ -71,23 +71,28 @@ namespace LucasAguiar.Data
                         (data_comp, valor_comp, item_comp, quantidade,
                          id_prod_fk, id_forn_fk, id_fun_fk, id_desp_fk,
                          numero_nota, frete, desconto, observacao,
-                         forma_pagamento, parcelas, vencimento_primeira)
+                         forma_pagamento, parcelas, vencimento_primeira,
+                         recebida, data_recebimento)
                     VALUES
                         (@data, @valor, @item, @quantidade,
                          @idProduto, @idFornecedor, @idFuncionario, @idDespesa,
                          @nota, @frete, @desconto, @observacao,
-                         @forma, @parcelas, @vencimento);
+                         @forma, @parcelas, @vencimento,
+                         @recebida, @dataRecebimento);
                     SELECT LAST_INSERT_ID();", conexao, transacao))
                 {
                     PreencherCabecalho(cmdCompra, compra);
                     cmdCompra.Parameters.AddWithValue("@idDespesa", (object?)idDespesa ?? DBNull.Value);
                     cmdCompra.Parameters.AddWithValue("@forma", compra.FormaPagamento);
+                    cmdCompra.Parameters.AddWithValue("@recebida", compra.Recebida ? 1 : 0);
+                    cmdCompra.Parameters.AddWithValue("@dataRecebimento",
+                        compra.Recebida ? compra.DataCompra.Date : DBNull.Value);
 
                     idCompra = Convert.ToInt32(cmdCompra.ExecuteScalar());
                 }
 
-                // Compra de produto dá entrada no estoque.
-                GravarItens(idCompra, compra.Itens, conexao, transacao);
+                // Compra de produto dá entrada no estoque; aguardando entrega, só no recebimento.
+                GravarItens(idCompra, compra.Itens, conexao, transacao, compra.Recebida);
 
                 transacao.Commit();
                 return idCompra;
@@ -149,8 +154,12 @@ namespace LucasAguiar.Data
                         "A despesa desta compra já entrou num caixa fechado: o valor não pode mais ser alterado.");
                 }
 
-                foreach (var item in ListarItens(compra.IdCompra, conexao, transacao))
-                    MoverEstoque(item.IdProduto ?? 0, -item.Quantidade, conexao, transacao);
+                // Recebimento nao muda aqui: e feito pelo Receber.
+                if (anterior.Recebida)
+                {
+                    foreach (var item in ListarItens(compra.IdCompra, conexao, transacao))
+                        MoverEstoque(item.IdProduto ?? 0, -item.Quantidade, conexao, transacao);
+                }
 
                 using (var limpar = new MySqlCommand(
                     "DELETE FROM compra_item WHERE id_comp_fk = @id", conexao, transacao))
@@ -159,7 +168,7 @@ namespace LucasAguiar.Data
                     limpar.ExecuteNonQuery();
                 }
 
-                GravarItens(compra.IdCompra, compra.Itens, conexao, transacao);
+                GravarItens(compra.IdCompra, compra.Itens, conexao, transacao, anterior.Recebida);
 
                 // Forma de pagamento nao muda aqui: ja esta na despesa.
                 using (var cmdCompra = new MySqlCommand(@"
@@ -228,8 +237,12 @@ namespace LucasAguiar.Data
                         "A despesa desta compra já entrou num caixa fechado: a compra não pode mais ser excluída.");
                 }
 
-                foreach (var item in ListarItens(id, conexao, transacao))
-                    MoverEstoque(item.IdProduto ?? 0, -item.Quantidade, conexao, transacao);
+                // Aguardando entrega nao entrou no estoque: nada a estornar.
+                if (compra.Recebida)
+                {
+                    foreach (var item in ListarItens(id, conexao, transacao))
+                        MoverEstoque(item.IdProduto ?? 0, -item.Quantidade, conexao, transacao);
+                }
 
                 // A compra sai antes da despesa: compras.id_desp_fk aponta para ela.
                 // Os itens saem junto, pelo ON DELETE CASCADE de compra_item.
@@ -254,6 +267,46 @@ namespace LucasAguiar.Data
             {
                 transacao.Rollback();
                 throw new Exception("Erro ao excluir a compra: " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Recebe a mercadoria de uma compra aguardando entrega: dá a
+        /// entrada no estoque dos itens e marca a data do recebimento.
+        /// </summary>
+        public void Receber(int id, string? usuario = null)
+        {
+            using var conexao = _conexao.GetConnection();
+            using var transacao = conexao.BeginTransaction();
+            try
+            {
+                var compra = LerParaAlterar(id, conexao, transacao)
+                    ?? throw new Exception("Compra não encontrada.");
+
+                if (compra.Recebida)
+                    throw new Exception("Esta compra já foi recebida.");
+
+                foreach (var item in ListarItens(id, conexao, transacao))
+                {
+                    MoverEstoque(
+                        item.IdProduto ?? 0, item.Quantidade, conexao, transacao,
+                        $"Compra #{id}: {item.Descricao}", id, usuario);
+                }
+
+                using (var comando = new MySqlCommand(@"
+                    UPDATE compras SET recebida = 1, data_recebimento = CURDATE()
+                    WHERE id_comp = @id", conexao, transacao))
+                {
+                    comando.Parameters.AddWithValue("@id", id);
+                    comando.ExecuteNonQuery();
+                }
+
+                transacao.Commit();
+            }
+            catch (Exception ex)
+            {
+                transacao.Rollback();
+                throw new Exception("Erro ao receber a compra: " + ex.Message);
             }
         }
 
@@ -322,9 +375,11 @@ namespace LucasAguiar.Data
         /// <summary>
         /// Grava os itens e da entrada no estoque. O custo do item vira o
         /// preco de custo do produto: e o ultimo preco pago a ele.
+        /// Sem <paramref name="moverEstoque"/>, a entrada fica para o Receber.
         /// </summary>
         private static void GravarItens(
-            int idCompra, IEnumerable<CompraItem> itens, MySqlConnection conexao, MySqlTransaction transacao)
+            int idCompra, IEnumerable<CompraItem> itens, MySqlConnection conexao, MySqlTransaction transacao,
+            bool moverEstoque = true)
         {
             foreach (var item in itens)
             {
@@ -344,9 +399,12 @@ namespace LucasAguiar.Data
 
                 // Com o numero da compra: no extrato do produto, a entrada
                 // diz de onde veio em vez de so "compra recebida".
-                MoverEstoque(
-                    item.IdProduto.Value, item.Quantidade, conexao, transacao,
-                    $"Compra #{idCompra}: {item.Descricao}", idCompra);
+                if (moverEstoque)
+                {
+                    MoverEstoque(
+                        item.IdProduto.Value, item.Quantidade, conexao, transacao,
+                        $"Compra #{idCompra}: {item.Descricao}", idCompra);
+                }
 
                 using var custo = new MySqlCommand(
                     "UPDATE produto SET preco_custo = @custo WHERE id_prod = @idProduto", conexao, transacao);
@@ -507,6 +565,8 @@ namespace LucasAguiar.Data
                 FormaPagamento = Texto("forma_pagamento") ?? FormaPagamento.Dinheiro,
                 Parcelas = Inteiro("parcelas"),
                 VencimentoPrimeira = DAOHelper.GetDateTime(leitor, "vencimento_primeira"),
+                Recebida = leitor.GetBoolean("recebida"),
+                DataRecebimento = DAOHelper.GetDateTime(leitor, "data_recebimento"),
                 NomeProduto = Texto("nome_prod"),
                 NomeFornecedor = Texto("nome_forn"),
                 NomeFuncionario = Texto("nome_fun")

@@ -24,6 +24,11 @@
         <input class="form-control" placeholder="Buscar produto" @bind="busca" @bind:event="oninput" />
     </div>
     <div class="campo">
+        <label>Categoria</label>
+        <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesCategoria"
+                 @bind-Valor="idCategoria" TextoDe="o => o.Rotulo" ValorDe="o => o.Id" />
+    </div>
+    <div class="campo">
         <label>Marca</label>
         <Seletor TItem="Opcao" TValor="string" Itens="OpcoesMarca"
                  @bind-Valor="marca" TextoDe="o => o.Rotulo" ValorDe="o => o.Valor" />
@@ -39,6 +44,12 @@
                  @bind-Valor="estoque" TextoDe="o => o.Rotulo" ValorDe="o => o.Valor"
                  PontoDe="o => o.Cor" />
     </div>
+    <div class="campo">
+        <label>Situação</label>
+        <Seletor TItem="Opcao" TValor="string" Itens="OpcoesSituacao"
+                 @bind-Valor="situacao" TextoDe="o => o.Rotulo" ValorDe="o => o.Valor"
+                 PontoDe="o => o.Cor" />
+    </div>
     <div class="campo-acoes">
         <button type="button" class="btn btn-outline-secondary" @onclick="Limpar">Limpar</button>
     </div>
@@ -47,17 +58,21 @@
 @* ---------- resumo ---------- *@
 <div class="resumo">
     <div class="cartao-resumo">
-        <span class="rotulo">Itens</span>
-        <strong class="valor">@Filtrados.Count</strong>
+        <span class="rotulo">Itens ativos</span>
+        <strong class="valor">@Filtrados.Count(p => p.Ativo)</strong>
+    </div>
+    <div class="cartao-resumo">
+        <span class="rotulo">Abaixo do mínimo</span>
+        <strong class="valor">@Filtrados.Count(AbaixoDoMinimo)</strong>
     </div>
     <div class="cartao-resumo prejuizo">
         <span class="rotulo">Zerados</span>
         <strong class="valor">@Filtrados.Count(p => p.Quantidade <= 0)</strong>
     </div>
-    @* Sem custo cadastrado ainda: o estoque sai a preço de venda. *@
+    @* Produto sem preço de custo cadastrado fica fora da soma. *@
     <div class="cartao-resumo">
-        <span class="rotulo">Estoque a preço de venda</span>
-        <strong class="valor">@Filtrados.Sum(p => (decimal)p.Valor * Math.Max(p.Quantidade, 0)).ToString("C")</strong>
+        <span class="rotulo">Valor em estoque (custo)</span>
+        <strong class="valor">@Filtrados.Sum(p => (p.PrecoCusto ?? 0) * Math.Max(p.Quantidade, 0)).ToString("C")</strong>
     </div>
 </div>
 
@@ -68,8 +83,11 @@
             <th class="col-id">Código</th>
             <th>Nome</th>
             <th class="opcional">Marca</th>
+            <th class="opcional">Categoria</th>
             <th class="al-dir">Estoque</th>
+            <th class="al-dir opcional">Custo</th>
             <th class="al-dir">Preço de venda</th>
+            <th class="al-dir opcional">Margem</th>
             <th class="col-acoes">Ações</th>
         </tr>
     </thead>
@@ -88,17 +106,24 @@
                         }
                     </td>
                     <td class="opcional">@Valor(produto.Marca)</td>
+                    <td class="opcional">@Valor(produto.NomeCategoria)</td>
                     <td class="al-dir">
                         @if (produto.Quantidade <= 0)
                         {
                             <span class="status erro"><i></i>@produto.Quantidade</span>
+                        }
+                        else if (AbaixoDoMinimo(produto))
+                        {
+                            <span class="status pendente" title="Mínimo: @produto.EstoqueMinimo"><i></i>@produto.Quantidade</span>
                         }
                         else
                         {
                             @produto.Quantidade
                         }
                     </td>
+                    <td class="al-dir opcional">@(produto.PrecoCusto?.ToString("C") ?? "—")</td>
                     <td class="al-dir">@produto.Valor.ToString("C")</td>
+                    <td class="al-dir opcional">@Margem(produto)</td>
 
                     <td class="col-acoes">
                         <AcoesLinha OnVisualizar="() => visualizando = produto"
@@ -111,7 +136,7 @@
         else
         {
             <tr>
-                <td colspan="6" class="text-center text-muted">Nenhum produto encontrado.</td>
+                <td colspan="9" class="text-center text-muted">Nenhum produto encontrado.</td>
             </tr>
         }
     </tbody>
@@ -192,6 +217,18 @@
     private string marca = "";
     private int idFornecedor;
     private string estoque = "";
+    private int idCategoria;
+    private string situacao = "";
+
+    /// <summary>Mesma regra do Estoque: com mínimo definido e saldo até ele. Zerado conta à parte.</summary>
+    private static bool AbaixoDoMinimo(Produto p) =>
+        p.EstoqueMinimo > 0 && p.Quantidade > 0 && p.Quantidade <= p.EstoqueMinimo;
+
+    /// <summary>Margem sobre o preço de venda.</summary>
+    private static string Margem(Produto p) =>
+        p.PrecoCusto.HasValue && p.Valor > 0
+            ? (((decimal)p.Valor - p.PrecoCusto.Value) / (decimal)p.Valor).ToString("P1")
+            : "—";
 
     private List<Produto> Filtrados =>
         listaProdutos
@@ -200,8 +237,11 @@
                         || p.IdProduto.ToString() == busca.Trim())
             .Where(p => marca == "" || string.Equals(p.Marca, marca, StringComparison.OrdinalIgnoreCase))
             .Where(p => idFornecedor == 0 || p.IdFornecedor == idFornecedor)
+            .Where(p => idCategoria == 0 || p.IdCategoria == idCategoria)
+            .Where(p => situacao == "" || p.Ativo == (situacao == "ATIVO"))
             .Where(p => estoque switch
             {
+                "MINIMO" => AbaixoDoMinimo(p),
                 "ZERADO" => p.Quantidade <= 0,
                 "COM" => p.Quantidade > 0,
                 _ => true
@@ -225,7 +265,24 @@
     {
         new("", "Todos"),
         new("COM", "Com estoque", "var(--ok)"),
+        new("MINIMO", "Abaixo do mínimo", "var(--alerta)"),
         new("ZERADO", "Zerado", "var(--perigo)")
+    };
+
+    private List<OpcaoId> OpcoesCategoria =>
+        new List<OpcaoId> { new(0, "Todas") }
+            .Concat(listaProdutos
+                .Where(p => p.IdCategoria.HasValue)
+                .GroupBy(p => (Id: p.IdCategoria!.Value, Nome: p.NomeCategoria ?? "Sem nome"))
+                .OrderBy(g => g.Key.Nome)
+                .Select(g => new OpcaoId(g.Key.Id, g.Key.Nome)))
+            .ToList();
+
+    private static readonly List<Opcao> OpcoesSituacao = new()
+    {
+        new("", "Todos"),
+        new("ATIVO", "Ativos", "var(--ok)"),
+        new("INATIVO", "Inativos", "var(--texto-fraco)")
     };
 
     private void Limpar()
@@ -234,6 +291,8 @@
         marca = "";
         idFornecedor = 0;
         estoque = "";
+        idCategoria = 0;
+        situacao = "";
     }
 
     protected override void OnInitialized()

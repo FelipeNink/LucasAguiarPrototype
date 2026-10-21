@@ -21,8 +21,19 @@
         <label>Nome ou CPF</label>
         <input class="form-control" placeholder="Buscar funcionário" @bind="busca" @bind:event="oninput" />
     </div>
+    <div class="campo">
+        <label>Cargo</label>
+        <Seletor TItem="Opcao" TValor="string" Itens="OpcoesCargo"
+                 @bind-Valor="cargo" TextoDe="o => o.Rotulo" ValorDe="o => o.Valor" />
+    </div>
+    <div class="campo">
+        <label>Situação</label>
+        <Seletor TItem="Opcao" TValor="string" Itens="OpcoesSituacao"
+                 @bind-Valor="situacao" TextoDe="o => o.Rotulo" ValorDe="o => o.Valor"
+                 PontoDe="o => o.Cor" />
+    </div>
     <div class="campo-acoes">
-        <button type="button" class="btn btn-outline-secondary" @onclick="() => busca = string.Empty">Limpar</button>
+        <button type="button" class="btn btn-outline-secondary" @onclick="Limpar">Limpar</button>
     </div>
 </section>
 
@@ -31,8 +42,12 @@
     <thead>
         <tr>
             <th>Nome</th>
+            <th class="opcional">Cargo</th>
             <th>Telefone</th>
+            <th class="opcional">Admissão</th>
             <th class="al-dir">Salário fixo</th>
+            <th class="al-dir opcional">Comissão serv. / prod.</th>
+            <th>Situação</th>
             <th class="col-acoes">Ações</th>
         </tr>
     </thead>
@@ -42,15 +57,15 @@
             foreach (var funcionario in Filtrados)
             {
                 <tr>
-                    <td>
-                        @funcionario.NomeFuncionario
-                        @if (!funcionario.Ativo)
-                        {
-                            <span class="status cancelada"><i></i>inativo</span>
-                        }
-                    </td>
+                    <td>@funcionario.NomeFuncionario</td>
+                    <td class="opcional">@(funcionario.Cargo == null ? "—" : CargoFuncionario.Rotulo(funcionario.Cargo))</td>
                     <td>@Valor(funcionario.Telefone)</td>
+                    <td class="opcional"><span class="data">@Valor(funcionario.DataAdmissao?.ToString("dd/MM/yyyy"))</span></td>
                     <td class="al-dir">@funcionario.SalarioFixo.ToString("C")</td>
+                    <td class="al-dir opcional">@($"{funcionario.ComissaoServicoPadrao:0.##}% / {funcionario.ComissaoProdutoPadrao:0.##}%")</td>
+                    <td>
+                        <span class="status @(funcionario.Ativo ? "pago" : "cancelada")"><i></i>@(funcionario.Ativo ? "Ativo" : "Inativo")</span>
+                    </td>
                     <td class="col-acoes">
                         <AcoesLinha OnVisualizar="() => visualizando = funcionario"
                                     OnEditar="() => Editar(funcionario)"
@@ -62,7 +77,7 @@
         else
         {
             <tr>
-                <td colspan="4" class="text-center text-muted">Nenhum funcionário encontrado.</td>
+                <td colspan="8" class="text-center text-muted">Nenhum funcionário encontrado.</td>
             </tr>
         }
     </tbody>
@@ -141,6 +156,8 @@
     private Funcionario? visualizando;
 
     private string busca = "";
+    private string cargo = "";
+    private string situacao = "";
 
     private List<Funcionario> Filtrados
     {
@@ -154,8 +171,29 @@
                             || (f.NomeFuncionario ?? "").Contains(termo, StringComparison.OrdinalIgnoreCase)
                             || (digitos.Length >= 3
                                 && new string((f.CPF ?? "").Where(char.IsDigit).ToArray()).Contains(digitos)))
+                .Where(f => cargo == "" || f.Cargo == cargo)
+                .Where(f => situacao == "" || f.Ativo == (situacao == "ATIVO"))
                 .ToList();
         }
+    }
+
+    private static readonly List<Opcao> OpcoesCargo =
+        new List<Opcao> { new("", "Todos") }
+            .Concat(CargoFuncionario.Todos.Select(c => new Opcao(c.Valor, c.Rotulo)))
+            .ToList();
+
+    private static readonly List<Opcao> OpcoesSituacao = new()
+    {
+        new("", "Todos"),
+        new("ATIVO", "Ativos", "var(--ok)"),
+        new("INATIVO", "Inativos", "var(--texto-fraco)")
+    };
+
+    private void Limpar()
+    {
+        busca = "";
+        cargo = "";
+        situacao = "";
     }
 
     protected override void OnInitialized()

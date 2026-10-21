@@ -106,6 +106,11 @@ namespace LucasAguiar.Configs
                 new[] { "/relatorios" },
                 new[] { "/relatorio/gerencial", "/excel/gerencial" }),
 
+            // Editar = mudar as taxas e prazos por forma de pagamento.
+            new("fluxo", "Fluxo de caixa", Financeiro,
+                Acao.Ver | Acao.Editar,
+                new[] { "/fluxo-caixa" }),
+
             new("despesas", "Despesas", Financeiro,
                 Acao.Ver | Acao.Criar | Acao.Editar | Acao.Excluir | Acao.Exportar,
                 new[] { "/despesas", "/despesa" },
