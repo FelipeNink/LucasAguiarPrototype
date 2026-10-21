@@ -4,7 +4,7 @@
 @using System.Globalization
 
 <input id="@Id" class="form-control al-dir-campo" inputmode="numeric" data-mascara="moeda"
-       placeholder="0,00" value="@Texto" @onchange="AoMudar" />
+       placeholder="0,00" @attributes="Extras" value="@Texto" @onchange="AoMudar" />
 
 @code {
     private static readonly CultureInfo Br = new("pt-BR");
@@ -12,6 +12,9 @@
     [Parameter] public string? Id { get; set; }
     [Parameter] public decimal Valor { get; set; }
     [Parameter] public EventCallback<decimal> ValorChanged { get; set; }
+
+    // placeholder, disabled, class... do chamador; vem depois e prevalece.
+    [Parameter(CaptureUnmatchedValues = true)] public Dictionary<string, object>? Extras { get; set; }
 
     private string Texto => Valor == 0 ? "" : Valor.ToString("N2", Br);
 

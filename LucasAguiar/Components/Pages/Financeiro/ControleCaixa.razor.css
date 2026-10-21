@@ -285,11 +285,11 @@ td.falta   { color: var(--perigo-escuro); font-weight: 600; }
     color: var(--texto-fraco);
 }
 
-.modal-corpo .form-control {
+.modal-corpo ::deep .form-control {
     margin-bottom: 1rem;
 }
 
-.campo-grande {
+.modal-corpo ::deep .campo-grande {
     font-size: 1.4rem !important;
     font-weight: 700;
     text-align: center;

@@ -64,7 +64,7 @@
     color: var(--texto-fraco);
 }
 
-.corpo .form-control {
+.corpo ::deep .form-control {
     margin-bottom: 1rem;
 }
 

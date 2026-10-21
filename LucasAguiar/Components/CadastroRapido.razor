@@ -36,11 +36,11 @@
                     <div class="dupla">
                         <div>
                             <label>Preço</label>
-                            <input type="number" step="0.01" min="0" class="form-control" @bind="valor" />
+                            <InputMoeda @bind-Valor="valor" />
                         </div>
                         <div>
                             <label>Comissão</label>
-                            <input type="number" step="0.01" min="0" class="form-control" @bind="comissao" />
+                            <InputMoeda @bind-Valor="comissao" />
                         </div>
                     </div>
                     <p class="ajuda">A comissão é o valor pago ao profissional por atendimento.</p>
@@ -50,7 +50,7 @@
                     <div class="dupla">
                         <div>
                             <label>Valor de venda</label>
-                            <input type="number" step="0.01" min="0" class="form-control" @bind="valor" />
+                            <InputMoeda @bind-Valor="valor" />
                         </div>
                         <div>
                             <label>Estoque</label>
@@ -61,7 +61,7 @@
                 else if (Tipo is TipoCadastro.Plano)
                 {
                     <label>Valor mensal</label>
-                    <input type="number" step="0.01" min="0" class="form-control" @bind="valor" />
+                    <InputMoeda @bind-Valor="valor" />
                     <p class="ajuda">
                         Os itens que o plano inclui são definidos depois, na tela de Planos.
                     </p>

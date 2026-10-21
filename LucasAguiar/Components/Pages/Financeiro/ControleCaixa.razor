@@ -32,8 +32,7 @@
         <div class="linha-abertura">
             <div>
                 <label>Saldo inicial em dinheiro</label>
-                <input type="number" step="0.01" min="0" class="form-control"
-                       @bind="valorAbertura" />
+                <InputMoeda @bind-Valor="valorAbertura" />
             </div>
             <div class="cresce">
                 <label>Observação</label>
@@ -124,8 +123,7 @@ else
                          @bind-Valor="tipoMovimento" TextoDe="o => o.Rotulo" ValorDe="o => o.Valor" />
                 <Seletor TItem="Opcao" TValor="string" Itens="OpcoesFormaMovimento"
                          @bind-Valor="formaMovimento" TextoDe="o => o.Rotulo" ValorDe="o => o.Valor" />
-                <input type="number" step="0.01" min="0" class="form-control"
-                       placeholder="Valor" @bind="valorMovimento" />
+                <InputMoeda placeholder="Valor" @bind-Valor="valorMovimento" />
                 <input class="form-control" placeholder="Motivo" @bind="descricaoMovimento" />
                 <button type="button" class="btn btn-primary" @onclick="RegistrarMovimento">Registrar</button>
             </div>
@@ -298,8 +296,7 @@ else
                     </p>
 
                     <label>Total contado na gaveta</label>
-                    <input type="number" step="0.01" min="0" class="form-control campo-grande"
-                           @bind="valorContado" />
+                    <InputMoeda class="form-control al-dir-campo campo-grande" @bind-Valor="valorContado" />
 
                     <label>Observação</label>
                     <input class="form-control" placeholder="Opcional" @bind="observacaoFechamento" />
