@@ -86,6 +86,8 @@ namespace LucasAguiar.Data
                         venda.PlanoVendido.ValidadeDias);
                 }
 
+                NotaFiscalDAO.EnfileirarNaTransacao(conexao, transacao, idVenda, venda);
+
                 transacao.Commit();
                 return idVenda;
             }
@@ -138,6 +140,10 @@ namespace LucasAguiar.Data
                     comando.Parameters.AddWithValue("@id", idVenda);
                     comando.ExecuteNonQuery();
                 }
+
+                // Nota ja emitida e cancelada na prefeitura pelo emissor.
+                NotaFiscalDAO.CancelarDaVendaNaTransacao(conexao, transacao, idVenda,
+                    $"Cancelamento da venda {idVenda}: {motivo.Trim()}");
 
                 transacao.Commit();
             }
@@ -370,7 +376,10 @@ namespace LucasAguiar.Data
                                                             WHERE vi.id_vend_fk = v.id_vend))
                                   AND fp.competencia = DATE_FORMAT(v.data_vend, '%Y-%m')) AS folha_paga,
                        EXISTS (SELECT 1 FROM venda_item vi
-                                WHERE vi.id_vend_fk = v.id_vend AND vi.tipo_item = 'PLANO') AS tem_plano
+                                WHERE vi.id_vend_fk = v.id_vend AND vi.tipo_item = 'PLANO') AS tem_plano,
+                       EXISTS (SELECT 1 FROM nota_fiscal nf
+                                WHERE nf.id_vend_fk = v.id_vend
+                                  AND nf.status IN ('PENDENTE', 'PROCESSANDO', 'AUTORIZADA')) AS tem_nota
                 FROM venda v
                 LEFT JOIN caixa c ON c.id_caixa = v.id_caixa_fk
                 WHERE v.id_vend = @id" + (transacao != null ? " FOR UPDATE" : ""), conexao, transacao);
@@ -386,6 +395,7 @@ namespace LucasAguiar.Data
             var mes = DAOHelper.GetString(leitor, "mes");
             var folhaPaga = Convert.ToInt32(leitor.GetValue(leitor.GetOrdinal("folha_paga"))) == 1;
             var temPlano = Convert.ToInt32(leitor.GetValue(leitor.GetOrdinal("tem_plano"))) == 1;
+            var temNota = Convert.ToInt32(leitor.GetValue(leitor.GetOrdinal("tem_nota"))) == 1;
             var caixaFechado = DAOHelper.GetString(leitor, "status_caixa") == StatusCaixa.Fechado;
 
             if (folhaPaga)
@@ -402,6 +412,11 @@ namespace LucasAguiar.Data
                 return new(ModoEdicao.Restrita,
                     "Esta venda gerou uma assinatura de plano: dá para trocar cliente e profissional. "
                     + "Para mudar o resto, cancele a venda (a assinatura é encerrada junto) e lance outra.", true);
+
+            if (temNota)
+                return new(ModoEdicao.Restrita,
+                    "Esta venda já tem nota fiscal emitida ou na fila: dá para trocar cliente e profissional, "
+                    + "mas a nota não muda. Para corrigir valores, cancele a venda (a nota é cancelada junto) e lance outra.", true);
 
             return new(ModoEdicao.Completa, null, true);
         }
@@ -472,6 +487,9 @@ namespace LucasAguiar.Data
 
                 GravarItens(conexao, transacao, venda.IdVenda, venda.Itens, venda.Usuario);
                 GravarPagamentos(conexao, transacao, venda.IdVenda, venda.Pagamentos);
+
+                // Nota recusada volta para a fila com os valores corrigidos.
+                NotaFiscalDAO.EnfileirarNaTransacao(conexao, transacao, venda.IdVenda, venda);
 
                 transacao.Commit();
             }

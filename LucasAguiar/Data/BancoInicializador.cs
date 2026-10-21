@@ -48,6 +48,8 @@ namespace LucasAguiar.Data
                 MigrarCadastros(conexao);
 
                 MigrarAtributos(conexao);
+
+                MigrarFiscal(conexao);
             }
             catch (Exception ex)
             {
@@ -727,6 +729,80 @@ namespace LucasAguiar.Data
                 INSERT IGNORE INTO taxa_pagamento (forma, taxa, dias) VALUES
                     ('DINHEIRO', 0, 0), ('PIX', 0, 0), ('DEBITO', 0, 1),
                     ('CREDITO', 0, 30), ('CREDITO_PARCELADO', 0, 30)");
+        }
+
+        // =============================================================
+        // NOTA FISCAL (NFS-e Nacional pela Focus NFe)
+        //
+        // Nasce desligada: sem CNPJ, municipio e token configurados nenhuma
+        // venda entra na fila.
+        // =============================================================
+
+        private void MigrarFiscal(MySqlConnection conexao)
+        {
+            CriarTabela(conexao, "config_fiscal", @"
+                CREATE TABLE IF NOT EXISTS `config_fiscal` (
+                  `id_config` tinyint NOT NULL,
+                  `ativo` tinyint(1) NOT NULL DEFAULT 0,
+                  `ambiente` varchar(12) NOT NULL DEFAULT 'HOMOLOGACAO',
+                  `cnpj` varchar(18) DEFAULT NULL,
+                  `inscricao_municipal` varchar(15) DEFAULT NULL,
+                  `razao_social` varchar(150) DEFAULT NULL,
+                  `codigo_municipio` varchar(7) DEFAULT NULL,
+                  `opcao_simples` tinyint NOT NULL DEFAULT 3,
+                  `regime_simples` tinyint DEFAULT 1,
+                  `regime_especial` tinyint NOT NULL DEFAULT 0,
+                  `codigo_tributacao_nacional` varchar(6) NOT NULL DEFAULT '060101',
+                  `codigo_tributacao_municipal` varchar(3) DEFAULT NULL,
+                  `codigo_nbs` varchar(9) DEFAULT NULL,
+                  `aliquota_iss` decimal(5,2) DEFAULT NULL,
+                  `ibs_cbs_cst` varchar(3) DEFAULT NULL,
+                  `ibs_cbs_classificacao` varchar(6) DEFAULT NULL,
+                  `serie_dps` int NOT NULL DEFAULT 1,
+                  `proximo_numero_dps` bigint NOT NULL DEFAULT 1,
+                  PRIMARY KEY (`id_config`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci");
+
+            Executar(conexao, "config_fiscal criada", "INSERT IGNORE INTO config_fiscal (id_config) VALUES (1)");
+
+            // Uma venda pode ter mais de uma linha: a cancelada ou descartada
+            // fica no historico quando outra nota e emitida no lugar.
+            CriarTabela(conexao, "nota_fiscal", @"
+                CREATE TABLE IF NOT EXISTS `nota_fiscal` (
+                  `id_nf` int NOT NULL AUTO_INCREMENT,
+                  `id_vend_fk` int NOT NULL,
+                  `tipo` varchar(10) NOT NULL DEFAULT 'NFSE',
+                  `status` varchar(20) NOT NULL,
+                  `ambiente` varchar(12) DEFAULT NULL,
+                  `referencia` varchar(60) DEFAULT NULL,
+                  `serie_dps` int DEFAULT NULL,
+                  `numero_dps` bigint DEFAULT NULL,
+                  `valor` decimal(10,2) DEFAULT NULL,
+                  `numero` varchar(20) DEFAULT NULL,
+                  `codigo_verificacao` varchar(60) DEFAULT NULL,
+                  `url_consulta` varchar(300) DEFAULT NULL,
+                  `url_pdf` varchar(300) DEFAULT NULL,
+                  `caminho_xml` varchar(300) DEFAULT NULL,
+                  `mensagem` varchar(1000) DEFAULT NULL,
+                  `tentativas` int NOT NULL DEFAULT 0,
+                  `proxima_tentativa` datetime DEFAULT NULL,
+                  `cancelar` tinyint(1) NOT NULL DEFAULT 0,
+                  `justificativa_cancelamento` varchar(255) DEFAULT NULL,
+                  `criado_em` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                  `emitida_em` datetime DEFAULT NULL,
+                  PRIMARY KEY (`id_nf`),
+                  UNIQUE KEY `uk_nota_fiscal_referencia` (`referencia`),
+                  KEY `idx_nota_fiscal_venda` (`id_vend_fk`),
+                  KEY `idx_nota_fiscal_status` (`status`),
+                  CONSTRAINT `fk_nota_fiscal_venda` FOREIGN KEY (`id_vend_fk`)
+                      REFERENCES `venda` (`id_vend`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci");
+
+            // Salao-parceiro (Lei 13.352/2016): por ora so o cadastro. A nota
+            // continua saindo inteira pelo salao ate o contador confirmar a
+            // divisao por cota-parte.
+            GarantirColuna(conexao, "funcionario", "parceiro_fun", "tinyint(1) NOT NULL DEFAULT 0");
+            GarantirColuna(conexao, "funcionario", "cnpj_parceiro_fun", "varchar(18) DEFAULT NULL");
         }
 
         // ---------- apoio das migracoes ----------

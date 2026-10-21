@@ -71,6 +71,11 @@ builder.Services.AddScoped<LucasAguiar.Services.AuthenticationService>();
 builder.Services.AddScoped<RelatorioPdf>();
 builder.Services.AddHttpClient<BuscaCep>();
 
+// NFS-e: a venda so enfileira; o emissor envia e acompanha em segundo plano.
+builder.Services.AddScoped<NotaFiscalDAO>();
+builder.Services.AddHttpClient<FocusNfse>();
+builder.Services.AddHostedService<EmissorNotasFiscais>();
+
 // Autenticacao por token de sessao guardado no banco. Substitui a sessao
 // em memoria do ASP.NET Core, que sumia a cada deploy e nao permitia
 // derrubar o acesso de ninguem.

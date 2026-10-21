@@ -132,6 +132,12 @@ namespace LucasAguiar.Configs
                 new[] { "/compra", "/compra/novo" },
                 new[] { "/relatorio/compras", "/excel/compras" }),
 
+            // Editar = configurar o prestador e reenviar nota recusada.
+            // Estornar = cancelar nota autorizada na prefeitura.
+            new("notas", "Notas fiscais", Financeiro,
+                Acao.Ver | Acao.Editar | Acao.Estornar,
+                new[] { "/notas-fiscais" }),
+
             // ---------- Cadastros ----------
             new("clientes", "Clientes", Cadastros, Cadastro,
                 new[] { "/cliente", "/cliente/novo" },

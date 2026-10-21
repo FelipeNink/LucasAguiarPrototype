@@ -42,9 +42,11 @@ namespace LucasAguiar.Data
             {
                 using (var comando = _conexao.CreateCommand(@"
                         INSERT INTO funcionario (nome_fun, telefone_fun, cpf_fun, data_nasc_fun, ctps_fun, rg_fun, email_fun, cep_fun, estado_fun, cidade_fun, bairro_fun, rua_fun, numero_fun, salario_fixo,
-                            cargo_fun, comissao_serv_padrao, comissao_prod_padrao, data_admissao, data_desligamento, chave_pix, dados_bancarios, cor_agenda, ativo_fun)
+                            cargo_fun, comissao_serv_padrao, comissao_prod_padrao, data_admissao, data_desligamento, chave_pix, dados_bancarios, cor_agenda, ativo_fun,
+                            parceiro_fun, cnpj_parceiro_fun)
                         VALUES (@_nome, @_telefone, @_cpf, @_dataNasc,@_ctps, @_rg, @_email, @_cep, @_estado, @_cidade, @_bairro, @_rua, @_numero, @_salario,
-                            @cargo, @comServ, @comProd, @admissao, @desligamento, @pix, @banco, @cor, @ativo);
+                            @cargo, @comServ, @comProd, @admissao, @desligamento, @pix, @banco, @cor, @ativo,
+                            @parceiro, @cnpjParceiro);
                         SELECT LAST_INSERT_ID();
                 "))
                 {
@@ -90,7 +92,8 @@ namespace LucasAguiar.Data
                     salario_fixo = @salario,
                     cargo_fun = @cargo, comissao_serv_padrao = @comServ, comissao_prod_padrao = @comProd,
                     data_admissao = @admissao, data_desligamento = @desligamento, chave_pix = @pix,
-                    dados_bancarios = @banco, cor_agenda = @cor, ativo_fun = @ativo
+                    dados_bancarios = @banco, cor_agenda = @cor, ativo_fun = @ativo,
+                    parceiro_fun = @parceiro, cnpj_parceiro_fun = @cnpjParceiro
                 WHERE id_fun = @id", conexao);
 
             PreencherNovos(comando, funcionario);
@@ -155,6 +158,8 @@ namespace LucasAguiar.Data
                         DadosBancarios = Texto("dados_bancarios"),
                         CorAgenda = Texto("cor_agenda"),
                         Ativo = leitor.GetBoolean("ativo_fun"),
+                        Parceiro = leitor.GetBoolean("parceiro_fun"),
+                        CnpjParceiro = Texto("cnpj_parceiro_fun"),
                         TemFoto = Convert.ToInt32(leitor.GetValue(leitor.GetOrdinal("tem_foto"))) == 1,
                         LoginVinculado = Texto("login_vinculado"),
                         IdFuncionario = leitor.GetInt32("id_fun"),
@@ -192,6 +197,8 @@ namespace LucasAguiar.Data
             comando.Parameters.AddWithValue("@banco", funcionario.DadosBancarios ?? (object)DBNull.Value);
             comando.Parameters.AddWithValue("@cor", funcionario.CorAgenda ?? (object)DBNull.Value);
             comando.Parameters.AddWithValue("@ativo", funcionario.Ativo ? 1 : 0);
+            comando.Parameters.AddWithValue("@parceiro", funcionario.Parceiro ? 1 : 0);
+            comando.Parameters.AddWithValue("@cnpjParceiro", funcionario.CnpjParceiro ?? (object)DBNull.Value);
         }
 
         // ---------- servicos que o profissional realiza ----------

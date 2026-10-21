@@ -122,7 +122,7 @@
             </div>
         }
 
-        @if (AlgumaDe("relatorios", "fluxo", "despesas", "comissoes", "folha", "compras"))
+        @if (AlgumaDe("relatorios", "fluxo", "despesas", "comissoes", "folha", "compras", "notas"))
         {
             <div class="grupo @(Aberto("Financeiro") ? "aberto" : "")">
                 <button type="button" class="grupo-rotulo" aria-expanded="@Aberto("Financeiro")"
@@ -134,7 +134,7 @@
                         {
                             <i class="ponto-atual" title="A página aberta está aqui"></i>
                         }
-                        <span class="grupo-contagem">@(Contagem("relatorios", "fluxo", "despesas", "comissoes", "folha", "compras"))</span>
+                        <span class="grupo-contagem">@(Contagem("relatorios", "fluxo", "despesas", "comissoes", "folha", "compras", "notas"))</span>
                     }
                     <svg class="seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
                 </button>
@@ -216,6 +216,19 @@
                                 <path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.5L21 8H6M9 21a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM18 21a1 1 0 1 0 0-2 1 1 0 0 0 0 2z" />
                             </svg>
                             Compras
+                        </NavLink>
+                    </div>
+                }
+
+                @if (Pode("notas"))
+                {
+                    <div class="nav-item">
+                        <NavLink class="nav-link" href="notas-fiscais">
+                            <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9zM14 3v6h6M8 13h8M8 17h5" />
+                            </svg>
+                            Notas fiscais
                         </NavLink>
                     </div>
                 }

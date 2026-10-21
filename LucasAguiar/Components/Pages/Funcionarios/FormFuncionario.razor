@@ -113,6 +113,21 @@
                     <input id="fun-banco" class="form-control" maxlength="300"
                            placeholder="Banco, agência e conta" @bind="Modelo.DadosBancarios" />
                 </Campo>
+                <Campo Rotulo="Profissional-parceiro" Para="fun-parceiro" Colunas="4"
+                       Dica="Lei do Salão-Parceiro: trabalha com CNPJ/MEI próprio.">
+                    <div class="form-check form-switch campo-switch">
+                        <input id="fun-parceiro" class="form-check-input" type="checkbox" role="switch" @bind="Modelo.Parceiro" />
+                        <label class="form-check-label" for="fun-parceiro">@(Modelo.Parceiro ? "Sim" : "Não")</label>
+                    </div>
+                </Campo>
+                @if (Modelo.Parceiro)
+                {
+                    <Campo Rotulo="CNPJ do parceiro" Para="fun-cnpj-parceiro" Colunas="4"
+                           Erro="@(tentouSalvar && !Documentos.CnpjValido(Modelo.CnpjParceiro) ? "Informe um CNPJ válido." : null)">
+                        <input id="fun-cnpj-parceiro" class="form-control" inputmode="numeric" data-mascara="cnpj"
+                               placeholder="00.000.000/0000-00" @bind="Modelo.CnpjParceiro" />
+                    </Campo>
+                }
             </div>
         </section>
 
@@ -293,7 +308,8 @@
             || Documentos.ErroCep(Modelo.Cep) != null
             || Modelo.ComissaoServicoPadrao > 100
             || Modelo.ComissaoProdutoPadrao > 100
-            || Modelo.DataDesligamento < Modelo.DataAdmissao;
+            || Modelo.DataDesligamento < Modelo.DataAdmissao
+            || (Modelo.Parceiro && !Documentos.CnpjValido(Modelo.CnpjParceiro));
 
         if (temErro)
         {
@@ -312,6 +328,7 @@
             Modelo.Cep = Vazio(Documentos.FormatarCep(Modelo.Cep));
             Modelo.ChavePix = Vazio(Modelo.ChavePix);
             Modelo.DadosBancarios = Vazio(Modelo.DadosBancarios);
+            Modelo.CnpjParceiro = Modelo.Parceiro ? Vazio(Documentos.FormatarCnpj(Modelo.CnpjParceiro)) : null;
 
             var id = Modelo.IdFuncionario;
             if (Novo) id = funcionarioDAO.Inserir(Modelo);

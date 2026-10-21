@@ -53,6 +53,13 @@ namespace LucasAguiar.Models
 
         public bool Ativo { get; set; } = true;
 
+        /// <summary>
+        /// Profissional-parceiro da Lei 13.352/2016, com CNPJ/MEI proprio.
+        /// Por ora so cadastro: a NFS-e ainda sai inteira pelo salao.
+        /// </summary>
+        public bool Parceiro { get; set; }
+        public string? CnpjParceiro { get; set; }
+
         // Preenchidos na leitura
         public bool TemFoto { get; set; }
 

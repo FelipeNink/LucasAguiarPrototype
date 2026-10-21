@@ -33,6 +33,7 @@ namespace LucasAguiar.Services
         public const string Comissoes = "tela:comissoes:Ver";
         public const string Folha = "tela:folha:Ver";
         public const string Compras = "tela:compras:Ver";
+        public const string NotasFiscais = "tela:notas:Ver";
         public const string Clientes = "tela:clientes:Ver";
         public const string Servicos = "tela:servicos:Ver";
         public const string Produtos = "tela:produtos:Ver";
@@ -71,6 +72,7 @@ namespace LucasAguiar.Services
     public const string EditarAgendamento = "tela:agendamentos:Editar";
     public const string CriarDespesa = "tela:despesas:Criar";
     public const string EditarDespesa = "tela:despesas:Editar";
+    public const string ConfigurarNotas = "tela:notas:Editar";
     }
 
     /// <summary>Exige uma acao numa tela nomeada.</summary>

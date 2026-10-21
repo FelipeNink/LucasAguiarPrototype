@@ -1,0 +1,246 @@
+@page "/notas-fiscais/configuracao"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = Politicas.ConfigurarNotas)]
+
+@* Dados do prestador e da tributacao da NFS-e. Os codigos e o regime vem
+   do contador; o token da Focus NFe fica em variavel de ambiente. *@
+
+@using LucasAguiar.Configs
+@using LucasAguiar.Models
+@inject NotaFiscalDAO notaDAO
+@inject FocusNfse focus
+@inject NavigationManager Navigation
+
+<PageTitle>Configuração fiscal</PageTitle>
+
+<div class="form-pagina">
+    <TopoForm Titulo="Configuração fiscal" Voltar="/notas-fiscais" RotuloVoltar="Notas fiscais" />
+
+    @if (erro != null)
+    {
+        <div class="alert alert-danger" role="alert">@erro</div>
+    }
+
+    <form @onsubmit="Salvar" novalidate>
+        <section class="cartao secao-form">
+            <h2>Emissão</h2>
+            <div class="grade-12">
+                <Campo Rotulo="Emitir NFS-e nas vendas" Para="nf-ativo" Colunas="4"
+                       Dica="Ligado, toda venda com serviço ou plano entra na fila da nota.">
+                    <div class="form-check form-switch campo-switch">
+                        <input id="nf-ativo" class="form-check-input" type="checkbox" role="switch" @bind="modelo.Ativo" />
+                        <label class="form-check-label" for="nf-ativo">@(modelo.Ativo ? "Ligado" : "Desligado")</label>
+                    </div>
+                </Campo>
+                <Campo Rotulo="Ambiente" Colunas="4"
+                       Dica="@(modelo.Ambiente == AmbienteFiscal.Producao ? "Notas com validade fiscal." : "Para testes: notas sem validade fiscal.")">
+                    <Seletor TItem="Opcao" TValor="string" Itens="OpcoesAmbiente"
+                             @bind-Valor="modelo.Ambiente" TextoDe="o => o.Rotulo" ValorDe="o => o.Valor" />
+                </Campo>
+                <Campo Rotulo="Token da Focus NFe" Colunas="4"
+                       Dica="@($"Variável {(modelo.Ambiente == AmbienteFiscal.Producao ? "Fiscal__TokenProducao" : "Fiscal__TokenHomologacao")} no servidor.")">
+                    <input class="form-control" disabled
+                           value="@(focus.Token(modelo.Ambiente) != null ? "Configurado" : "Não configurado")" />
+                </Campo>
+            </div>
+        </section>
+
+        <section class="cartao secao-form">
+            <h2>Prestador</h2>
+            <div class="grade-12">
+                <Campo Rotulo="CNPJ" Para="nf-cnpj" Colunas="4" Obrigatorio="true"
+                       Erro="@(tentouSalvar ? ErroCnpj : null)">
+                    <input id="nf-cnpj" class="form-control" inputmode="numeric" data-mascara="cnpj"
+                           placeholder="00.000.000/0000-00" @bind="modelo.Cnpj" />
+                </Campo>
+                <Campo Rotulo="Inscrição municipal" Para="nf-im" Colunas="4">
+                    <input id="nf-im" class="form-control" maxlength="15" @bind="modelo.InscricaoMunicipal" />
+                </Campo>
+                <Campo Rotulo="Código IBGE do município" Para="nf-municipio" Colunas="4" Obrigatorio="true"
+                       Dica="7 dígitos. Ex.: 1100205 é Porto Velho."
+                       Erro="@(tentouSalvar ? ErroMunicipio : null)">
+                    <input id="nf-municipio" class="form-control" inputmode="numeric" maxlength="7"
+                           @bind="modelo.CodigoMunicipio" />
+                </Campo>
+                <Campo Rotulo="Razão social" Para="nf-razao" Colunas="12"
+                       Dica="Só para conferência: a Focus usa o cadastro da empresa no painel dela.">
+                    <input id="nf-razao" class="form-control" maxlength="150" @bind="modelo.RazaoSocial" />
+                </Campo>
+            </div>
+        </section>
+
+        <section class="cartao secao-form">
+            <h2>Tributação</h2>
+            <p class="explicacao">Confirme estes códigos com o contador antes de passar para produção.</p>
+            <div class="grade-12">
+                <Campo Rotulo="Simples Nacional" Colunas="4">
+                    <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesSimples"
+                             @bind-Valor="modelo.OpcaoSimples" TextoDe="o => o.Rotulo" ValorDe="o => o.Id" />
+                </Campo>
+                @if (modelo.OpcaoSimples == 3)
+                {
+                    <Campo Rotulo="Apuração no Simples" Colunas="4">
+                        <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesRegimeSimples"
+                                 Valor="modelo.RegimeSimples ?? 1"
+                                 ValorChanged="v => modelo.RegimeSimples = v"
+                                 TextoDe="o => o.Rotulo" ValorDe="o => o.Id" />
+                    </Campo>
+                }
+                <Campo Rotulo="Regime especial municipal" Colunas="4">
+                    <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesRegimeEspecial"
+                             @bind-Valor="modelo.RegimeEspecial" TextoDe="o => o.Rotulo" ValorDe="o => o.Id" />
+                </Campo>
+
+                <Campo Rotulo="Código de tributação nacional" Para="nf-trib" Colunas="4" Obrigatorio="true"
+                       Dica="060101 = barbearia, cabeleireiros e congêneres (LC 116, item 6.01)."
+                       Erro="@(tentouSalvar ? ErroTributacao : null)">
+                    <input id="nf-trib" class="form-control" inputmode="numeric" maxlength="6"
+                           @bind="modelo.CodigoTributacaoNacional" />
+                </Campo>
+                <Campo Rotulo="Código de tributação municipal" Para="nf-trib-mun" Colunas="4"
+                       Dica="Só se a prefeitura exigir.">
+                    <input id="nf-trib-mun" class="form-control" maxlength="3" @bind="modelo.CodigoTributacaoMunicipal" />
+                </Campo>
+                <Campo Rotulo="Código NBS" Para="nf-nbs" Colunas="4">
+                    <input id="nf-nbs" class="form-control" maxlength="9" @bind="modelo.CodigoNbs" />
+                </Campo>
+                <Campo Rotulo="Alíquota do ISS (%)" Para="nf-aliquota" Colunas="4"
+                       Dica="Em branco, vale a do município no ambiente nacional."
+                       Erro="@(modelo.AliquotaIss is < 0 or > 5 ? "Entre 0 e 5%." : null)">
+                    <input id="nf-aliquota" type="number" step="0.01" min="0" max="5" class="form-control"
+                           @bind="modelo.AliquotaIss" />
+                </Campo>
+                <Campo Rotulo="CST do IBS/CBS" Para="nf-cst" Colunas="4"
+                       Dica="Reforma tributária. Em branco, o grupo não vai na nota.">
+                    <input id="nf-cst" class="form-control" maxlength="3" @bind="modelo.IbsCbsCst" />
+                </Campo>
+                <Campo Rotulo="Classificação tributária do IBS/CBS" Para="nf-class" Colunas="4">
+                    <input id="nf-class" class="form-control" maxlength="6" @bind="modelo.IbsCbsClassificacao" />
+                </Campo>
+            </div>
+        </section>
+
+        <section class="cartao secao-form">
+            <h2>Numeração da DPS</h2>
+            <div class="grade-12">
+                <Campo Rotulo="Série" Para="nf-serie" Colunas="4"
+                       Erro="@(modelo.SerieDps is < 1 or > 49999 ? "Entre 1 e 49999." : null)">
+                    <input id="nf-serie" type="number" min="1" max="49999" class="form-control" @bind="modelo.SerieDps" />
+                </Campo>
+                <Campo Rotulo="Próximo número" Para="nf-numero" Colunas="4"
+                       Dica="Só mude se já emitia por outro sistema nesta série.">
+                    <input id="nf-numero" type="number" min="1" class="form-control" @bind="modelo.ProximoNumeroDps" />
+                </Campo>
+            </div>
+        </section>
+
+        <RodapeForm Cancelar="/notas-fiscais" Salvando="salvando" />
+    </form>
+</div>
+
+@code {
+    private ConfigFiscal modelo = new();
+    private string? erro;
+    private bool tentouSalvar;
+    private bool salvando;
+
+    private static readonly List<Opcao> OpcoesAmbiente = new()
+    {
+        new(AmbienteFiscal.Homologacao, "Homologação"),
+        new(AmbienteFiscal.Producao, "Produção")
+    };
+
+    private static readonly List<OpcaoId> OpcoesSimples = new()
+    {
+        new(1, "Não optante"),
+        new(2, "MEI"),
+        new(3, "ME/EPP")
+    };
+
+    private static readonly List<OpcaoId> OpcoesRegimeSimples = new()
+    {
+        new(1, "Tributos federais e ISS pelo SN"),
+        new(2, "Federais pelo SN, ISS fora"),
+        new(3, "Federais e ISS fora do SN")
+    };
+
+    private static readonly List<OpcaoId> OpcoesRegimeEspecial = new()
+    {
+        new(0, "Nenhum"),
+        new(1, "Ato cooperado"),
+        new(2, "Estimativa"),
+        new(3, "Microempresa municipal"),
+        new(5, "Profissional autônomo"),
+        new(6, "Sociedade de profissionais"),
+        new(9, "Outros")
+    };
+
+    private string? ErroCnpj => Documentos.CnpjValido(modelo.Cnpj) ? null : "CNPJ incorreto.";
+
+    private string? ErroMunicipio =>
+        Documentos.SoDigitos(modelo.CodigoMunicipio).Length == 7 ? null : "Informe os 7 dígitos do IBGE.";
+
+    private string? ErroTributacao =>
+        Documentos.SoDigitos(modelo.CodigoTributacaoNacional).Length == 6 ? null : "Informe os 6 dígitos.";
+
+    protected override void OnInitialized()
+    {
+        try
+        {
+            modelo = notaDAO.BuscarConfig();
+        }
+        catch (Exception ex)
+        {
+            erro = "Erro ao carregar a configuração: " + ex.Message;
+        }
+    }
+
+    private void Salvar()
+    {
+        tentouSalvar = true;
+        erro = null;
+
+        // Desligada, da para salvar pela metade e terminar depois.
+        var temErro =
+            (modelo.Ativo && (ErroCnpj != null || ErroMunicipio != null))
+            || ErroTributacao != null
+            || modelo.AliquotaIss is < 0 or > 5
+            || modelo.SerieDps is < 1 or > 49999
+            || modelo.ProximoNumeroDps < 1;
+
+        if (temErro)
+        {
+            erro = "Confira os campos destacados.";
+            return;
+        }
+
+        try
+        {
+            salvando = true;
+
+            modelo.Cnpj = Vazio(Documentos.FormatarCnpj(modelo.Cnpj));
+            modelo.CodigoMunicipio = Vazio(Documentos.SoDigitos(modelo.CodigoMunicipio));
+            modelo.CodigoTributacaoNacional = Documentos.SoDigitos(modelo.CodigoTributacaoNacional);
+            modelo.InscricaoMunicipal = Vazio(modelo.InscricaoMunicipal);
+            modelo.RazaoSocial = Vazio(modelo.RazaoSocial);
+            modelo.CodigoTributacaoMunicipal = Vazio(modelo.CodigoTributacaoMunicipal);
+            modelo.CodigoNbs = Vazio(modelo.CodigoNbs);
+            modelo.IbsCbsCst = Vazio(modelo.IbsCbsCst);
+            modelo.IbsCbsClassificacao = Vazio(modelo.IbsCbsClassificacao);
+            if (modelo.OpcaoSimples != 3) modelo.RegimeSimples = null;
+
+            notaDAO.SalvarConfig(modelo);
+            Navigation.NavigateTo("/notas-fiscais");
+        }
+        catch (Exception ex)
+        {
+            erro = ex.Message;
+        }
+        finally
+        {
+            salvando = false;
+        }
+    }
+
+    private static string? Vazio(string? valor) => string.IsNullOrWhiteSpace(valor) ? null : valor.Trim();
+}

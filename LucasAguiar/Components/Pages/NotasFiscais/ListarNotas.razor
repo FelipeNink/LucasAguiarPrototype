@@ -1,0 +1,286 @@
+@page "/notas-fiscais"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = Politicas.NotasFiscais)]
+
+@* Fila e historico das NFS-e. Quem emite e o EmissorNotasFiscais, em
+   segundo plano: esta tela so acompanha, reenvia e pede cancelamento. *@
+
+@using LucasAguiar.Configs
+@using LucasAguiar.Models
+@inject NotaFiscalDAO notaDAO
+@inject FocusNfse focus
+@inject Autorizacao permissao
+
+<h1 class="titulo-listagem">Notas fiscais</h1>
+<div class="barra-acoes barra-listagem">
+    <button type="button" class="btn btn-outline-secondary" @onclick="Carregar">Atualizar</button>
+    @if (podeEditar)
+    {
+        <a href="/notas-fiscais/configuracao" class="btn-novo btn-cadastrar">Configuração</a>
+    }
+</div>
+
+@if (!string.IsNullOrEmpty(erro))
+{
+    <div class="alert alert-danger">@erro</div>
+}
+@if (!string.IsNullOrEmpty(aviso))
+{
+    <div class="alert alert-success">@aviso</div>
+}
+
+@if (!config.Ativo)
+{
+    <div class="alert alert-warning">
+        A emissão está desligada: as vendas não geram NFS-e.
+        @if (podeEditar) { <a href="/notas-fiscais/configuracao">Configurar</a> }
+    </div>
+}
+else if (!tokenConfigurado)
+{
+    <div class="alert alert-warning">
+        Falta o token da Focus NFe de @AmbienteFiscal.Rotulo(config.Ambiente):
+        defina a variável <code>@(config.Ambiente == AmbienteFiscal.Producao ? "Fiscal__TokenProducao" : "Fiscal__TokenHomologacao")</code>
+        no servidor. Até lá as notas ficam na fila.
+    </div>
+}
+else if (config.Ambiente == AmbienteFiscal.Homologacao)
+{
+    <div class="alert alert-info">Ambiente de homologação: as notas emitidas aqui não têm validade fiscal.</div>
+}
+
+@* ---------- filtros ---------- *@
+<section class="filtros">
+    <div class="campo">
+        <label>Venda de</label>
+        <input type="date" class="form-control" @bind="de" @bind:after="Carregar" />
+    </div>
+    <div class="campo">
+        <label>Até</label>
+        <input type="date" class="form-control" @bind="ate" @bind:after="Carregar" />
+    </div>
+    <div class="campo">
+        <label>Situação</label>
+        <Seletor TItem="Opcao" TValor="string" Itens="OpcoesSituacao"
+                 @bind-Valor="situacao" TextoDe="o => o.Rotulo" ValorDe="o => o.Valor"
+                 PontoDe="o => o.Cor" />
+    </div>
+    <div class="campo-acoes">
+        <button type="button" class="btn btn-outline-secondary" @onclick="Limpar">Limpar</button>
+    </div>
+</section>
+
+@* ---------- resumo ---------- *@
+<div class="resumo">
+    <div class="cartao-resumo">
+        <span class="rotulo">Autorizadas</span>
+        <strong class="valor">@Filtradas.Where(n => n.Status == StatusNota.Autorizada).Sum(n => n.Valor ?? 0).ToString("C")</strong>
+    </div>
+    <div class="cartao-resumo">
+        <span class="rotulo">Na fila ou processando</span>
+        <strong class="valor">@Filtradas.Count(n => n.Status is StatusNota.Pendente or StatusNota.Processando)</strong>
+    </div>
+    <div class="cartao-resumo prejuizo">
+        <span class="rotulo">Com erro</span>
+        <strong class="valor">@Filtradas.Count(n => n.Status == StatusNota.Erro)</strong>
+    </div>
+</div>
+
+<div class="tabela">
+<table class="table">
+    <thead>
+        <tr>
+            <th>Venda</th>
+            <th>Data</th>
+            <th>Cliente</th>
+            <th class="col-num">Valor</th>
+            <th>Nº NFS-e</th>
+            <th>Situação</th>
+            <th class="opcional">Retorno</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (Filtradas.Any())
+        {
+            @foreach (var n in Filtradas)
+            {
+                <tr class="@(n.Status is StatusNota.Cancelada or StatusNota.Descartada ? "cancelada" : "")">
+                    <td>#@n.IdVenda</td>
+                    <td><span class="data">@(n.DataVenda?.ToString("dd/MM/yyyy HH:mm") ?? "—")</span></td>
+                    <td><span class="nome-cliente">@(n.NomeCliente ?? "Consumidor")</span></td>
+                    <td class="col-num">@(n.Valor?.ToString("C") ?? "—")</td>
+                    <td>@(n.Numero ?? "—")</td>
+                    <td>
+                        <span class="status @Classe(n)"><i></i>@Rotulo(n)</span>
+                        @if (n.Ambiente == AmbienteFiscal.Homologacao)
+                        {
+                            <small class="text-muted d-block">homologação</small>
+                        }
+                    </td>
+                    <td class="opcional"><small>@n.Mensagem</small></td>
+                    <td>
+                        <span class="acoes">
+                            @if (!string.IsNullOrEmpty(n.UrlPdf))
+                            {
+                                <a href="@n.UrlPdf" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary">PDF</a>
+                            }
+                            @if (!string.IsNullOrEmpty(n.UrlConsulta))
+                            {
+                                <a href="@n.UrlConsulta" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary">Consultar</a>
+                            }
+                            @if (podeEditar && n.PodeReenviar)
+                            {
+                                <button type="button" class="btn btn-sm btn-outline-primary" @onclick="() => Reenviar(n)">Reenviar</button>
+                            }
+                            @if (podeEstornar && n.PodeCancelar)
+                            {
+                                <button type="button" class="btn btn-sm btn-outline-danger" @onclick="() => AbrirCancelamento(n)">Cancelar</button>
+                            }
+                        </span>
+                    </td>
+                </tr>
+            }
+        }
+        else
+        {
+            <tr>
+                <td colspan="8" class="vazio">Nenhuma nota encontrada.</td>
+            </tr>
+        }
+    </tbody>
+</table>
+</div>
+
+<Janela Visivel="@(cancelando != null)" Titulo="@($"Cancelar NFS-e {cancelando?.Numero}")"
+        Largura="480" Erro="@erroCancelamento" OnFechar="FecharCancelamento">
+    <ChildContent>
+        <p class="text-muted" style="font-size: 14px;">
+            A venda #@cancelando?.IdVenda continua valendo. Para desfazer a venda inteira, cancele pela tela de
+            vendas: a nota é cancelada junto.
+        </p>
+        <label class="form-label" for="nf-justificativa">Justificativa (mínimo 15 caracteres)</label>
+        <textarea id="nf-justificativa" class="form-control" rows="3" maxlength="255"
+                  @bind="justificativa" @bind:event="oninput"></textarea>
+    </ChildContent>
+    <Rodape>
+        <button type="button" class="btn btn-outline-secondary" @onclick="FecharCancelamento">Voltar</button>
+        <button type="button" class="btn btn-danger" @onclick="ConfirmarCancelamento">Cancelar nota</button>
+    </Rodape>
+</Janela>
+
+@code {
+    private List<NotaFiscal> notas = new();
+    private ConfigFiscal config = new();
+    private bool tokenConfigurado;
+    private bool podeEditar;
+    private bool podeEstornar;
+    private string? erro;
+    private string? aviso;
+
+    private DateTime? de = DateTime.Today.AddDays(-30);
+    private DateTime? ate;
+    private string situacao = "";
+
+    private NotaFiscal? cancelando;
+    private string justificativa = "";
+    private string? erroCancelamento;
+
+    private static readonly List<Opcao> OpcoesSituacao = new()
+    {
+        new("", "Todas"),
+        new(StatusNota.Autorizada, "Autorizada", "var(--ok)"),
+        new(StatusNota.Pendente, "Na fila"),
+        new(StatusNota.Processando, "Processando"),
+        new(StatusNota.Erro, "Erro", "var(--perigo)"),
+        new(StatusNota.Cancelada, "Cancelada", "var(--texto-fraco)"),
+        new(StatusNota.Descartada, "Descartada", "var(--texto-fraco)")
+    };
+
+    private List<NotaFiscal> Filtradas =>
+        notas.Where(n => situacao == "" || n.Status == situacao).ToList();
+
+    /// <summary>Autorizada com cancelamento pedido ainda nao e cancelada.</summary>
+    private static string Rotulo(NotaFiscal n) =>
+        n.Status == StatusNota.Autorizada && n.Cancelar ? "Cancelando" : StatusNota.Rotulo(n.Status);
+
+    private static string Classe(NotaFiscal n) => n.Status switch
+    {
+        StatusNota.Autorizada => n.Cancelar ? "pendente" : "pago",
+        StatusNota.Pendente or StatusNota.Processando => "pendente",
+        StatusNota.Erro => "erro",
+        _ => "cancelada"
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await permissao.CarregarAsync();
+        podeEditar = permissao.Pode("notas", Acao.Editar);
+        podeEstornar = permissao.Pode("notas", Acao.Estornar);
+        Carregar();
+    }
+
+    private void Carregar()
+    {
+        try
+        {
+            erro = null;
+            config = notaDAO.BuscarConfig();
+            tokenConfigurado = focus.Token(config.Ambiente) != null;
+            notas = notaDAO.Listar(de, ate);
+        }
+        catch (Exception ex)
+        {
+            erro = "Erro ao carregar as notas: " + ex.Message;
+        }
+    }
+
+    private void Limpar()
+    {
+        de = DateTime.Today.AddDays(-30);
+        ate = null;
+        situacao = "";
+        Carregar();
+    }
+
+    private void Reenviar(NotaFiscal nota)
+    {
+        try
+        {
+            aviso = null;
+            notaDAO.Reenviar(nota.IdNota);
+            aviso = $"Nota da venda #{nota.IdVenda} voltou para a fila.";
+            Carregar();
+        }
+        catch (Exception ex)
+        {
+            erro = ex.Message;
+        }
+    }
+
+    private void AbrirCancelamento(NotaFiscal nota)
+    {
+        cancelando = nota;
+        justificativa = "";
+        erroCancelamento = null;
+    }
+
+    private void FecharCancelamento() => cancelando = null;
+
+    private void ConfirmarCancelamento()
+    {
+        if (cancelando == null) return;
+
+        try
+        {
+            notaDAO.SolicitarCancelamento(cancelando.IdNota, justificativa);
+            aviso = $"Cancelamento da NFS-e {cancelando.Numero} pedido. A prefeitura responde em instantes.";
+            cancelando = null;
+            Carregar();
+        }
+        catch (Exception ex)
+        {
+            erroCancelamento = ex.Message;
+        }
+    }
+}
