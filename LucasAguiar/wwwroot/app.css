@@ -1760,24 +1760,50 @@ form .form-check-label {
     color: var(--texto-fraco);
 }
 
-/* Acao auxiliar (cadastrar plano, fornecedor...) ao lado do campo:
-   link discreto, nunca botao na cor primaria. Global: as telas de venda
-   e agendamento, que nao sao .form-pagina, usam tambem. */
+/* Acao auxiliar (cadastrar plano, fornecedor, categoria...) ao lado do
+   campo. Global: as telas de venda e agendamento, que nao sao
+   .form-pagina, usam tambem.
+
+   Era texto laranja solto, sem moldura nem respiro: no meio de um
+   formulario de campos emoldurados, nao se lia como coisa clicavel.
+   Agora e botao de contorno -- discreto o bastante para nao disputar
+   com Salvar, que e o laranja cheio, mas com a borda, o raio e a
+   altura dos demais controles. */
 .acao-campo {
     align-self: flex-start;
     margin-top: 6px;
-    padding: 0;
-    border: 0;
-    background: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 34px;
+    padding: 0 13px;
+    border: 1px solid var(--borda-2);
+    border-radius: var(--raio);
+    background: var(--superficie);
+    font-family: var(--fonte);
     font-size: 13px;
     font-weight: 600;
     color: var(--marca-escura);
+    white-space: nowrap;
     cursor: pointer;
+    transition: background-color 0.14s, border-color 0.14s;
 }
 
 .acao-campo:hover {
-    color: var(--marca);
-    text-decoration: underline;
+    border-color: var(--marca-fraca);
+    background: var(--morno);
+}
+
+.acao-campo:focus-visible {
+    outline: none;
+    border-color: var(--marca);
+    box-shadow: var(--anel-foco);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .acao-campo {
+        transition: none;
+    }
 }
 
 /* Cancelar e Salvar a direita, presos ao fim da area visivel. */
