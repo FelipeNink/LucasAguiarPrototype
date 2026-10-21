@@ -6,9 +6,10 @@
 @inject PlanoDAO planoDAO
 @inject ServicoDAO servicoDAO
 @inject ProdutoDAO produtoDAO
+@inject AssinaturaDAO assinaturaDAO
 @inject NavigationManager Navigation
 
-<div class="form-pagina">
+<div class="form-pagina com-previa">
     <TopoForm Titulo="@(Novo ? "Novo plano" : "Editar plano")" Voltar="/plano" RotuloVoltar="Planos" />
 
     @if (erro != null)
@@ -16,6 +17,7 @@
         <div class="alert alert-danger" role="alert">@erro</div>
     }
 
+    <div class="plano-layout">
     <form @onsubmit="Salvar" novalidate>
         <section class="cartao secao-form">
             <h2>Dados do plano</h2>
@@ -181,6 +183,103 @@
 
         <RodapeForm Cancelar="/plano" Salvando="salvando" />
     </form>
+
+    @* Como a assinatura deste plano aparece para o cliente, montada ao vivo. *@
+    <aside class="previa-plano" aria-label="Prévia da assinatura">
+        <div class="previa-cartao">
+            <header class="previa-topo">
+                <span class="previa-sobre">Assinatura · @ResumoItens</span>
+                <strong class="previa-nome">@(string.IsNullOrWhiteSpace(Modelo.NomePlano) ? "Nome do plano" : Modelo.NomePlano)</strong>
+                <span class="previa-preco">@valor.ToString("C") <small>@PorPeriodo</small></span>
+            </header>
+
+            <div class="previa-corpo">
+                @if (itens.Count == 0)
+                {
+                    <p class="previa-vazia">Adicione serviços ou produtos para ver os créditos do assinante.</p>
+                }
+                else
+                {
+                    @foreach (var item in itens)
+                    {
+                        <div class="previa-item">
+                            <span class="previa-item-nome">@item.Descricao</span>
+                            <div class="creditos">
+                                @if (item.Ilimitado)
+                                {
+                                    <span class="credito ilimitado">∞ ilimitado</span>
+                                }
+                                else
+                                {
+                                    @for (var n = 1; n <= Math.Min(item.Quantidade!.Value, MaxCaixas); n++)
+                                    {
+                                        <span class="credito">@n</span>
+                                    }
+                                    @if (item.Quantidade!.Value > MaxCaixas)
+                                    {
+                                        <span class="credito mais">+@(item.Quantidade.Value - MaxCaixas)</span>
+                                    }
+                                }
+                            </div>
+                        </div>
+                    }
+
+                    <div class="previa-bloco">
+                        <span>Créditos por ciclo</span>
+                        <strong class="previa-total">@(itens.Any(i => i.Ilimitado) && TotalCreditos == 0 ? "∞" : TotalCreditos.ToString())</strong>
+                    </div>
+                }
+
+                <div class="previa-bloco validade">
+                    <div class="validade-linha">
+                        <span>Válida por <strong>@Periodicidade.Dias(Modelo.Periodicidade) dias</strong></span>
+                        <small>a partir da venda</small>
+                    </div>
+                    <div class="barra"><i></i></div>
+                </div>
+
+                @if (valor > 0 && Diferenca > 0)
+                {
+                    <p class="previa-economia">O assinante economiza <strong>@Diferenca.ToString("C")</strong> por ciclo.</p>
+                }
+
+                @if (!Novo)
+                {
+                    <div class="previa-assinantes">
+                        <h3>Assinantes</h3>
+                        @if (assinantes.Count == 0)
+                        {
+                            <p class="previa-vazia">Ninguém assinou este plano ainda.</p>
+                        }
+                        else
+                        {
+                            <ul>
+                                @foreach (var a in assinantes.Take(5))
+                                {
+                                    <li>
+                                        <span>@(a.NomeCliente ?? "—")</span>
+                                        @if (a.Vencida)
+                                        {
+                                            <span class="selo-expirada">Expirada</span>
+                                        }
+                                        else
+                                        {
+                                            <small>@(a.DataFim.HasValue ? $"vence {a.DataFim:dd/MM}" : "sem prazo")</small>
+                                        }
+                                    </li>
+                                }
+                            </ul>
+                            @if (assinantes.Count > 5)
+                            {
+                                <a href="/assinaturas" class="previa-ver-todos">e mais @(assinantes.Count - 5) · ver todas</a>
+                            }
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </aside>
+    </div>
 </div>
 
 <CadastroRapido Visivel="@(modalAberto != null)"
@@ -227,6 +326,29 @@
     private decimal SomaItens => itens.Where(i => !i.Ilimitado).Sum(i => i.ValorUnitario * i.Quantidade!.Value);
     private decimal Diferenca => SomaItens - valor;
 
+    /// <summary>Acima disto a fila de caixinhas vira "+N".</summary>
+    private const int MaxCaixas = 8;
+
+    /// <summary>Assinaturas ativas deste plano, para a previa na edicao.</summary>
+    private List<Assinatura> assinantes = new();
+
+    private int TotalCreditos => itens.Where(i => !i.Ilimitado).Sum(i => i.Quantidade!.Value);
+
+    /// <summary>Linha de cima do cartao, ex.: "4 Corte + 4 Barba · mensal".</summary>
+    private string ResumoItens =>
+        itens.Count == 0
+            ? Periodicidade.Rotulo(Modelo.Periodicidade).ToLower()
+            : string.Join(" + ", itens.Select(i => i.Ilimitado ? $"{i.Descricao} ilimitado" : $"{i.Quantidade} {i.Descricao}"))
+              + " · " + Periodicidade.Rotulo(Modelo.Periodicidade).ToLower();
+
+    private string PorPeriodo => Modelo.Periodicidade switch
+    {
+        "TRIMESTRAL" => "/ trimestre",
+        "SEMESTRAL" => "/ semestre",
+        "ANUAL" => "/ ano",
+        _ => "/ mês"
+    };
+
     protected override void OnInitialized()
     {
         valor = Math.Round((decimal)(Modelo.Valor ?? 0), 2);
@@ -236,6 +358,11 @@
         {
             servicos = servicoDAO.ListarTodos() ?? new();
             produtos = produtoDAO.ListarTodos() ?? new();
+
+            if (!Novo)
+                assinantes = assinaturaDAO.ListarTodas()
+                    .Where(a => a.IdPlano == Modelo.IdPlano && a.Status == StatusAssinatura.Ativa)
+                    .ToList();
         }
         catch (Exception ex)
         {

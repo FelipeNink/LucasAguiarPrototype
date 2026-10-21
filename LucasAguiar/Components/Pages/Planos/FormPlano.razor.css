@@ -278,3 +278,247 @@
 .acao-montador {
     margin: 6px 0 14px;
 }
+
+/* ---------- previa da assinatura ---------- */
+
+.form-pagina.com-previa {
+    max-width: 1440px;
+}
+
+.plano-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 360px;
+    gap: 24px;
+    align-items: start;
+}
+
+.previa-plano {
+    position: sticky;
+    top: 16px;
+}
+
+.previa-cartao {
+    overflow: hidden;
+    background: var(--superficie);
+    border: 1px solid var(--borda);
+    border-radius: 18px;
+    box-shadow: var(--sombra-media);
+}
+
+.previa-topo {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 20px 22px;
+    background: linear-gradient(135deg, var(--marca-clara), var(--marca) 45%, var(--marca-escura));
+    color: var(--sobre-marca);
+}
+
+.previa-sobre {
+    font-size: 12.5px;
+    font-weight: 600;
+    opacity: 0.85;
+}
+
+.previa-nome {
+    font-family: var(--fonte-titulo);
+    font-size: 26px;
+    font-weight: 700;
+    line-height: 1.1;
+    overflow-wrap: anywhere;
+}
+
+.previa-preco {
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.previa-preco small {
+    font-weight: 500;
+    opacity: 0.8;
+}
+
+.previa-corpo {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 18px 22px 22px;
+}
+
+.previa-vazia {
+    margin: 0;
+    font-size: 13.5px;
+    color: var(--texto-3);
+}
+
+.previa-item {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.previa-item-nome {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--texto-2);
+}
+
+.creditos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.credito {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border: 2px dashed var(--borda-3);
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--texto-3);
+}
+
+/* O primeiro credito aparece "usado", como o assinante ve depois da primeira visita. */
+.credito:first-child:not(.ilimitado) {
+    background: var(--ok);
+    border: 2px solid var(--ok);
+    color: #fff;
+}
+
+.credito.mais {
+    border-style: solid;
+    background: var(--superficie-3);
+}
+
+.credito.ilimitado {
+    width: auto;
+    padding: 0 12px;
+    border-style: solid;
+    border-color: var(--morno-borda);
+    background: var(--morno);
+    color: var(--selecionado-texto);
+}
+
+.previa-bloco {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px;
+    background: var(--superficie-2);
+    border-radius: 12px;
+    font-size: 14px;
+    color: var(--texto-2);
+}
+
+.previa-total {
+    font-family: var(--fonte-titulo);
+    font-size: 30px;
+    line-height: 1;
+    color: var(--marca);
+}
+
+.previa-bloco.validade {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+}
+
+.validade-linha {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.validade-linha strong {
+    color: var(--texto);
+}
+
+.validade-linha small {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--marca-escura);
+}
+
+.barra {
+    height: 6px;
+    overflow: hidden;
+    background: var(--borda);
+    border-radius: 999px;
+}
+
+.barra i {
+    display: block;
+    width: 100%;
+    height: 100%;
+    background: var(--marca);
+    border-radius: inherit;
+}
+
+.previa-economia {
+    margin: 0;
+    font-size: 13.5px;
+    color: var(--ok-texto);
+}
+
+.previa-assinantes h3 {
+    margin: 4px 0 6px;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--texto-3);
+}
+
+.previa-assinantes ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.previa-assinantes li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 9px 0;
+    border-top: 1px solid var(--borda);
+    font-size: 14px;
+    color: var(--texto);
+}
+
+.previa-assinantes li small {
+    color: var(--texto-3);
+}
+
+.selo-expirada {
+    padding: 2px 10px;
+    background: var(--perigo-fundo);
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--perigo);
+}
+
+.previa-ver-todos {
+    display: inline-block;
+    margin-top: 6px;
+    font-size: 13px;
+    color: var(--marca-escura);
+}
+
+@media (max-width: 1100px) {
+    .plano-layout {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .previa-plano {
+        position: static;
+    }
+}
