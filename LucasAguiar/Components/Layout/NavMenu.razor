@@ -363,7 +363,7 @@
 
         @* Quem administra o sistema. Para a maior parte da equipe esta
            secao inteira nao existe. *@
-        @if (AlgumaDe("equipe", "funcoes", "logs"))
+        @if (AlgumaDe("equipe", "funcoes", "logs", "horario"))
         {
             <div class="grupo @(Aberto("Sistema") ? "aberto" : "")">
                 <button type="button" class="grupo-rotulo" aria-expanded="@Aberto("Sistema")"
@@ -415,6 +415,19 @@
                                 <path d="M8 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-3M8 3v4h8V3M8 12h8M8 16h5" />
                             </svg>
                             Logs
+                        </NavLink>
+                    </div>
+                }
+
+                @if (Pode("horario"))
+                {
+                    <div class="nav-item">
+                        <NavLink class="nav-link" href="horario">
+                            <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 7v5l3 2" />
+                            </svg>
+                            Horário
                         </NavLink>
                     </div>
                 }

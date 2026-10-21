@@ -250,3 +250,10 @@
     font-size: 0.75rem;
     color: var(--texto-3);
 }
+
+.aviso-expediente {
+    margin: 0.5rem 0 0;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--alerta);
+}

@@ -1,0 +1,127 @@
+@page "/horario"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = Politicas.Horario)]
+
+@* Grade semanal do expediente. O painel mostra se a barbearia esta aberta
+   a partir dela; o "abrir/fechar agora" do dia fica no proprio painel. *@
+
+@using LucasAguiar.Configs
+@using LucasAguiar.Models
+@inject HorarioDAO horarioDAO
+@inject Autorizacao permissao
+@inject NavigationManager Navigation
+
+<PageTitle>Horário de funcionamento</PageTitle>
+
+<div class="form-pagina">
+    <TopoForm Titulo="Horário de funcionamento" Voltar="/" RotuloVoltar="Painel" />
+
+    @if (erro != null)
+    {
+        <div class="alert alert-danger" role="alert">@erro</div>
+    }
+
+    <form @onsubmit="Salvar" novalidate>
+        <section class="cartao secao-form">
+            <h2>Semana</h2>
+            <p class="suave">
+                Agendamentos fora destes horários mostram um aviso, sem bloquear.
+            </p>
+
+            <table class="table tabela-horario">
+                <thead>
+                    <tr>
+                        <th>Dia</th>
+                        <th>Abre?</th>
+                        <th>Abertura</th>
+                        <th>Fechamento</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var d in Expediente.OrdemDaSemana.Select(dia => grade[(int)dia]))
+                    {
+                        var invalido = tentouSalvar && d.Aberto && d.Fecha <= d.Abre;
+                        <tr class="@(d.Aberto ? "" : "fechado")">
+                            <td>@Expediente.NomeDia[(int)d.Dia]</td>
+                            <td>
+                                <div class="form-check form-switch">
+                                    <input id="hor-@((int)d.Dia)" class="form-check-input" type="checkbox" role="switch"
+                                           disabled="@(!podeEditar)" @bind="d.Aberto" />
+                                    <label class="form-check-label" for="hor-@((int)d.Dia)">@(d.Aberto ? "Aberto" : "Fechado")</label>
+                                </div>
+                            </td>
+                            <td>
+                                <input type="time" class="form-control" disabled="@(!podeEditar || !d.Aberto)"
+                                       value="@Expediente.Hora(d.Abre)" @onchange="e => d.Abre = Ler(e, d.Abre)" />
+                            </td>
+                            <td>
+                                <input type="time" class="form-control @(invalido ? "is-invalid" : "")"
+                                       disabled="@(!podeEditar || !d.Aberto)"
+                                       value="@Expediente.Hora(d.Fecha)" @onchange="e => d.Fecha = Ler(e, d.Fecha)" />
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </section>
+
+        @if (podeEditar)
+        {
+            <RodapeForm Cancelar="/" Salvando="salvando" />
+        }
+    </form>
+</div>
+
+@code {
+    private List<HorarioDia> grade = Enum.GetValues<DayOfWeek>().Select(d => new HorarioDia { Dia = d }).ToList();
+    private string? erro;
+    private bool podeEditar;
+    private bool tentouSalvar;
+    private bool salvando;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await permissao.CarregarAsync();
+        podeEditar = permissao.Pode("horario", Acao.Editar);
+
+        try
+        {
+            grade = horarioDAO.Listar();
+        }
+        catch (Exception ex)
+        {
+            erro = "Erro ao carregar o horário: " + ex.Message;
+        }
+    }
+
+    private static TimeSpan Ler(ChangeEventArgs e, TimeSpan atual) =>
+        TimeSpan.TryParse(e.Value?.ToString(), out var hora) ? hora : atual;
+
+    private async Task Salvar()
+    {
+        tentouSalvar = true;
+        erro = null;
+
+        if (grade.Any(d => d.Aberto && d.Fecha <= d.Abre))
+        {
+            erro = "O fechamento deve ser depois da abertura.";
+            return;
+        }
+
+        try
+        {
+            salvando = true;
+            await permissao.ExigirAsync("horario", Acao.Editar);
+            horarioDAO.Salvar(grade);
+            Navigation.NavigateTo("/");
+        }
+        catch (Exception ex)
+        {
+            erro = ex.Message;
+        }
+        finally
+        {
+            salvando = false;
+        }
+    }
+}

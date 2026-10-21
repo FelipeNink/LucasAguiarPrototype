@@ -6,6 +6,7 @@
 @inject ClienteDAO clienteDAO
 @inject FuncionarioDAO funcionarioDAO
 @inject ServicoDAO servicoDAO
+@inject HorarioDAO horarioDAO
 @inject NavigationManager Navigation
 
 <div class="form-pagina">
@@ -168,6 +169,12 @@
                 </div>
             </dl>
 
+            @* So avisa: encaixe fora do expediente acontece. *@
+            @if (AvisoExpediente is string avisoExpediente)
+            {
+                <p class="aviso-expediente">@avisoExpediente</p>
+            }
+
             @if (ServicosEscolhidos.Count > 0)
             {
                 <div class="resumo-total">
@@ -233,6 +240,12 @@
     private List<Funcionario> funcionarios = new();
     private List<Servico> servicos = new();
     private List<Agendamento> ocupados = new();
+    private List<HorarioDia> gradeHorario = new();
+    private bool? excecaoNoDia;
+
+    private string? AvisoExpediente => gradeHorario.Count == 0
+        ? null
+        : Expediente.AvisoAgendamento(gradeHorario, excecaoNoDia, Modelo.DataHora, Modelo.Fim);
 
     private Dictionary<(int IdFuncionario, int IdServico), FuncionarioServico> precosProprios = new();
 
@@ -289,6 +302,22 @@
         }
 
         CarregarOcupados();
+        CarregarExpediente();
+    }
+
+    /// <summary>Grade da semana e o ajuste manual da data escolhida, para o aviso.</summary>
+    private void CarregarExpediente()
+    {
+        try
+        {
+            if (gradeHorario.Count == 0) gradeHorario = horarioDAO.Listar();
+            excecaoNoDia = horarioDAO.Excecao(Data);
+        }
+        catch
+        {
+            // Sem o horario so falta o aviso; o agendamento segue.
+            gradeHorario = new();
+        }
     }
 
     /// <summary>
@@ -316,6 +345,7 @@
         {
             Modelo.DataHora = nova.Date + Modelo.DataHora.TimeOfDay;
             CarregarOcupados();
+            CarregarExpediente();
         }
     }
 

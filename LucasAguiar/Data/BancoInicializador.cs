@@ -50,6 +50,8 @@ namespace LucasAguiar.Data
                 MigrarAtributos(conexao);
 
                 MigrarFiscal(conexao);
+
+                MigrarExpediente(conexao);
             }
             catch (Exception ex)
             {
@@ -803,6 +805,38 @@ namespace LucasAguiar.Data
             // divisao por cota-parte.
             GarantirColuna(conexao, "funcionario", "parceiro_fun", "tinyint(1) NOT NULL DEFAULT 0");
             GarantirColuna(conexao, "funcionario", "cnpj_parceiro_fun", "varchar(18) DEFAULT NULL");
+        }
+
+        // =============================================================
+        // HORARIO DE FUNCIONAMENTO
+        //
+        // Uma linha por dia da semana (0 = domingo, como o DayOfWeek) e as
+        // excecoes do "abrir/fechar agora", que valem so para a data.
+        // =============================================================
+
+        private void MigrarExpediente(MySqlConnection conexao)
+        {
+            CriarTabela(conexao, "horario_funcionamento", @"
+                CREATE TABLE IF NOT EXISTS `horario_funcionamento` (
+                  `dia_semana` tinyint NOT NULL,
+                  `aberto` tinyint(1) NOT NULL DEFAULT 1,
+                  `abre` time NOT NULL DEFAULT '09:00:00',
+                  `fecha` time NOT NULL DEFAULT '19:00:00',
+                  PRIMARY KEY (`dia_semana`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci");
+
+            // Segunda a sabado das 9h as 19h, domingo fechado -- o mesmo que
+            // os relatorios ja supunham. O dono ajusta na tela.
+            Executar(conexao, "horario_funcionamento preenchido", @"
+                INSERT IGNORE INTO horario_funcionamento (dia_semana, aberto) VALUES
+                    (0, 0), (1, 1), (2, 1), (3, 1), (4, 1), (5, 1), (6, 1)");
+
+            CriarTabela(conexao, "horario_excecao", @"
+                CREATE TABLE IF NOT EXISTS `horario_excecao` (
+                  `data` date NOT NULL,
+                  `aberto` tinyint(1) NOT NULL,
+                  PRIMARY KEY (`data`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci");
         }
 
         // ---------- apoio das migracoes ----------

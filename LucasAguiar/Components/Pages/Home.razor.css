@@ -172,3 +172,71 @@
     background: var(--ok);
     box-shadow: 0 0 0 4px var(--ok-fundo);
 }
+
+/* ---------- expediente (aberta/fechada) ---------- */
+
+.expediente {
+    position: relative;
+    display: inline-block;
+    margin-left: 0.5rem;
+    vertical-align: middle;
+}
+
+.selo-expediente {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 1px 8px;
+    font-size: 12px;
+    color: var(--texto-3);
+    background: transparent;
+    border: 1px solid var(--borda);
+    border-radius: 999px;
+}
+
+button.selo-expediente {
+    cursor: pointer;
+}
+
+.selo-expediente i {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--texto-fraco);
+}
+
+.selo-expediente.aberta i {
+    background: var(--ok);
+}
+
+.menu-expediente {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    min-width: 210px;
+    padding: 4px;
+    background: var(--superficie);
+    border: 1px solid var(--borda);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.menu-expediente button,
+.menu-expediente a {
+    padding: 6px 10px;
+    font-size: 13px;
+    text-align: left;
+    color: var(--texto);
+    text-decoration: none;
+    background: transparent;
+    border: 0;
+    border-radius: 6px;
+}
+
+.menu-expediente button:hover,
+.menu-expediente a:hover {
+    background: var(--superficie-3);
+}

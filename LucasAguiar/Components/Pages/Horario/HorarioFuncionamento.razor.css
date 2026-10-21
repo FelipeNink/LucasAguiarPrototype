@@ -1,0 +1,19 @@
+.tabela-horario {
+    margin: 0;
+}
+
+.tabela-horario td {
+    vertical-align: middle;
+}
+
+.tabela-horario .form-control {
+    max-width: 9rem;
+}
+
+.tabela-horario .form-switch {
+    margin: 0;
+}
+
+.tabela-horario tr.fechado td:first-child {
+    color: var(--texto-apagado);
+}

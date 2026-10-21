@@ -10,6 +10,7 @@
 @inject PainelDAO painelDAO
 @inject CaixaDAO caixaDAO
 @inject EstoqueDAO estoqueDAO
+@inject HorarioDAO horarioDAO
 @inject Autorizacao permissao
 
 
@@ -18,6 +19,47 @@
         @* Data e base de comparacao aparecem uma vez so, aqui. Antes cada
            indicador repetia "vs. periodo anterior". *@
         <span class="linha-titulo">@DataPorExtenso · @RotuloPeriodo</span>
+
+        @* Aberta/fechada, discreto ao lado da data. Clicar abre o ajuste
+           do dia para quem pode mexer no horario. *@
+        @if (situacao != null)
+        {
+            <span class="expediente">
+                @if (podeVerHorario)
+                {
+                    <button type="button" class="selo-expediente @(situacao.Aberta ? "aberta" : "fechada")"
+                            aria-expanded="@menuExpediente" @onclick="() => menuExpediente = !menuExpediente">
+                        <i></i>@situacao.Texto
+                    </button>
+                }
+                else
+                {
+                    <span class="selo-expediente @(situacao.Aberta ? "aberta" : "fechada")"><i></i>@situacao.Texto</span>
+                }
+
+                @if (menuExpediente)
+                {
+                    <span class="menu-expediente">
+                        @if (podeEditarHorario)
+                        {
+                            @if (situacao.Aberta)
+                            {
+                                <button type="button" @onclick="() => AjustarHoje(false)">Fechar por hoje</button>
+                            }
+                            else
+                            {
+                                <button type="button" @onclick="() => AjustarHoje(true)">Abrir agora</button>
+                            }
+                            @if (excecaoHoje != null)
+                            {
+                                <button type="button" @onclick="() => AjustarHoje(null)">Voltar ao horário normal</button>
+                            }
+                        }
+                        <a href="/horario">Horários da semana</a>
+                    </span>
+                }
+            </span>
+        }
         <h1 class="titulo-painel">Painel</h1>
     </div>
 
@@ -242,12 +284,20 @@ else
     private bool podeVerCaixa;
     private List<SaldoEstoque> reposicao = new();
 
+    private SituacaoExpediente? situacao;
+    private bool? excecaoHoje;
+    private bool menuExpediente;
+    private bool podeVerHorario;
+    private bool podeEditarHorario;
+
     protected override async Task OnInitializedAsync()
     {
         await permissao.CarregarAsync();
 
         podeVerValores = permissao.Pode("painel", Acao.VerValores);
         podeVerCaixa = permissao.PodeVer("caixa");
+        podeVerHorario = permissao.PodeVer("horario");
+        podeEditarHorario = permissao.Pode("horario", Acao.Editar);
 
         if (permissao.PodeVer("estoque"))
         {
@@ -322,6 +372,38 @@ else
         {
             erro = "Erro ao carregar o painel: " + ex.Message;
             dadosJson = "{}";
+        }
+
+        CarregarExpediente();
+    }
+
+    private void CarregarExpediente()
+    {
+        try
+        {
+            excecaoHoje = horarioDAO.Excecao(DateTime.Today);
+            situacao = Expediente.Situacao(horarioDAO.Listar(), excecaoHoje, DateTime.Now);
+        }
+        catch
+        {
+            // O selo e acessorio: sem ele, o resto do painel continua.
+            situacao = null;
+        }
+    }
+
+    /// <summary>Abre ou fecha so hoje; null volta a seguir a grade.</summary>
+    private async Task AjustarHoje(bool? aberto)
+    {
+        try
+        {
+            await permissao.ExigirAsync("horario", Acao.Editar);
+            horarioDAO.DefinirExcecao(DateTime.Today, aberto);
+            menuExpediente = false;
+            CarregarExpediente();
+        }
+        catch (Exception ex)
+        {
+            erro = "Erro ao ajustar o horário: " + ex.Message;
         }
     }
 }

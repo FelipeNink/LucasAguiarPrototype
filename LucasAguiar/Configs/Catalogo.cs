@@ -189,7 +189,12 @@ namespace LucasAguiar.Configs
             new("logs", "Logs", Sistema,
                 Acao.Ver | Acao.Exportar,
                 new[] { "/logs" },
-                new[] { "/excel/logs" })
+                new[] { "/excel/logs" }),
+
+            // Editar tambem cobre o "abrir/fechar agora" do painel.
+            new("horario", "Horário de funcionamento", Sistema,
+                Acao.Ver | Acao.Editar,
+                new[] { "/horario" })
         };
 
         /// <summary>Todas as acoes, na ordem em que aparecem na matriz.</summary>
