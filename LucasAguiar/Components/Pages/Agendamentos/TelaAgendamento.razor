@@ -33,9 +33,70 @@
                     <Campo Rotulo="Cliente" Colunas="12" Obrigatorio="true"
                            Erro="@(tentouSalvar && Modelo.IdCliente <= 0 ? "Selecione o cliente." : null)">
                         <ChildContent>
-                            <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesCliente"
-                                     @bind-Valor="Modelo.IdCliente" TextoDe="o => o.Rotulo" ValorDe="o => o.Id"
-                                     ComAvatar="true" Placeholder="Selecione o cliente" />
+                            @* Busca digitando, no padrao da Nova Venda. *@
+                            @if (ClienteEscolhido == null)
+                            {
+                                <div class="busca-cliente">
+                                    <svg class="icone-busca" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M20 20l-4-4" /></svg>
+                                    <input class="form-control busca" placeholder="Buscar por nome, telefone ou CPF…"
+                                           @bind="termoBusca" @bind:event="oninput" @bind:after="BuscarClientes"
+                                           @onfocus="() => buscaAberta = true" @onblur="() => buscaAberta = false" />
+
+                                    @if (buscaAberta || termoBusca.Trim().Length >= 2)
+                                    {
+                                        <div class="lista-busca">
+                                            @if (resultados.Count > 0)
+                                            {
+                                                <div class="lista-busca-titulo"><span>Clientes</span></div>
+                                                @foreach (var c in resultados)
+                                                {
+                                                    <button type="button" class="resultado"
+                                                            @onmousedown="() => SelecionarCliente(c.IdCliente)" @onmousedown:preventDefault="true">
+                                                        <span>
+                                                            <span class="resultado-nome">@c.NomeCliente</span>
+                                                            <span class="resultado-info">
+                                                                @(string.IsNullOrWhiteSpace(c.Telefone) ? "sem telefone" : c.Telefone)
+                                                                @if (c.TemPlano)
+                                                                {
+                                                                    <span class="etiqueta-plano">@c.NomePlano</span>
+                                                                }
+                                                            </span>
+                                                        </span>
+                                                        <span class="selecionar">Selecionar</span>
+                                                    </button>
+                                                }
+                                            }
+                                            else if (termoBusca.Trim().Length >= 2)
+                                            {
+                                                <div class="sem-resultado">
+                                                    Nenhum cliente com "@termoBusca".
+                                                    <button type="button" class="btn btn-primary btn-sm"
+                                                            @onmousedown="CadastrarComTermo" @onmousedown:preventDefault="true">
+                                                        Cadastrar "@termoBusca"
+                                                    </button>
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <div class="lista-busca-vazia">Digite ao menos 2 letras para buscar o cliente.</div>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="cliente-escolhido">
+                                    <span class="avatar-cliente">@Iniciais(ClienteEscolhido.NomeCliente)</span>
+                                    <div class="cliente-dados">
+                                        <strong>@ClienteEscolhido.NomeCliente</strong>
+                                        <span class="cliente-detalhe">
+                                            @(string.IsNullOrWhiteSpace(ClienteEscolhido.Telefone) ? "sem telefone" : ClienteEscolhido.Telefone)
+                                        </span>
+                                    </div>
+                                    <button type="button" class="remover" title="Trocar cliente" @onclick="TrocarCliente">×</button>
+                                </div>
+                            }
                         </ChildContent>
                         <Acao>
                             <button type="button" class="acao-campo" @onclick="() => modalAberto = CadastroRapido.TipoCadastro.Cliente">
@@ -260,10 +321,10 @@
 
     private DateTime Data => Modelo.DataHora.Date;
 
-    // Inativos ficam de fora, menos o que ja esta no agendamento.
-    private List<OpcaoId> OpcoesCliente =>
-        clientes.Where(c => c.Ativo || c.IdCliente == Modelo.IdCliente)
-            .Select(c => new OpcaoId(c.IdCliente, c.Identificacao)).ToList();
+    // Busca do cliente; o Buscar do DAO ja deixa os inativos de fora.
+    private string termoBusca = "";
+    private bool buscaAberta;
+    private List<Cliente> resultados = new();
 
     private List<OpcaoId> OpcoesFuncionario =>
         funcionarios.Where(f => f.Ativo || f.IdFuncionario == Modelo.IdFuncionario)
@@ -381,6 +442,59 @@
 
     private bool Conflita(Agendamento outro) =>
         outro.DataHora < Modelo.Fim && outro.Fim > Modelo.DataHora;
+
+    private void BuscarClientes()
+    {
+        try
+        {
+            erro = null;
+            resultados = termoBusca.Trim().Length < 2 ? new() : clienteDAO.Buscar(termoBusca, 8);
+        }
+        catch (Exception ex)
+        {
+            erro = ex.Message;
+        }
+    }
+
+    private void SelecionarCliente(int id)
+    {
+        Modelo.IdCliente = id;
+        resultados.Clear();
+        termoBusca = "";
+        buscaAberta = false;
+    }
+
+    private void TrocarCliente()
+    {
+        Modelo.IdCliente = 0;
+    }
+
+    /// <summary>Cadastra so com o nome digitado e ja escolhe, como na venda.</summary>
+    private void CadastrarComTermo()
+    {
+        try
+        {
+            erro = null;
+            var id = clienteDAO.InserirSomenteNome(termoBusca);
+            clientes = clienteDAO.ListarTodos();
+            SelecionarCliente(id);
+        }
+        catch (Exception ex)
+        {
+            erro = ex.Message;
+        }
+    }
+
+    private static string Iniciais(string? nome)
+    {
+        var partes = (nome ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return partes.Length switch
+        {
+            0 => "—",
+            1 => partes[0][..Math.Min(2, partes[0].Length)].ToUpperInvariant(),
+            _ => $"{partes[0][0]}{partes[^1][0]}".ToUpperInvariant()
+        };
+    }
 
     private void AoCriarRegistro(int id)
     {

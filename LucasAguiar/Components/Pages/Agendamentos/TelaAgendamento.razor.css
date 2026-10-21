@@ -181,8 +181,187 @@
     font-weight: 600;
 }
 
+.btn-cta,
 .cancelar {
     justify-content: center;
+}
+
+/* ---------- busca do cliente (mesmo visual da Nova Venda) ---------- */
+
+.busca-cliente {
+    position: relative;
+}
+
+.icone-busca {
+    position: absolute;
+    left: 0.8rem;
+    top: 1.35rem;
+    width: 0.95rem;
+    height: 0.95rem;
+    transform: translateY(-50%);
+    fill: none;
+    stroke: var(--texto-fraco);
+    stroke-width: 2;
+    stroke-linecap: round;
+    pointer-events: none;
+}
+
+.busca {
+    padding-left: 2.3rem;
+    background: var(--superficie-2);
+}
+
+.busca:focus {
+    background: var(--superficie);
+}
+
+.lista-busca {
+    position: absolute;
+    top: calc(100% + 0.35rem);
+    left: 0;
+    right: 0;
+    z-index: 30;
+    max-height: 20rem;
+    overflow-y: auto;
+    background: var(--superficie);
+    border: 1px solid var(--borda);
+    border-radius: 12px;
+    box-shadow: var(--sombra-menu);
+}
+
+.lista-busca-titulo {
+    padding: 0.45rem 0.85rem;
+    background: var(--superficie-2);
+    border-bottom: 1px solid var(--borda);
+    font-size: 0.66rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--texto-fraco);
+}
+
+.lista-busca-vazia {
+    padding: 0.8rem 0.85rem;
+    font-size: 0.8rem;
+    color: var(--texto-fraco);
+}
+
+.resultado {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0.55rem 0.85rem;
+    background: none;
+    border: none;
+    border-bottom: 1px solid var(--superficie-3);
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.12s;
+}
+
+.resultado:hover {
+    background: var(--morno-2);
+}
+
+.resultado-nome {
+    display: block;
+    font-weight: 600;
+    color: var(--texto);
+    font-size: 0.86rem;
+}
+
+.resultado-info {
+    display: block;
+    font-size: 0.74rem;
+    color: var(--texto-fraco);
+}
+
+.selecionar {
+    flex-shrink: 0;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--marca-escura);
+}
+
+.etiqueta-plano {
+    display: inline-block;
+    margin-left: 0.4rem;
+    padding: 0.05rem 0.45rem;
+    border-radius: 999px;
+    background: var(--morno-2);
+    color: var(--marca-escura);
+    font-weight: 600;
+}
+
+.sem-resultado {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding: 0.7rem 0.85rem;
+    font-size: 0.83rem;
+    color: var(--texto-3);
+}
+
+.cliente-escolhido {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 0.75rem;
+    background: var(--ok-fundo);
+    border: 1px solid var(--ok-borda);
+    border-radius: 12px;
+}
+
+.avatar-cliente {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 2.2rem;
+    height: 2.2rem;
+    border-radius: 9px;
+    background: var(--ok);
+    color: #fff;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.cliente-dados {
+    flex: 1;
+    min-width: 0;
+}
+
+.cliente-dados strong {
+    font-size: 0.92rem;
+    color: var(--texto);
+}
+
+.cliente-detalhe {
+    display: block;
+    font-size: 0.78rem;
+    color: var(--texto-3);
+}
+
+.remover {
+    width: 1.5rem;
+    height: 1.5rem;
+    background: none;
+    border: none;
+    border-radius: 50%;
+    color: var(--texto-apagado);
+    font-size: 1.1rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.remover:hover {
+    background: var(--perigo-fundo);
+    color: var(--perigo);
 }
 
 @media (max-width: 1000px) {
