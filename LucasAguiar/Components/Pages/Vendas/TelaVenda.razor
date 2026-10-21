@@ -722,6 +722,10 @@ else
     /// <summary>Venda aberta para edicao; nulo e venda nova.</summary>
     [Parameter] public int? IdVendaEdicao { get; set; }
 
+    /// <summary>Vindos do cadastro de cliente com plano: a venda abre com os dois.</summary>
+    [Parameter] public int? IdCliente { get; set; }
+    [Parameter] public int? IdPlano { get; set; }
+
     private bool Editando => IdVendaEdicao is > 0;
 
     /// <summary>Na edicao, a venda nao pode mais mudar por aqui (ver o erro).</summary>
@@ -909,7 +913,20 @@ else
         }
 
         if (Editando) CarregarParaEdicao();
-        else PreencherPeloAgendamento();
+        else
+        {
+            PreencherPeloAgendamento();
+            PreencherPeloCadastro();
+        }
+    }
+
+    /// <summary>Cliente cadastrado com plano: o plano já entra na venda, que vira a assinatura.</summary>
+    private void PreencherPeloCadastro()
+    {
+        if (IdCliente is not > 0 || clienteSelecionado != null) return;
+
+        SelecionarCliente(IdCliente.Value);
+        if (IdPlano is > 0 && clienteSelecionado != null) RenovarPlano(IdPlano.Value);
     }
 
     /// <summary>

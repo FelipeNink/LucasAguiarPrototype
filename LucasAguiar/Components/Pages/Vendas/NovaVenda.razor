@@ -4,10 +4,17 @@
 
 <PageTitle>Nova venda</PageTitle>
 
-<TelaVenda IdAgendamento="IdAgendamento" />
+<TelaVenda IdAgendamento="IdAgendamento" IdCliente="IdCliente" IdPlano="IdPlano" />
 
 @code {
     /// <summary>Agendamento que originou a venda: ao confirmar, ele fica concluído.</summary>
     [SupplyParameterFromQuery(Name = "agendamento")]
     private int? IdAgendamento { get; set; }
+
+    /// <summary>Cliente recém-cadastrado com plano: a venda já abre com o plano.</summary>
+    [SupplyParameterFromQuery(Name = "cliente")]
+    private int? IdCliente { get; set; }
+
+    [SupplyParameterFromQuery(Name = "plano")]
+    private int? IdPlano { get; set; }
 }

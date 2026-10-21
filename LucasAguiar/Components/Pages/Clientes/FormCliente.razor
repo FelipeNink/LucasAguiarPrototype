@@ -200,7 +200,18 @@
             Modelo.Email = Vazio(Modelo.Email);
             Modelo.Observacoes = Vazio(Modelo.Observacoes);
 
-            if (Novo) clienteDAO.Inserir(Modelo);
+            if (Novo)
+            {
+                var idCliente = clienteDAO.Inserir(Modelo);
+
+                // A assinatura nasce da venda do plano, para o pagamento entrar
+                // no caixa. Cliente novo com plano segue direto para essa venda.
+                if (Modelo.TemPlano)
+                {
+                    Navigation.NavigateTo($"/venda/nova?cliente={idCliente}&plano={Modelo.IdPlano}");
+                    return;
+                }
+            }
             else clienteDAO.Atualizar(Modelo);
 
             Navigation.NavigateTo("/cliente");
