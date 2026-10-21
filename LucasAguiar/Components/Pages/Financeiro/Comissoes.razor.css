@@ -247,3 +247,216 @@ td.quitado {
         grid-template-columns: repeat(2, 1fr);
     }
 }
+
+/* ---------- calculo da linha e ranking ---------- */
+
+.comissoes-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    gap: 20px;
+    align-items: start;
+}
+
+.comissoes-lado {
+    position: sticky;
+    top: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+tr.clicavel {
+    cursor: pointer;
+}
+
+tr.selecionada > td {
+    background: var(--selecionado-fundo) !important;
+}
+
+.cartao-calculo,
+.cartao-ranking {
+    overflow: hidden;
+    background: var(--superficie);
+    border: 1px solid var(--borda);
+    border-radius: 18px;
+    box-shadow: var(--sombra-media);
+}
+
+.calculo-topo {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 18px 20px;
+    background: linear-gradient(135deg, var(--marca-clara), var(--marca) 45%, var(--marca-escura));
+    color: var(--sobre-marca);
+}
+
+.calculo-data {
+    font-size: 12.5px;
+    font-weight: 600;
+    opacity: 0.85;
+}
+
+.calculo-item {
+    font-family: var(--fonte-titulo);
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1.1;
+    overflow-wrap: anywhere;
+}
+
+.calculo-quem {
+    font-size: 13.5px;
+    font-weight: 600;
+}
+
+.calculo-corpo {
+    padding: 6px 20px 20px;
+}
+
+.calculo-linha {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--borda);
+    font-size: 14px;
+    color: var(--texto-2);
+}
+
+.calculo-linha strong {
+    color: var(--texto);
+}
+
+.selo-pagamento {
+    padding: 3px 10px;
+    background: var(--ok-fundo);
+    border-radius: 999px;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--ok-texto);
+}
+
+.calculo-destaque {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 16px;
+    padding: 14px 16px;
+    background: var(--alerta-fundo);
+    border: 2px solid var(--alerta-borda);
+    border-radius: 12px;
+}
+
+.calculo-destaque.paga {
+    background: var(--ok-fundo);
+    border-color: var(--ok);
+}
+
+.calculo-destaque > div {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.calculo-rotulo {
+    font-size: 14.5px;
+    font-weight: 600;
+    color: var(--texto);
+}
+
+.calculo-destaque small {
+    font-size: 12px;
+    color: var(--texto-3);
+}
+
+.calculo-destaque > strong {
+    font-family: var(--fonte-titulo);
+    font-size: 28px;
+    line-height: 1;
+    white-space: nowrap;
+    color: var(--alerta-texto);
+}
+
+.calculo-destaque.paga > strong {
+    color: var(--ok-texto);
+}
+
+.cartao-ranking {
+    padding: 16px 12px 10px;
+}
+
+.cartao-ranking h3 {
+    margin: 0 8px 8px;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--texto-3);
+}
+
+.cartao-ranking ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.cartao-ranking button {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 9px 8px;
+    background: transparent;
+    border: none;
+    border-radius: 10px;
+    font: 500 14.5px var(--fonte);
+    color: var(--texto);
+    text-align: left;
+    cursor: pointer;
+}
+
+.cartao-ranking button:hover {
+    background: var(--superficie-2);
+}
+
+.cartao-ranking button.ativo {
+    background: var(--ok-fundo);
+}
+
+.cartao-ranking .avatar {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.ranking-nome {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.cartao-ranking strong {
+    font-variant-numeric: tabular-nums;
+    color: var(--ok-texto);
+}
+
+@media (max-width: 1100px) {
+    .comissoes-layout {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .comissoes-lado {
+        position: static;
+    }
+}

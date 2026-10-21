@@ -50,6 +50,9 @@ namespace LucasAguiar.Data
             /// <summary>Já existe folha paga do profissional na competência da venda.</summary>
             public bool Paga { get; set; }
 
+            /// <summary>Forma de pagamento da venda; PLANO quando o credito pagou.</summary>
+            public string? FormaPagamento { get; set; }
+
             public bool EProduto => TipoItem == Models.TipoItem.Produto;
 
             /// <summary>Comissão sobre o valor do item; nulo quando o item saiu sem valor (plano).</summary>
@@ -160,7 +163,7 @@ namespace LucasAguiar.Data
 
             using var conexao = _conexao.GetConnection();
             using var comando = new MySqlCommand($@"
-                SELECT v.id_vend, v.data_vend, c.nome_cli, f.id_fun, f.nome_fun,
+                SELECT v.id_vend, v.data_vend, v.forma_pagamento_vend, c.nome_cli, f.id_fun, f.nome_fun,
                        vi.tipo_item, vi.descricao, vi.quantidade, vi.valor_total,
                        (vi.comissao * vi.quantidade) comissao, vi.coberto_plano,
                        EXISTS (SELECT 1 FROM folha_pagamento fp
@@ -199,7 +202,9 @@ namespace LucasAguiar.Data
                     NomeCliente = leitor.IsDBNull(iCliente) ? null : leitor.GetString(iCliente),
                     IdFuncionario = leitor.GetInt32("id_fun"),
                     NomeFuncionario = leitor.IsDBNull(iNome) ? "(sem nome)" : leitor.GetString(iNome),
-                    Paga = Convert.ToInt32(leitor.GetValue(leitor.GetOrdinal("paga"))) == 1
+                    Paga = Convert.ToInt32(leitor.GetValue(leitor.GetOrdinal("paga"))) == 1,
+                    FormaPagamento = DAOHelper.IsNull(leitor, "forma_pagamento_vend")
+                        ? null : leitor.GetString("forma_pagamento_vend")
                 });
             }
 

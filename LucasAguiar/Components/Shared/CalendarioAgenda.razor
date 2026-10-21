@@ -155,9 +155,6 @@
     /// <summary>Pixels por hora na grade. Meia hora fica com 33px, o bastante para nome e servico.</summary>
     private const int AlturaHora = 66;
 
-    /// <summary>Cores para quem ainda nao escolheu a sua no cadastro.</summary>
-    private static readonly string[] Paleta = { "#2f6fed", "#0f9f8f", "#e38a12", "#8b5cf6", "#e0457b", "#4b5563" };
-
     private record Coluna(DateTime Dia, Funcionario? Profissional, string Cor, List<Agendamento> Agendamentos)
     {
         public bool Hoje => Dia == DateTime.Today;
@@ -383,34 +380,10 @@
 
     // ---------- aparencia ----------
 
-    private string CorDe(int idFuncionario)
-    {
-        var cor = funcionarios.FirstOrDefault(f => f.IdFuncionario == idFuncionario)?.CorAgenda;
-        return !string.IsNullOrWhiteSpace(cor) ? cor : Paleta[Math.Abs(idFuncionario) % Paleta.Length];
-    }
-
-    /// <summary>Texto branco em cor escura, quase preto em cor clara.</summary>
-    private static string TextoSobre(string hex)
-    {
-        try
-        {
-            var h = hex.TrimStart('#');
-            var r = Convert.ToInt32(h[..2], 16);
-            var g = Convert.ToInt32(h[2..4], 16);
-            var b = Convert.ToInt32(h[4..6], 16);
-            return (0.299 * r + 0.587 * g + 0.114 * b) > 170 ? "#111827" : "#fff";
-        }
-        catch
-        {
-            return "#fff";
-        }
-    }
-
-    private static string Inicial(string? nome) =>
-        string.IsNullOrWhiteSpace(nome) ? "?" : nome.Trim()[..1].ToUpper();
-
-    private static string PrimeiroNome(string? nome) =>
-        string.IsNullOrWhiteSpace(nome) ? "—" : nome.Trim().Split(' ')[0];
+    private string CorDe(int idFuncionario) => CorProfissional.De(funcionarios, idFuncionario);
+    private static string TextoSobre(string hex) => CorProfissional.TextoSobre(hex);
+    private static string Inicial(string? nome) => CorProfissional.Inicial(nome);
+    private static string PrimeiroNome(string? nome) => CorProfissional.PrimeiroNome(nome);
 
     private static string Px(double valor) =>
         valor.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) + "px";

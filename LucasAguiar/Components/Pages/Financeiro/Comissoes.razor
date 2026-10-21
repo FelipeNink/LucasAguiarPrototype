@@ -60,6 +60,9 @@
     <span class="periodo-texto">@de.ToString("dd/MM/yyyy") a @ate.ToString("dd/MM/yyyy")</span>
 </div>
 
+<div class="comissoes-layout">
+<div class="comissoes-principal">
+
 @* ---------- resumo ---------- *@
 <div class="resumo">
     <div class="cartao-resumo comissao">
@@ -105,7 +108,8 @@
         {
             @foreach (var l in Filtradas)
             {
-                <tr>
+                <tr class="clicavel @(l == Selecionada ? "selecionada" : "")" title="Ver o cálculo"
+                    @onclick="() => selecionada = l">
                     <td class="suave">@l.DataVenda.ToString("dd/MM/yyyy")</td>
                     <td>#@l.IdVenda</td>
                     <td>@(l.NomeCliente ?? "—")</td>
@@ -142,9 +146,87 @@
     </tbody>
 </table>
 </div>
+</div>
+
+@* Como a comissao da linha escolhida foi calculada, e o total de cada um no periodo. *@
+<aside class="comissoes-lado">
+    @if (Selecionada is { } sel)
+    {
+        var cor = CorProfissional.De(funcionarios, sel.IdFuncionario);
+        var nome = CorProfissional.PrimeiroNome(sel.NomeFuncionario);
+
+        <div class="cartao-calculo">
+            <header class="calculo-topo">
+                <span class="calculo-data">@Cultura.TextInfo.ToTitleCase(sel.DataVenda.ToString("dddd, dd/MM", Cultura))</span>
+                <strong class="calculo-item">@sel.Descricao@(sel.Quantidade > 1 ? $" ×{sel.Quantidade}" : "")</strong>
+                <span class="calculo-quem">@(sel.NomeCliente ?? "Consumidor") · com @nome</span>
+            </header>
+
+            <div class="calculo-corpo">
+                <div class="calculo-linha">
+                    <span>@(sel.EProduto ? "Valor do produto" : "Valor do serviço")</span>
+                    <strong>@sel.ValorItem.ToString("C")</strong>
+                </div>
+                <div class="calculo-linha">
+                    <span>Pagamento</span>
+                    <span class="selo-pagamento">✓ @FormaPagamento.Rotulo(sel.FormaPagamento)</span>
+                </div>
+
+                <div class="calculo-destaque @(sel.Paga ? "paga" : "")">
+                    <div>
+                        <span class="calculo-rotulo">Comissão de @nome</span>
+                        <small>
+                            @if (sel.Percentual is { } p)
+                            {
+                                @($"{p:P0} de {sel.ValorItem:C}")
+                            }
+                            else
+                            {
+                                @("Atendimento coberto pelo plano")
+                            }
+                            · @(sel.Paga ? "paga na folha" : "a pagar")
+                        </small>
+                    </div>
+                    <strong>@sel.Comissao.ToString("C")</strong>
+                </div>
+            </div>
+        </div>
+    }
+
+    <div class="cartao-ranking">
+        <h3>Comissões do período</h3>
+        @if (Ranking.Count == 0)
+        {
+            <p class="suave">Nenhuma comissão no período.</p>
+        }
+        else
+        {
+            <ul>
+                @foreach (var r in Ranking)
+                {
+                    var cor = CorProfissional.De(funcionarios, r.Id);
+                    <li>
+                        <button type="button" class="@(idFuncionario == r.Id ? "ativo" : "")"
+                                title="@(idFuncionario == r.Id ? "Mostrar todos" : $"Só {r.Nome}")"
+                                @onclick="() => FiltrarProfissional(r.Id)">
+                            <span class="avatar" style="background: @cor; color: @CorProfissional.TextoSobre(cor)">@CorProfissional.Inicial(r.Nome)</span>
+                            <span class="ranking-nome">@r.Nome</span>
+                            <strong>@r.Total.ToString("C")</strong>
+                        </button>
+                    </li>
+                }
+            </ul>
+        }
+    </div>
+</aside>
+</div>
 
 @code {
+    private static readonly System.Globalization.CultureInfo Cultura = new("pt-BR");
+
     private List<ComissaoDAO.LinhaComissao> linhas = new();
+    private List<Funcionario> funcionarios = new();
+    private ComissaoDAO.LinhaComissao? selecionada;
     private List<OpcaoId> OpcoesFuncionario = new() { new(0, "Todos") };
 
     private string? erro;
@@ -173,6 +255,28 @@
     };
 
     private List<ComissaoDAO.LinhaComissao> Filtradas =>
+        PorTipoESituacao
+            .Where(l => idFuncionario == 0 || l.IdFuncionario == idFuncionario)
+            .ToList();
+
+    /// <summary>A linha clicada, ou a mais recente se ela saiu do filtro.</summary>
+    private ComissaoDAO.LinhaComissao? Selecionada =>
+        selecionada != null && Filtradas.Contains(selecionada) ? selecionada : Filtradas.FirstOrDefault();
+
+    /// <summary>
+    /// Total de cada profissional, sem o filtro de profissional: escolher
+    /// alguem na lista nao pode fazer os outros sumirem dela.
+    /// </summary>
+    private List<(int Id, string Nome, decimal Total)> Ranking =>
+        PorTipoESituacao
+            .GroupBy(l => l.IdFuncionario)
+            .Select(g => (g.Key, g.First().NomeFuncionario ?? "—", g.Sum(l => l.Comissao)))
+            .OrderByDescending(r => r.Item3)
+            .ToList();
+
+    private void FiltrarProfissional(int id) => idFuncionario = idFuncionario == id ? 0 : id;
+
+    private List<ComissaoDAO.LinhaComissao> PorTipoESituacao =>
         linhas
             .Where(l => tipo == ""
                         || (tipo == TipoItem.Produto ? l.EProduto : !l.EProduto))
@@ -190,7 +294,8 @@
     {
         try
         {
-            OpcoesFuncionario.AddRange(funcionarioDAO.ListarTodos()
+            funcionarios = funcionarioDAO.ListarTodos();
+            OpcoesFuncionario.AddRange(funcionarios
                 .Select(f => new OpcaoId(f.IdFuncionario, f.NomeFuncionario ?? "Sem nome")));
         }
         catch (Exception ex)
@@ -230,8 +335,9 @@
         {
             erro = null;
             // 'ate' e exclusivo no SQL: soma um dia para incluir o dia escolhido.
-            linhas = comissaoDAO.ListarItens(de, ate.AddDays(1),
-                idFuncionario > 0 ? idFuncionario : null);
+            // Todos os profissionais: o filtro de profissional e aplicado na
+            // tela, para o ranking ao lado continuar mostrando todo mundo.
+            linhas = comissaoDAO.ListarItens(de, ate.AddDays(1));
         }
         catch (Exception ex)
         {
