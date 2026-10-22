@@ -69,6 +69,7 @@ builder.Services.AddScoped<LogDAO>();
 builder.Services.AddScoped<HorarioDAO>();
 builder.Services.AddScoped<JornadaDAO>();
 builder.Services.AddScoped<BancoInicializador>();
+builder.Services.AddScoped<DadosExemplo>();
 builder.Services.AddScoped<LucasAguiar.Services.AuthenticationService>();
 builder.Services.AddScoped<RelatorioPdf>();
 builder.Services.AddHttpClient<BuscaCep>();
@@ -136,6 +137,19 @@ using (var escopo = app.Services.CreateScope())
     {
         app.Logger.LogWarning(ex, "A limpeza de sessões e logs não pôde ser feita.");
     }
+}
+
+// Dados de exemplo pela linha de comando: carrega ou remove e sai, sem
+// subir o site. Ver Data/DadosExemplo.cs.
+if (args.Contains("--dados-exemplo") || args.Contains("--remover-exemplo"))
+{
+    using var escopo = app.Services.CreateScope();
+    var exemplo = escopo.ServiceProvider.GetRequiredService<DadosExemplo>();
+
+    if (args.Contains("--remover-exemplo")) exemplo.Remover(Console.WriteLine);
+    else exemplo.Carregar(Console.WriteLine);
+
+    return;
 }
 
 // Precisa vir antes de tudo que olha para o esquema ou o IP do pedido.
