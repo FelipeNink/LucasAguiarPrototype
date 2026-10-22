@@ -11,8 +11,9 @@
         @{
             var nomePagina = routeData.PageType?.Name;
 
-            // Telas de acesso nao levam a lateral nem o cabecalho.
-            var semMoldura = nomePagina is "Login" or "Logout" or "Error" or "TrocarSenha";
+            // Telas de acesso nao levam a lateral nem o cabecalho. A de
+            // confirmar horario e do cliente, aberta pelo link do lembrete.
+            var semMoldura = nomePagina is "Login" or "Logout" or "Error" or "TrocarSenha" or "ConfirmarHorario";
 
             var tipoLayout = semMoldura
                 ? typeof(Layout.BlankLayout)

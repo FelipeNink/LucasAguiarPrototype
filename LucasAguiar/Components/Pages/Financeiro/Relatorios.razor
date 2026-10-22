@@ -238,6 +238,17 @@ else if (relatorio == Faltas)
         passado. A taxa é sobre @faltas.Encerrados horário(s) encerrado(s); cancelado, que avisou, fica à parte.
     </p>
 
+    @* Mede o lembrete: quem confirmou pelo link falta menos que quem nao respondeu? *@
+    @if (faltas.EncerradosConfirmados > 0)
+    {
+        <p class="nota-relatorio">
+            <strong>Quem confirmou pelo lembrete:</strong> @faltas.TaxaConfirmados.ToString("0.#")% de falta
+            (@faltas.FaltasConfirmados de @faltas.EncerradosConfirmados).
+            <strong>Quem não confirmou:</strong> @faltas.TaxaSemConfirmar.ToString("0.#")%
+            (@faltas.FaltasSemConfirmar de @faltas.EncerradosSemConfirmar).
+        </p>
+    }
+
     <div class="tabela fixa">
         <table class="table table-striped">
             <thead>

@@ -118,9 +118,10 @@
                                 <a href="/agendamento/@a.IdAgendamento"
                                    class="bloco @ClasseStatus(a.Status) @(a.DuracaoMin < 40 ? "curto" : "")"
                                    style="top: @Px(Topo(a)); height: @Px(Altura(a)); left: calc(@Pct(faixa, faixas) + 3px); width: calc(@Pct(1, faixas) - 6px); --cor: @cor; color: @TextoSobre(cor)"
-                                   title="@a.DataHora.ToString("HH:mm")–@a.Fim.ToString("HH:mm") · @(a.NomeCliente ?? "—") · @(a.NomeServico ?? "—") · @StatusAgendamento.Rotulo(a.Status)"
+                                   title="@a.DataHora.ToString("HH:mm")–@a.Fim.ToString("HH:mm") · @(a.NomeCliente ?? "—") · @(a.NomeServico ?? "—") · @a.RotuloStatus"
                                    @onclick:stopPropagation="true">
-                                    <strong>@(a.NomeCliente ?? "—")</strong>
+                                    @* O check marca quem confirmou pelo link do lembrete. *@
+                                    <strong>@(a.Confirmado ? "✓ " : "")@(a.NomeCliente ?? "—")</strong>
                                     <span>@(coluna.Profissional == null ? $"{a.DataHora:HH:mm} · {PrimeiroNome(a.NomeFuncionario)}" : a.NomeServico ?? "—")</span>
                                 </a>
                             }

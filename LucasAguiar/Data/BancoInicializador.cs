@@ -54,6 +54,8 @@ namespace LucasAguiar.Data
                 MigrarExpediente(conexao);
 
                 MigrarJornada(conexao);
+
+                MigrarConfirmacao(conexao);
             }
             catch (Exception ex)
             {
@@ -877,6 +879,23 @@ namespace LucasAguiar.Data
                   CONSTRAINT `fk_bloqueio_funcionario` FOREIGN KEY (`id_fun_fk`)
                       REFERENCES `funcionario` (`id_fun`) ON DELETE CASCADE
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci");
+        }
+
+        // =============================================================
+        // CONFIRMACAO PELO CLIENTE
+        //
+        // O lembrete leva um link /confirmar/<token>. Confirmar nao muda o
+        // status -- o horario continua AGENDADO, ocupando a agenda --, so
+        // marca confirmado_em. Cancelar pelo link vira CANCELADO e guarda
+        // quando, para o painel avisar a equipe.
+        // =============================================================
+
+        private void MigrarConfirmacao(MySqlConnection conexao)
+        {
+            GarantirColuna(conexao, "agendamento", "token_confirmacao", "varchar(32) DEFAULT NULL");
+            GarantirColuna(conexao, "agendamento", "confirmado_em", "datetime DEFAULT NULL");
+            GarantirColuna(conexao, "agendamento", "cancelado_cliente_em", "datetime DEFAULT NULL");
+            GarantirIndiceUnico(conexao, "agendamento", "uk_agendamento_token", "token_confirmacao");
         }
 
         // ---------- apoio das migracoes ----------

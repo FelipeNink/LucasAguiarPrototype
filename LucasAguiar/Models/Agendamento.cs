@@ -45,6 +45,12 @@ namespace LucasAguiar.Models
         /// <summary>Venda gerada a partir deste agendamento.</summary>
         public int? IdVenda { get; set; }
 
+        /// <summary>Quando o cliente confirmou pelo link do lembrete. O status segue AGENDADO.</summary>
+        public DateTime? ConfirmadoEm { get; set; }
+
+        /// <summary>Quando o cliente cancelou pelo link; null se foi a equipe.</summary>
+        public DateTime? CanceladoClienteEm { get; set; }
+
         // Preenchidos por join, para exibicao
         public string? NomeCliente { get; set; }
         public string? TelefoneCliente { get; set; }
@@ -59,5 +65,14 @@ namespace LucasAguiar.Models
         public DateTime Fim => DataHora.AddMinutes(DuracaoMin);
 
         public bool Aberto => Status == StatusAgendamento.Agendado;
+
+        /// <summary>Em aberto e confirmado pelo cliente.</summary>
+        public bool Confirmado => Aberto && ConfirmadoEm.HasValue;
+
+        /// <summary>O rotulo do status, com "Confirmado" no lugar de "Agendado" quando o cliente confirmou.</summary>
+        public string RotuloStatus =>
+            Confirmado ? "Confirmado"
+            : Status == StatusAgendamento.Cancelado && CanceladoClienteEm.HasValue ? "Cancelado pelo cliente"
+            : StatusAgendamento.Rotulo(Status);
     }
 }

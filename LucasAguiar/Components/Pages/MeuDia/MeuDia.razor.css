@@ -233,6 +233,7 @@
     color: var(--marca-escura);
 }
 
+.situacao.confirmado,
 .situacao.concluido {
     background: var(--ok-fundo);
     color: var(--ok-escuro);

@@ -47,6 +47,16 @@ namespace LucasAguiar.Configs
                    "Se precisar remarcar, é só responder por aqui.";
         }
 
+        /// <summary>Lembrete da vespera com o link onde o cliente confirma ou cancela.</summary>
+        public static string Lembrete(string? cliente, DateTime quando, string? servico, string? profissional, string link)
+        {
+            var oque = string.IsNullOrWhiteSpace(servico) ? "seu horário" : servico.Trim();
+            var com = string.IsNullOrWhiteSpace(profissional) ? "" : $" com {PrimeiroNome(profissional)}";
+
+            return $"Olá, {PrimeiroNome(cliente)}! Lembrete da {NomeBarbearia}: {oque}{com} " +
+                   $"{Quando(quando)}. Confirme ou cancele por aqui: {link}";
+        }
+
         public static string RemarcarFalta(string? cliente, DateTime quando)
             => $"Olá, {PrimeiroNome(cliente)}! Sentimos sua falta no horário de " +
                $"{quando.ToString("dd/MM 'às' HH:mm", Cultura)} aqui na {NomeBarbearia}. " +

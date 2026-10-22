@@ -1,0 +1,86 @@
+@using LucasAguiar.Configs
+@using LucasAguiar.Models
+@inject AgendamentoDAO agendamentoDAO
+@inject NavigationManager Navigation
+
+@* Horarios de amanha ainda sem confirmacao, cada um com o lembrete pronto
+   no WhatsApp. A mensagem leva o link /confirmar/<codigo>: o cliente
+   confirma ou cancela sozinho, e quem confirmou sai desta lista.
+
+   O envio e um clique por cliente (wa.me), de proposito: sem API paga e
+   sem risco de o numero da barbearia ser bloqueado por disparo em massa.
+   Com IdFuncionario, so os horarios daquele profissional (Meu dia). *@
+
+@if (carregado && total > 0)
+{
+    <section class="lembretes">
+        <header>
+            <div>
+                <h2>Lembrar amanhã</h2>
+                <span class="sub">
+                    @confirmados de @total confirmado(s)@(pendentes.Count > 0 ? $" · {pendentes.Count} sem resposta" : "")
+                </span>
+            </div>
+        </header>
+
+        @if (pendentes.Count == 0)
+        {
+            <p class="tudo-certo">✓ Todos os horários de amanhã estão confirmados.</p>
+        }
+        else
+        {
+            <ul>
+                @foreach (var (a, link) in pendentes)
+                {
+                    <li>
+                        <span class="hora">@a.DataHora.ToString("HH:mm")</span>
+                        <span class="quem">
+                            <strong>@a.NomeCliente</strong>
+                            <span>@a.NomeServico@(IdFuncionario == null ? $" · {WhatsApp.PrimeiroNome(a.NomeFuncionario)}" : "")</span>
+                        </span>
+                        <BotaoWhatsApp Telefone="@a.TelefoneCliente" Rotulo="Lembrar"
+                                       Titulo="Mandar o lembrete com o link de confirmação"
+                                       Mensagem="@WhatsApp.Lembrete(a.NomeCliente, a.DataHora, a.NomeServico, a.NomeFuncionario, link)" />
+                    </li>
+                }
+            </ul>
+        }
+    </section>
+}
+
+@code {
+    /// <summary>So os horarios deste profissional; null mostra todos.</summary>
+    [Parameter] public int? IdFuncionario { get; set; }
+
+    private List<(Agendamento Agendamento, string Link)> pendentes = new();
+    private int total;
+    private int confirmados;
+    private bool carregado;
+
+    protected override void OnParametersSet()
+    {
+        try
+        {
+            var amanha = DateTime.Today.AddDays(1);
+
+            var abertos = agendamentoDAO.Listar(amanha, amanha.AddDays(1), StatusAgendamento.Agendado)
+                .Where(a => IdFuncionario == null || a.IdFuncionario == IdFuncionario)
+                .ToList();
+
+            total = abertos.Count;
+            confirmados = abertos.Count(a => a.Confirmado);
+
+            pendentes = abertos
+                .Where(a => !a.Confirmado)
+                .Select(a => (a, Navigation.BaseUri + "confirmar/" + agendamentoDAO.GarantirToken(a.IdAgendamento)))
+                .ToList();
+        }
+        catch
+        {
+            // Lembrete e apoio: falhar aqui nao derruba a tela que o usa.
+            total = 0;
+        }
+
+        carregado = true;
+    }
+}

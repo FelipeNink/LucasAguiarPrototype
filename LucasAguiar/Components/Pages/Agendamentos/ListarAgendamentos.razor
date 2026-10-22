@@ -93,6 +93,9 @@
     </div>
 </div>
 
+@* Os horarios de amanha que ainda nao confirmaram, com o lembrete pronto. *@
+<LembretesAmanha />
+
 <div class="tabela fixa">
     <table class="table">
         <thead>
@@ -133,8 +136,8 @@
                             <td class="al-dir opcional"><span class="descritivo">@a.DuracaoMin min</span></td>
                             <td class="col-num">@a.PrecoServico.ToString("C")</td>
                             <td>
-                                <span class="status @ClasseStatus(a.Status)">
-                                    <i></i>@StatusAgendamento.Rotulo(a.Status)
+                                <span class="status @(a.Confirmado ? "pago" : ClasseStatus(a.Status))">
+                                    <i></i>@a.RotuloStatus
                                 </span>
                             </td>
                             <td class="col-acoes">
@@ -220,8 +223,8 @@
                 <div>
                     <dt>Status</dt>
                     <dd>
-                        <span class="status @ClasseStatus(visualizando.Status)">
-                            <i></i>@StatusAgendamento.Rotulo(visualizando.Status)
+                        <span class="status @(visualizando.Confirmado ? "pago" : ClasseStatus(visualizando.Status))">
+                            <i></i>@visualizando.RotuloStatus
                         </span>
                     </dd>
                 </div>

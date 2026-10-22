@@ -213,6 +213,20 @@ namespace LucasAguiar.Data
 
             public decimal Taxa =>
                 Encerrados == 0 ? 0 : Math.Round((decimal)Faltas / Encerrados * 100, 1);
+
+            /// <summary>Encerrados e faltas so de quem confirmou pelo link do lembrete.</summary>
+            public int EncerradosConfirmados { get; set; }
+            public int FaltasConfirmados { get; set; }
+
+            public int EncerradosSemConfirmar => Encerrados - EncerradosConfirmados;
+            public int FaltasSemConfirmar => Faltas - FaltasConfirmados;
+
+            /// <summary>Taxa de falta de quem confirmou x de quem nao confirmou: mede o lembrete.</summary>
+            public decimal TaxaConfirmados =>
+                EncerradosConfirmados == 0 ? 0 : Math.Round((decimal)FaltasConfirmados / EncerradosConfirmados * 100, 1);
+
+            public decimal TaxaSemConfirmar =>
+                EncerradosSemConfirmar == 0 ? 0 : Math.Round((decimal)FaltasSemConfirmar / EncerradosSemConfirmar * 100, 1);
         }
 
         /// <summary>
@@ -237,7 +251,11 @@ namespace LucasAguiar.Data
                     SUM(status = 'CONCLUIDO') AS concluidos,
                     SUM(status = 'CANCELADO') AS cancelados,
                     SUM(status = 'FALTOU' OR (status = 'AGENDADO' AND data_hora < NOW())) AS faltas,
-                    SUM(status = 'AGENDADO' AND data_hora >= NOW()) AS pendentes
+                    SUM(status = 'AGENDADO' AND data_hora >= NOW()) AS pendentes,
+                    SUM(confirmado_em IS NOT NULL AND (status IN ('CONCLUIDO', 'FALTOU')
+                        OR (status = 'AGENDADO' AND data_hora < NOW()))) AS encerrados_confirmados,
+                    SUM(confirmado_em IS NOT NULL AND (status = 'FALTOU'
+                        OR (status = 'AGENDADO' AND data_hora < NOW()))) AS faltas_confirmados
                   FROM agendamento
                  WHERE data_hora >= @de AND data_hora < @ate", conexao);
 
@@ -251,6 +269,8 @@ namespace LucasAguiar.Data
                 resumo.Cancelados = Inteiro(leitor, "cancelados");
                 resumo.Faltas = Inteiro(leitor, "faltas");
                 resumo.Pendentes = Inteiro(leitor, "pendentes");
+                resumo.EncerradosConfirmados = Inteiro(leitor, "encerrados_confirmados");
+                resumo.FaltasConfirmados = Inteiro(leitor, "faltas_confirmados");
             }
 
             return resumo;

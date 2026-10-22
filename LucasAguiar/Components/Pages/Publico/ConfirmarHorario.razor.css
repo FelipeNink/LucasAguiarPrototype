@@ -1,0 +1,128 @@
+/* Aberta no celular do cliente, pelo link do WhatsApp: um cartao so,
+   centralizado, com botoes grandes. Sem nada do sistema em volta. */
+
+.pagina-confirmar {
+    min-height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+    background: var(--superficie-2);
+}
+
+.cartao-confirmar {
+    width: 100%;
+    max-width: 420px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 28px 24px;
+    background: var(--superficie);
+    border: 1px solid var(--borda-suave);
+    border-radius: var(--raio-cartao);
+    box-shadow: 0 4px 16px rgba(16, 24, 40, 0.08);
+    text-align: center;
+}
+
+.cartao-confirmar h1 {
+    margin: 0;
+    font-size: 24px;
+}
+
+.cartao-confirmar p {
+    margin: 0;
+    color: var(--texto-3);
+}
+
+.dados-horario {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 0;
+    padding: 14px 16px;
+    background: var(--superficie-2);
+    border-radius: var(--raio);
+    text-align: left;
+}
+
+.dados-horario dt {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--texto-fraco);
+}
+
+.dados-horario dd {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--texto);
+}
+
+.dados-horario dd::first-letter {
+    text-transform: uppercase;
+}
+
+.botoes {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.botoes button,
+.cartao-confirmar > .botao-secundario {
+    width: 100%;
+    height: 48px;
+    border-radius: var(--raio);
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.botao-principal {
+    border: none;
+    background: var(--marca);
+    color: #fff;
+}
+
+.botao-secundario {
+    border: 1px solid var(--borda-2);
+    background: var(--superficie);
+    color: var(--texto-2);
+}
+
+.botao-perigo {
+    border: none;
+    background: var(--perigo);
+    color: #fff;
+}
+
+button:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+.situacao {
+    padding: 12px;
+    border-radius: var(--raio);
+    background: var(--superficie-3);
+    font-weight: 600;
+}
+
+.situacao.confirmado {
+    background: var(--ok-fundo);
+    color: var(--ok-texto);
+}
+
+.situacao.cancelado {
+    background: var(--perigo-fundo);
+    color: var(--perigo-escuro);
+}
+
+.confirmar-cancelamento {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-top: 4px;
+}

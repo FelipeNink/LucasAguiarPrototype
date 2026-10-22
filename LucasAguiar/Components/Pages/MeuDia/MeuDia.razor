@@ -112,7 +112,7 @@ else if (carregado)
                         </span>
 
                         <span class="acoes">
-                            <span class="situacao @a.Status.ToLowerInvariant()">@StatusAgendamento.Rotulo(a.Status)</span>
+                            <span class="situacao @(a.Confirmado ? "confirmado" : a.Status.ToLowerInvariant())">@a.RotuloStatus</span>
 
                             @if (a.Aberto && podeVender)
                             {
@@ -129,6 +129,9 @@ else if (carregado)
             </ul>
         }
     </section>
+
+    @* Os clientes dele que ainda nao confirmaram amanha. *@
+    <LembretesAmanha IdFuncionario="idFuncionario" />
 }
 
 @code {

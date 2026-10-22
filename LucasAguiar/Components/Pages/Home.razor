@@ -11,6 +11,7 @@
 @inject CaixaDAO caixaDAO
 @inject EstoqueDAO estoqueDAO
 @inject AssinaturaDAO assinaturaDAO
+@inject AgendamentoDAO agendamentoDAO
 @inject HorarioDAO horarioDAO
 @inject Autorizacao permissao
 
@@ -126,9 +127,24 @@
    Reposicao: so quando ha o que repor, e so para quem pode abrir o
    estoque. Assinaturas: mesma regra; vencida e a ativa com o prazo ja
    passado, vencendo e a que vence nos proximos dias. *@
-@if (reposicao.Count > 0 || assinaturasAtencao.Count > 0)
+@if (reposicao.Count > 0 || assinaturasAtencao.Count > 0 || canceladosCliente.Count > 0)
 {
     <div class="avisos-painel">
+        @* Cancelou pelo link do lembrete: o horario ja ficou livre, e a
+           equipe precisa saber para encaixar outro cliente. *@
+        @if (canceladosCliente.Count > 0)
+        {
+            var lista = string.Join(" · ", canceladosCliente.Select(a => $"{a.NomeCliente}: {WhatsApp.Quando(a.DataHora)}"));
+            <a href="/agendamentos" class="aviso-compacto" title="@lista">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM16 2v4M8 2v4M3 10h18M10 14l4 4M14 14l-4 4" />
+                </svg>
+                <strong>@TextoCancelados</strong>
+                <span>@lista</span>
+            </a>
+        }
+
         @if (reposicao.Count > 0)
         {
             var lista = string.Join(" · ", reposicao.Select(p => $"{p.Nome}: {p.Saldo}"));
@@ -304,6 +320,14 @@ else
     /// <summary>Dias a frente em que uma assinatura ativa ja conta como "vencendo".</summary>
     private const int DiasAvisoAssinatura = 7;
 
+    /// <summary>Cancelados pelo cliente, pelo link do lembrete, nas ultimas 24 horas.</summary>
+    private List<Agendamento> canceladosCliente = new();
+
+    private string TextoCancelados =>
+        canceladosCliente.Count == 1
+            ? $"{WhatsApp.PrimeiroNome(canceladosCliente[0].NomeCliente)} cancelou o horário de {canceladosCliente[0].DataHora:dd/MM 'às' HH:mm}"
+            : $"{canceladosCliente.Count} clientes cancelaram pelo lembrete";
+
     /// <summary>Ativas vencidas ou vencendo, da mais antiga para a mais nova.</summary>
     private List<Assinatura> assinaturasAtencao = new();
 
@@ -347,6 +371,18 @@ else
             catch
             {
                 // Aviso de reposicao nao pode derrubar o painel inteiro.
+            }
+        }
+
+        if (permissao.PodeVer("agendamentos"))
+        {
+            try
+            {
+                canceladosCliente = agendamentoDAO.CanceladosPeloCliente(DateTime.Now.AddHours(-24));
+            }
+            catch
+            {
+                // Mesmo caso da reposicao: o aviso e acessorio.
             }
         }
 

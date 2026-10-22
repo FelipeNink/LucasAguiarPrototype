@@ -106,7 +106,7 @@ namespace LucasAguiar.Services
                     {
                         a.IdAgendamento, a.DataHora, a.Fim, a.NomeCliente, a.TelefoneCliente,
                         a.NomeServico, a.NomeFuncionario, a.PrecoServico,
-                        StatusAgendamento.Rotulo(a.Status), a.Observacao
+                        a.RotuloStatus, a.Observacao
                     })));
 
             // A planilha de estoque sai com a movimentacao, e nao so com o

@@ -81,8 +81,13 @@ namespace LucasAguiar.Data
             using var transacao = conexao.BeginTransaction();
             try
             {
+                // Remarcado para outra hora ou outro profissional, a
+                // confirmacao do cliente era do horario antigo: volta a
+                // pendente. Vem antes de data_hora no SET porque o MySQL
+                // aplica as atribuicoes em ordem.
                 using (var comando = new MySqlCommand(@"
                     UPDATE agendamento SET
+                        confirmado_em = IF(data_hora <> @dataHora OR id_fun_fk <> @idFuncionario, NULL, confirmado_em),
                         data_hora = @dataHora, duracao_min = @duracao, id_cli_fk = @idCliente,
                         id_fun_fk = @idFuncionario, id_serv_fk = @idServico,
                         observacao = @observacao, status = @status
@@ -139,6 +144,95 @@ namespace LucasAguiar.Data
             comando.Parameters.AddWithValue("@id", id);
 
             comando.ExecuteNonQuery();
+        }
+
+        // ---------- confirmacao pelo cliente ----------
+
+        /// <summary>
+        /// Codigo do link de confirmacao, criado na primeira vez que alguem
+        /// manda o lembrete. Aleatorio (128 bits): o link de um cliente nao
+        /// leva ao de outro trocando um numero.
+        /// </summary>
+        public string GarantirToken(int id)
+        {
+            using var conexao = _conexao.GetConnection();
+
+            using (var gravar = new MySqlCommand(@"
+                UPDATE agendamento SET token_confirmacao = @token
+                WHERE id_agend = @id AND token_confirmacao IS NULL", conexao))
+            {
+                gravar.Parameters.AddWithValue("@token", Convert.ToHexString(
+                    System.Security.Cryptography.RandomNumberGenerator.GetBytes(16)).ToLowerInvariant());
+                gravar.Parameters.AddWithValue("@id", id);
+                gravar.ExecuteNonQuery();
+            }
+
+            using var ler = new MySqlCommand(
+                "SELECT token_confirmacao FROM agendamento WHERE id_agend = @id", conexao);
+            ler.Parameters.AddWithValue("@id", id);
+            return Convert.ToString(ler.ExecuteScalar())
+                ?? throw new Exception("Agendamento não encontrado.");
+        }
+
+        public Agendamento? BuscarPorToken(string token)
+        {
+            if (string.IsNullOrWhiteSpace(token) || token.Length != 32) return null;
+
+            using var conexao = _conexao.GetConnection();
+            using var comando = new MySqlCommand(
+                SelecaoPadrao + " WHERE a.token_confirmacao = @token LIMIT 1", conexao);
+            comando.Parameters.AddWithValue("@token", token);
+
+            using var leitor = comando.ExecuteReader();
+            return leitor.Read() ? Ler(leitor) : null;
+        }
+
+        /// <summary>
+        /// O cliente confirma pelo link. So vale para horario em aberto que
+        /// ainda nao passou; confirmar de novo nao muda a data da primeira.
+        /// </summary>
+        public bool ConfirmarPeloCliente(string token)
+        {
+            using var conexao = _conexao.GetConnection();
+            using var comando = new MySqlCommand(@"
+                UPDATE agendamento SET confirmado_em = COALESCE(confirmado_em, NOW())
+                WHERE token_confirmacao = @token AND status = @agendado AND data_hora > NOW()", conexao);
+            comando.Parameters.AddWithValue("@token", token);
+            comando.Parameters.AddWithValue("@agendado", StatusAgendamento.Agendado);
+            return comando.ExecuteNonQuery() > 0;
+        }
+
+        /// <summary>
+        /// O cliente cancela pelo link: o horario fica livre na hora, e a
+        /// data do cancelamento serve para o painel avisar a equipe.
+        /// </summary>
+        public bool CancelarPeloCliente(string token)
+        {
+            using var conexao = _conexao.GetConnection();
+            using var comando = new MySqlCommand(@"
+                UPDATE agendamento SET status = @cancelado, cancelado_cliente_em = NOW()
+                WHERE token_confirmacao = @token AND status = @agendado AND data_hora > NOW()", conexao);
+            comando.Parameters.AddWithValue("@cancelado", StatusAgendamento.Cancelado);
+            comando.Parameters.AddWithValue("@token", token);
+            comando.Parameters.AddWithValue("@agendado", StatusAgendamento.Agendado);
+            return comando.ExecuteNonQuery() > 0;
+        }
+
+        /// <summary>Cancelados pelo cliente desde uma data, de horarios que ainda nao passaram.</summary>
+        public List<Agendamento> CanceladosPeloCliente(DateTime desde)
+        {
+            var lista = new List<Agendamento>();
+
+            using var conexao = _conexao.GetConnection();
+            using var comando = new MySqlCommand(
+                SelecaoPadrao + @" WHERE a.cancelado_cliente_em >= @desde AND a.data_hora >= @hoje
+                                   ORDER BY a.data_hora", conexao);
+            comando.Parameters.AddWithValue("@desde", desde);
+            comando.Parameters.AddWithValue("@hoje", DateTime.Today);
+
+            using var leitor = comando.ExecuteReader();
+            while (leitor.Read()) lista.Add(Ler(leitor));
+            return lista;
         }
 
         /// <summary>Marca a falta do cliente; só vale para horário ainda em aberto.</summary>
@@ -274,6 +368,16 @@ namespace LucasAguiar.Data
                 return leitor.IsDBNull(i) ? 0 : leitor.GetInt32(i);
             }
 
+            // Colunas da confirmacao: se a migracao nao rodou, ficam nulas em
+            // vez de derrubar a agenda inteira.
+            DateTime? Data(string coluna)
+            {
+                for (var i = 0; i < leitor.FieldCount; i++)
+                    if (leitor.GetName(i) == coluna)
+                        return leitor.IsDBNull(i) ? null : leitor.GetDateTime(i);
+                return null;
+            }
+
             var iVenda = leitor.GetOrdinal("id_vend_fk");
             var iPreco = leitor.GetOrdinal("preco_serv");
 
@@ -296,6 +400,8 @@ namespace LucasAguiar.Data
                 Observacao = Texto("observacao"),
                 Status = Texto("status") ?? StatusAgendamento.Agendado,
                 IdVenda = leitor.IsDBNull(iVenda) ? null : leitor.GetInt32(iVenda),
+                ConfirmadoEm = Data("confirmado_em"),
+                CanceladoClienteEm = Data("cancelado_cliente_em"),
                 NomeCliente = Texto("nome_cli"),
                 TelefoneCliente = Texto("telefone_cli"),
                 NomeFuncionario = Texto("nome_fun"),

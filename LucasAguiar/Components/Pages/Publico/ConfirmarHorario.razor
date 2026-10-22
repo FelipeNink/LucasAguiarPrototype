@@ -1,0 +1,154 @@
+@page "/confirmar/{Token}"
+@rendermode InteractiveServer
+@attribute [AllowAnonymous]
+
+@using LucasAguiar.Configs
+@using LucasAguiar.Models
+@inject AgendamentoDAO agendamentoDAO
+
+@* Pagina publica do lembrete: o cliente abre pelo link do WhatsApp, sem
+   login, e confirma ou cancela o proprio horario. O que da acesso e so
+   o codigo do link, aleatorio e unico por agendamento; ele para de valer
+   quando o horario passa ou deixa de estar em aberto. Nao mostra
+   telefone nem nada alem do que o cliente ja sabe do proprio horario. *@
+
+<PageTitle>Seu horário</PageTitle>
+<HeadContent>
+    <meta name="robots" content="noindex, nofollow" />
+</HeadContent>
+
+<main class="pagina-confirmar">
+    <div class="cartao-confirmar">
+        <Marca />
+
+        @if (agendamento == null)
+        {
+            <h1>Link inválido</h1>
+            <p>Este link não existe ou foi digitado errado. Fale com a barbearia pelo WhatsApp.</p>
+        }
+        else
+        {
+            <h1>@WhatsApp.PrimeiroNome(agendamento.NomeCliente), seu horário</h1>
+
+            <dl class="dados-horario">
+                <div>
+                    <dt>Quando</dt>
+                    <dd>@agendamento.DataHora.ToString("dddd, dd 'de' MMMM 'às' HH:mm", Cultura)</dd>
+                </div>
+                <div>
+                    <dt>Serviço</dt>
+                    <dd>@(agendamento.NomeServico ?? "—")</dd>
+                </div>
+                @if (!string.IsNullOrWhiteSpace(agendamento.NomeFuncionario))
+                {
+                    <div>
+                        <dt>Com</dt>
+                        <dd>@WhatsApp.PrimeiroNome(agendamento.NomeFuncionario)</dd>
+                    </div>
+                }
+            </dl>
+
+            @if (agendamento.Status == StatusAgendamento.Cancelado)
+            {
+                <p class="situacao cancelado">Este horário foi cancelado. Se quiser marcar outro, fale com a barbearia.</p>
+            }
+            else if (!agendamento.Aberto || agendamento.DataHora <= DateTime.Now)
+            {
+                <p class="situacao">Este horário já passou.</p>
+            }
+            else if (agendamento.Confirmado)
+            {
+                <p class="situacao confirmado">✓ Horário confirmado. Até lá!</p>
+
+                @if (!pedindoCancelar)
+                {
+                    <button type="button" class="botao-secundario" @onclick="() => pedindoCancelar = true">
+                        Não vou poder ir
+                    </button>
+                }
+            }
+            else if (!pedindoCancelar)
+            {
+                <div class="botoes">
+                    <button type="button" class="botao-principal" disabled="@ocupado" @onclick="Confirmar">
+                        Confirmar horário
+                    </button>
+                    <button type="button" class="botao-secundario" disabled="@ocupado" @onclick="() => pedindoCancelar = true">
+                        Não vou poder ir
+                    </button>
+                </div>
+            }
+
+            @* Cancelar libera o horario na hora: pede uma segunda confirmacao. *@
+            @if (pedindoCancelar && agendamento.Aberto && agendamento.DataHora > DateTime.Now)
+            {
+                <div class="confirmar-cancelamento">
+                    <p>Cancelar este horário? Ele fica livre para outro cliente.</p>
+                    <div class="botoes">
+                        <button type="button" class="botao-perigo" disabled="@ocupado" @onclick="Cancelar">Sim, cancelar</button>
+                        <button type="button" class="botao-secundario" disabled="@ocupado" @onclick="() => pedindoCancelar = false">Voltar</button>
+                    </div>
+                </div>
+            }
+
+            @if (erro != null)
+            {
+                <p class="situacao cancelado">@erro</p>
+            }
+        }
+    </div>
+</main>
+
+@code {
+    private static readonly System.Globalization.CultureInfo Cultura = new("pt-BR");
+
+    [Parameter] public string Token { get; set; } = "";
+
+    private Agendamento? agendamento;
+    private bool pedindoCancelar;
+    private bool ocupado;
+    private string? erro;
+
+    protected override void OnParametersSet() => Recarregar();
+
+    private void Recarregar()
+    {
+        try
+        {
+            agendamento = agendamentoDAO.BuscarPorToken(Token);
+        }
+        catch
+        {
+            agendamento = null;
+        }
+    }
+
+    private void Confirmar() => Agir(() => agendamentoDAO.ConfirmarPeloCliente(Token));
+
+    private void Cancelar() => Agir(() => agendamentoDAO.CancelarPeloCliente(Token));
+
+    /// <summary>
+    /// Grava e relê: se o horario mudou enquanto a pagina estava aberta
+    /// (a equipe remarcou ou cancelou), o cliente ve a situacao nova.
+    /// </summary>
+    private void Agir(Func<bool> acao)
+    {
+        ocupado = true;
+        erro = null;
+
+        try
+        {
+            if (!acao()) erro = "Não foi possível: o horário mudou. Veja a situação atual acima.";
+            pedindoCancelar = false;
+        }
+        catch
+        {
+            erro = "Não conseguimos registrar agora. Tente de novo em instantes ou fale com a barbearia.";
+        }
+        finally
+        {
+            ocupado = false;
+            Recarregar();
+        }
+    }
+}
