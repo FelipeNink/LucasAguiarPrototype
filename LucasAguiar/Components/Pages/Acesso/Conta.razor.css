@@ -1,10 +1,18 @@
-/* Blocos independentes numa grade que se reacomoda sozinha: no
-   computador ficam dois a dois, no celular empilham. */
+/* Tres colunas fixas e iguais, com os blocos da mesma linha na mesma
+   altura; os acessos abertos ocupam a linha de baixo inteira. Com
+   auto-fit, o bloco de linha inteira criava seis colunas vazias e os
+   tres de cima ficavam estreitos e cada um de uma altura. */
 .grade-conta {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 16px;
-    align-items: start;
+    align-items: stretch;
+}
+
+@media (max-width: 900px) {
+    .grade-conta {
+        grid-template-columns: minmax(0, 1fr);
+    }
 }
 
 .bloco-conta {

@@ -1,4 +1,4 @@
-// Graficos do relatorio de Faturamento (antes ficavam no painel).
+// Graficos do painel e do relatorio de Faturamento (mesmos ids nas duas telas).
 // Carregado no <head> do App.razor: o Blazor usa navegacao aprimorada e nao
 // re-executa <script> declarado dentro de uma pagina, entao o bootstrap precisa
 // viver aqui fora e reagir ao evento 'enhancedload'.
@@ -37,7 +37,7 @@
     let graficoBarras = null;
     let graficoPizza = null;
 
-    /// Le os dados que o Relatorios.razor deixou no elemento oculto.
+    /// Le os dados que o Home.razor ou o Relatorios.razor deixou no elemento oculto.
     function lerDados() {
         const alvo = document.getElementById('dados-painel');
         if (!alvo) return null;

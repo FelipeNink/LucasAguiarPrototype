@@ -6,6 +6,7 @@
 @using LucasAguiar.Configs
 @using LucasAguiar.Models
 @using LucasAguiar.Services
+@using System.Text.Json
 @inject PainelDAO painelDAO
 @inject CaixaDAO caixaDAO
 @inject EstoqueDAO estoqueDAO
@@ -117,53 +118,42 @@
 </div>
 
 
-@* ---------- reposicao ----------
-   O aviso so aparece quando ha o que repor, e so para quem pode abrir
-   o estoque. Produto acabando e coisa que se resolve no mesmo dia, e
-   ninguem vai conferir a tela de estoque todo dia por via das duvidas. *@
-@if (reposicao.Count > 0)
+@* ---------- avisos ----------
+   Reposicao e assinaturas, lado a lado e numa linha cada: o aviso so
+   diz o que precisa de atencao e leva para a tela que resolve. A lista
+   completa fica no title, ao passar o mouse.
+
+   Reposicao: so quando ha o que repor, e so para quem pode abrir o
+   estoque. Assinaturas: mesma regra; vencida e a ativa com o prazo ja
+   passado, vencendo e a que vence nos proximos dias. *@
+@if (reposicao.Count > 0 || assinaturasAtencao.Count > 0)
 {
-    <div class="aviso-reposicao">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M3 9h18v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1zM3 9l2-5h14l2 5M12 12v5M9.5 14.5h5" />
-        </svg>
+    <div class="avisos-painel">
+        @if (reposicao.Count > 0)
+        {
+            var lista = string.Join(" · ", reposicao.Select(p => $"{p.Nome}: {p.Saldo}"));
+            <a href="/estoque" class="aviso-compacto" title="@lista">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M3 9h18v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1zM3 9l2-5h14l2 5M12 12v5M9.5 14.5h5" />
+                </svg>
+                <strong>@reposicao.Count produto(s) pedindo reposição</strong>
+                <span>@lista</span>
+            </a>
+        }
 
-        <div>
-            <strong>
-                @reposicao.Count produto(s) pedindo reposição
-            </strong>
-            <span>
-                @string.Join(" · ", reposicao.Take(4).Select(p =>
-                    $"{p.Nome}: {p.Saldo}"))@(reposicao.Count > 4 ? " · …" : "")
-            </span>
-        </div>
-
-        <a href="/estoque" class="link-caixa">Ver estoque</a>
-    </div>
-}
-
-@* ---------- assinaturas ----------
-   Mesma regra da reposicao: so aparece quando ha o que cobrar, e so
-   para quem pode abrir as assinaturas. Vencida e a ativa com o prazo
-   ja passado; vencendo, a que vence nos proximos dias. *@
-@if (assinaturasAtencao.Count > 0)
-{
-    <div class="aviso-reposicao">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M4 5h16v14H4zM4 10h16M8 15h3" />
-        </svg>
-
-        <div>
-            <strong>@TextoAssinaturas</strong>
-            <span>
-                @string.Join(" · ", assinaturasAtencao.Take(4).Select(a =>
-                    $"{a.NomeCliente}: {a.DataFim:dd/MM}"))@(assinaturasAtencao.Count > 4 ? " · …" : "")
-            </span>
-        </div>
-
-        <a href="/assinaturas" class="link-caixa">Ver assinaturas</a>
+        @if (assinaturasAtencao.Count > 0)
+        {
+            var lista = string.Join(" · ", assinaturasAtencao.Select(a => $"{a.NomeCliente}: {a.DataFim:dd/MM}"));
+            <a href="/assinaturas" class="aviso-compacto" title="@lista">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M4 5h16v14H4zM4 10h16M8 15h3" />
+                </svg>
+                <strong>@TextoAssinaturas</strong>
+                <span>@lista</span>
+            </a>
+        }
     </div>
 }
 
@@ -214,8 +204,33 @@ else
     </div>
 }
 
-@* Os graficos de receita x despesa e formas de pagamento foram para
-   Relatorios: sao analise, e o painel fica com o que pede acao hoje. *@
+@* ---------- gráficos ----------
+   Mais baixos que antes, para dividir o painel com a agenda. Os mesmos
+   dois tambem aparecem em Relatorios, no Faturamento. *@
+@if (podeVerValores)
+{
+    <div class="painel">
+        <section class="cartao cartao-barras">
+            <header class="cartao-topo">
+                <h2>Receita e despesas por mês</h2>
+                <span class="cartao-sub">Últimos 12 meses</span>
+            </header>
+            <div class="area-grafico">
+                <canvas id="barChart"></canvas>
+            </div>
+        </section>
+
+        <section class="cartao cartao-pizza">
+            <header class="cartao-topo">
+                <h2>Formas de pagamento</h2>
+                <span class="cartao-sub">@RotuloPeriodo</span>
+            </header>
+            <div class="area-grafico">
+                <canvas id="pieChart"></canvas>
+            </div>
+        </section>
+    </div>
+}
 
 @if (permissao.PodeVer("agendamentos"))
 {
@@ -227,9 +242,18 @@ else
     <CartaoAniversariantes />
 }
 
+@* Os dados vão para o JS por um elemento oculto, lido pelo dashboard.js.
+   Sem permissao de ver valores o elemento nem existe: esconder o grafico
+   e deixar os numeros no HTML nao esconderia nada. *@
+@if (podeVerValores)
+{
+    <script id="dados-painel" type="application/json">@((MarkupString)dadosJson)</script>
+}
+
 @code {
     private PainelDAO.ResumoPainel resumo = new();
     private Caixa? caixaAberto;
+    private string dadosJson = "{}";
     private string? erro;
 
     /// <summary>0 = hoje, 7/30 = últimos dias, -1 = mês corrente.</summary>
@@ -386,10 +410,23 @@ else
             var (de, ate) = Intervalo;
             resumo = painelDAO.Resumo(de, ate);
             caixaAberto = caixaDAO.BuscarAberto();
+
+            var serie = painelDAO.SerieMensal();
+            var formas = painelDAO.PorFormaPagamento(de, ate);
+
+            dadosJson = JsonSerializer.Serialize(new
+            {
+                meses = serie.Select(s => s.Mes).ToArray(),
+                receitas = serie.Select(s => s.Receita).ToArray(),
+                despesas = serie.Select(s => s.Despesa).ToArray(),
+                formasRotulos = formas.Keys.Select(FormaPagamento.Rotulo).ToArray(),
+                formasValores = formas.Values.ToArray()
+            });
         }
         catch (Exception ex)
         {
             erro = "Erro ao carregar o painel: " + ex.Message;
+            dadosJson = "{}";
         }
 
         CarregarExpediente();

@@ -298,44 +298,38 @@
             </div>
         }
 
-        @* Quem administra o sistema. Item solto, sem grupo: equipe,
-           funcoes, horario e logs viram abas. Para a maior parte da
-           equipe ele nem existe. *@
-        @if (AlgumaDe("equipe", "funcoes", "logs", "horario"))
-        {
-            <div class="nav-item">
-                <NavLink class="@($"nav-link {AtivoEm(AbasGrupo.Configuracoes)}")" href="@PrimeiraAba(AbasGrupo.Configuracoes)">
-                    <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                         stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6" />
-                    </svg>
-                    Configurações
-                </NavLink>
-            </div>
-        }
     </nav>
 </div>
 
 @* Rodape: quem esta usando o sistema, e as acoes de conta. *@
 <div class="rodape-lateral">
-    <span class="avatar-usuario" aria-hidden="true">@Iniciais</span>
+    @* Clicar em quem esta logado abre a propria conta. *@
+    <a class="usuario-conta" href="/conta" title="Minha conta">
+        <span class="avatar-usuario" aria-hidden="true">@Iniciais</span>
 
-    <div class="usuario-dados">
-        <span class="usuario-nome">@NomeUsuario</span>
-        @* Era "Administrador" escrito no HTML, para qualquer um que
-           entrasse. Agora vem do acesso: a funcao da pessoa, se ela tiver
-           uma, e senao o perfil. *@
-        <span class="usuario-papel">@Papel</span>
-    </div>
+        <span class="usuario-dados">
+            <span class="usuario-nome">@NomeUsuario</span>
+            @* Era "Administrador" escrito no HTML, para qualquer um que
+               entrasse. Agora vem do acesso: a funcao da pessoa, se ela tiver
+               uma, e senao o perfil. *@
+            <span class="usuario-papel">@Papel</span>
+        </span>
+    </a>
 
     <div class="acoes-conta">
-    <a class="botao-conta" href="/conta" aria-label="Configurações da conta" title="Minha conta">
+    @* A engrenagem e a configuracao do sistema: equipe, funcoes, horario
+       e logs, em abas. So aparece para quem pode abrir alguma delas. *@
+    @if (AlgumaDe("equipe", "funcoes", "logs", "horario"))
+    {
+    <a class="botao-conta @AtivoEm(AbasGrupo.Configuracoes)" href="@PrimeiraAba(AbasGrupo.Configuracoes)"
+       aria-label="Configurações" title="Configurações">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" />
             <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5v.2a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1h.2a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" />
         </svg>
     </a>
+    }
 
     <button type="button" class="botao-conta"
             aria-label="@(tema == "escuro" ? "Usar tema claro" : "Usar tema escuro")"

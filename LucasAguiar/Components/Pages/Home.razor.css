@@ -14,6 +14,106 @@
     margin: 0;
 }
 
+.painel {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 1.25rem;
+    align-items: stretch;
+    margin-bottom: 1.25rem;
+}
+
+.cartao {
+    background: var(--superficie);
+    border: 1px solid var(--borda-suave);
+    border-radius: 10px;
+    padding: 1rem 1.25rem 0.85rem;
+    box-shadow: 0 1px 3px rgba(16, 24, 40, 0.06);
+    display: flex;
+    flex-direction: column;
+}
+
+.cartao-topo {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.6rem;
+}
+
+.cartao-topo h2 {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--texto);
+}
+
+.cartao-sub {
+    font-size: 0.78rem;
+    color: var(--texto-fraco);
+}
+
+/* Altura fixa + maintainAspectRatio:false = o Chart.js respeita este tamanho.
+   Sem flex:1 aqui: o stretch do grid sobrescreveria a altura. Mais baixo
+   que em Relatorios: no painel o grafico divide espaco com a agenda. */
+.area-grafico {
+    position: relative;
+    height: 220px;
+    flex: 0 0 220px;
+}
+
+.area-grafico canvas {
+    max-width: 100%;
+}
+
+/* ---------- avisos ----------
+   Lado a lado, numa linha cada; o detalhe corta com reticencias e a
+   lista inteira vai no title. Mesmas cores do aviso de alerta. */
+.avisos-painel {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 10px 0 1.25rem;
+}
+
+.aviso-compacto {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1 1 320px;
+    min-width: 0;
+    padding: 7px 12px;
+    border: 1px solid var(--alerta-borda);
+    border-radius: var(--raio-cartao);
+    background: var(--alerta-fundo);
+    color: var(--alerta-texto);
+    font-size: 13px;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.aviso-compacto:hover {
+    filter: brightness(1.08);
+}
+
+.aviso-compacto svg {
+    width: 16px;
+    height: 16px;
+    flex: none;
+    color: var(--alerta);
+}
+
+.aviso-compacto strong {
+    flex: none;
+    font-weight: 600;
+}
+
+.aviso-compacto span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    opacity: 0.8;
+}
+
 /* Detalhe sob o valor, nao ao lado dele. */
 .indicador .detalhe {
     display: block;
@@ -78,6 +178,10 @@
 /* ---------- período ---------- */
 
 @media (max-width: 1100px) {
+    .painel {
+        grid-template-columns: 1fr;
+    }
+
     .indicadores {
         grid-template-columns: repeat(2, 1fr);
     }

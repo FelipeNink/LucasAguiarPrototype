@@ -109,10 +109,6 @@
 .grupo + .grupo {
     margin-top: 22px;
 }
-/* Configuracoes: item solto depois dos grupos, com o mesmo respiro. */
-.grupo + .nav-item {
-    margin-top: 22px;
-}
 .grupo-rotulo {
     display: block;
     padding: 0 10px 6px;
@@ -276,28 +272,45 @@ button.grupo-rotulo:focus-visible {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);
     grid-template-areas:
-        "avatar dados"
-        "acoes  acoes";
+        "usuario usuario"
+        "acoes   acoes";
     align-items: center;
     gap: 6px 10px;
     padding: 10px 16px;
     border-top: 1px solid var(--lateral-linha);
 }
 
-.rodape-lateral .avatar-usuario {
-    grid-area: avatar;
+/* Avatar e nome sao um link so, para a propria conta. */
+.rodape-lateral .usuario-conta {
+    grid-area: usuario;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    margin: -4px -6px;
+    padding: 4px 6px;
+    border-radius: 7px;
+    text-decoration: none;
+    transition: background-color 0.15s;
 }
 
-.rodape-lateral .usuario-dados {
-    grid-area: dados;
+.rodape-lateral .usuario-conta:hover {
+    background: rgba(255, 255, 255, 0.07);
 }
 
-/* Os tres botoes ocupam a faixa de baixo, divididos por igual: alvos
-   largos, que no celular se tocam sem erro. */
+.rodape-lateral .usuario-conta:focus-visible {
+    outline: 2px solid var(--marca);
+    outline-offset: 2px;
+}
+
+/* Os botoes ocupam a faixa de baixo, divididos por igual: alvos
+   largos, que no celular se tocam sem erro. Sao dois ou tres, conforme
+   a pessoa ve ou nao a engrenagem de configuracoes. */
 .rodape-lateral .acoes-conta {
     grid-area: acoes;
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
     gap: 4px;
     margin-top: 2px;
 }
@@ -359,6 +372,10 @@ button.grupo-rotulo:focus-visible {
 .botao-conta:hover {
     background: rgba(255, 255, 255, 0.07);
     color: #fff;
+}
+/* Engrenagem acesa quando a pagina aberta e uma das abas de configuracoes. */
+.botao-conta.active {
+    color: var(--marca);
 }
 .botao-conta:focus-visible {
     outline: 2px solid var(--marca);

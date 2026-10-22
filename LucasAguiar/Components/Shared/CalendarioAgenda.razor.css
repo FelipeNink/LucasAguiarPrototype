@@ -92,8 +92,9 @@
 
 /* ---------- grade de horarios (dia e semana) ---------- */
 
+/* Mais baixa para o painel nao virar so agenda; o resto do dia rola. */
 .grade-rolagem {
-    max-height: 640px;
+    max-height: 400px;
     overflow: auto;
     border: 1px solid var(--borda);
     border-radius: var(--raio-cartao);
