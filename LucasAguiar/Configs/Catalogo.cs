@@ -116,21 +116,17 @@ namespace LucasAguiar.Configs
                 new[] { "/despesas", "/despesa" },
                 new[] { "/relatorio/despesas", "/excel/despesas" }),
 
-            new("comissoes", "Comissões", Financeiro,
+            // Comissoes e folha sao as duas abas de "Repasses" no menu.
+            new("comissoes", "Repasses: detalhe por venda", Financeiro,
                 Acao.Ver | Acao.Exportar,
                 new[] { "/comissoes" },
                 new[] { "/relatorio/comissoes", "/excel/comissoes" }),
 
             // Liquidar = pagar o profissional, o que gera despesa e
             // movimento de caixa.
-            new("folha", "Folha de pagamento", Financeiro,
+            new("folha", "Repasses: fechamento do mês", Financeiro,
                 Acao.Ver | Acao.Liquidar | Acao.Exportar,
                 new[] { "/folha" }),
-
-            new("compras", "Compras", Financeiro,
-                Acao.Ver | Acao.Criar | Acao.Editar | Acao.Excluir | Acao.Exportar,
-                new[] { "/compra", "/compra/novo" },
-                new[] { "/relatorio/compras", "/excel/compras" }),
 
             // Editar = configurar o prestador e reenviar nota recusada.
             // Estornar = cancelar nota autorizada na prefeitura.
@@ -159,6 +155,12 @@ namespace LucasAguiar.Configs
                 Acao.Ver | Acao.Criar | Acao.Editar | Acao.Exportar,
                 new[] { "/estoque" },
                 new[] { "/relatorio/estoque", "/excel/estoque" }),
+
+            // Fica em Cadastros, ao lado de estoque: no menu e uma aba de "Estoque".
+            new("compras", "Compras", Cadastros,
+                Acao.Ver | Acao.Criar | Acao.Editar | Acao.Excluir | Acao.Exportar,
+                new[] { "/compra", "/compra/novo" },
+                new[] { "/relatorio/compras", "/excel/compras" }),
 
             new("planos", "Planos", Cadastros, Cadastro,
                 new[] { "/plano", "/plano/novo" },
@@ -309,7 +311,7 @@ namespace LucasAguiar.Configs
             Acao.Excluir => "Apagar registros.",
             Acao.Exportar => "Baixar o relatório em PDF e a planilha.",
             Acao.Estornar => "Cancelar uma venda já lançada.",
-            Acao.Liquidar => "Movimentar dinheiro: abrir e fechar o caixa, sangria, suprimento e pagamento da folha.",
+            Acao.Liquidar => "Movimentar dinheiro: abrir e fechar o caixa, sangria, suprimento e pagamento dos repasses.",
             Acao.VerValores => "Ver faturamento, lucro e comissões no painel.",
             _ => ""
         };

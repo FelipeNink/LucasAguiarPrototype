@@ -1,0 +1,48 @@
+@* Abas de um item do menu que junta varias telas (Estoque, Repasses).
+   Cada aba continua sendo uma pagina com rota, guarda e permissao
+   proprias: a aba so leva de uma a outra, e so aparece para quem pode
+   abrir aquela pagina. Com uma aba so visivel, a barra nem aparece. *@
+@inject Autorizacao permissao
+@inject NavigationManager Navigation
+
+@if (Visiveis.Count > 1)
+{
+    <nav class="abas-grupo" aria-label="Seções">
+        @foreach (var aba in Visiveis)
+        {
+            <a href="@aba.Href" class="@(Atual(aba) ? "ativa" : "")"
+               aria-current="@(Atual(aba) ? "page" : null)">@aba.Rotulo</a>
+        }
+    </nav>
+}
+
+@code {
+    /// <summary>Uma aba: a chave da tela no catalogo, o rotulo e a listagem que ela abre.</summary>
+    public record Aba(string Tela, string Rotulo, string Href);
+
+    // A ordem aqui e a ordem das abas, e a primeira visivel e para onde o menu leva.
+    public static readonly Aba[] Estoque =
+    {
+        new("estoque", "Saldo", "/estoque"),
+        new("produtos", "Produtos", "/produto"),
+        new("compras", "Compras", "/compra"),
+        new("fornecedores", "Fornecedores", "/fornecedores")
+    };
+
+    public static readonly Aba[] Repasses =
+    {
+        new("folha", "Fechamento do mês", "/folha"),
+        new("comissoes", "Detalhe por venda", "/comissoes")
+    };
+
+    [Parameter, EditorRequired]
+    public Aba[] Abas { get; set; } = Array.Empty<Aba>();
+
+    private List<Aba> Visiveis => Abas.Where(a => permissao.PodeVer(a.Tela)).ToList();
+
+    private bool Atual(Aba aba)
+    {
+        var caminho = "/" + Navigation.ToBaseRelativePath(Navigation.Uri).Split('?', '#')[0].TrimEnd('/');
+        return caminho.Equals(aba.Href, StringComparison.OrdinalIgnoreCase);
+    }
+}

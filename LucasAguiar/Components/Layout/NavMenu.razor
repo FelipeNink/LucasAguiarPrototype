@@ -121,7 +121,7 @@
             </div>
         }
 
-        @if (AlgumaDe("relatorios", "fluxo", "despesas", "comissoes", "folha", "compras", "notas"))
+        @if (AlgumaDe("relatorios", "fluxo", "despesas", "comissoes", "folha", "notas"))
         {
             <div class="grupo @(Aberto("Financeiro") ? "aberto" : "")">
                 <button type="button" class="grupo-rotulo" aria-expanded="@Aberto("Financeiro")"
@@ -179,41 +179,16 @@
                     </div>
                 }
 
-                @if (Pode("comissoes"))
+                @* Folha e comissoes num item so; as duas viram abas da tela. *@
+                @if (AlgumaDe("folha", "comissoes"))
                 {
                     <div class="nav-item">
-                        <NavLink class="nav-link" href="comissoes">
+                        <NavLink class="@($"nav-link {AtivoEm(AbasGrupo.Repasses)}")" href="@PrimeiraAba(AbasGrupo.Repasses)">
                             <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                  stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <path d="M19 5L5 19M6.5 9a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zM17.5 20a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z" />
+                                <path d="M2 6h20v12H2zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6 12h.01M18 12h.01" />
                             </svg>
-                            Comissões
-                        </NavLink>
-                    </div>
-                }
-
-                @if (Pode("folha"))
-                {
-                    <div class="nav-item">
-                        <NavLink class="nav-link" href="folha">
-                            <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <path d="M16 20v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2M9.5 10a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM21 20v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8" />
-                            </svg>
-                            Folha de pagamento
-                        </NavLink>
-                    </div>
-                }
-
-                @if (Pode("compras"))
-                {
-                    <div class="nav-item">
-                        <NavLink class="nav-link" href="compra">
-                            <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.5L21 8H6M9 21a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM18 21a1 1 0 1 0 0-2 1 1 0 0 0 0 2z" />
-                            </svg>
-                            Compras
+                            Repasses
                         </NavLink>
                     </div>
                 }
@@ -234,7 +209,7 @@
             </div>
         }
 
-        @if (AlgumaDe("clientes", "servicos", "produtos", "estoque", "planos",
+        @if (AlgumaDe("clientes", "servicos", "produtos", "estoque", "compras", "planos",
                       "assinaturas", "funcionarios", "fornecedores"))
         {
             <div class="grupo @(Aberto("Cadastros") ? "aberto" : "")">
@@ -278,25 +253,12 @@
                     </div>
                 }
 
-                @if (Pode("produtos"))
+                @* Saldo, produtos, compras e fornecedores num item so; as
+                   quatro telas viram abas. *@
+                @if (AlgumaDe("estoque", "produtos", "compras", "fornecedores"))
                 {
                     <div class="nav-item">
-                        <NavLink class="nav-link" href="produto">
-                            <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <path d="M21 16V8l-9-5-9 5v8l9 5zM3.3 7.3L12 12l8.7-4.7M12 12v9.5" />
-                            </svg>
-                            Produtos
-                        </NavLink>
-                    </div>
-                }
-
-                @* Logo depois de Produtos: e a mesma coisa vista pelo
-                   saldo, nao pelo cadastro. *@
-                @if (Pode("estoque"))
-                {
-                    <div class="nav-item">
-                        <NavLink class="nav-link" href="estoque">
+                        <NavLink class="@($"nav-link {AtivoEm(AbasGrupo.Estoque)}")" href="@PrimeiraAba(AbasGrupo.Estoque)">
                             <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                  stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                 <path d="M3 9h18v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1zM3 9l2-5h14l2 5M10 13h4" />
@@ -341,19 +303,6 @@
                                 <path d="M16 20v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2M9.5 10a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM21 20v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8" />
                             </svg>
                             Funcionários
-                        </NavLink>
-                    </div>
-                }
-
-                @if (Pode("fornecedores"))
-                {
-                    <div class="nav-item">
-                        <NavLink class="nav-link" href="fornecedores">
-                            <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <path d="M3 10h13v8H3zM16 12h3.5l2.5 3v3h-6M6.5 21a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM18 21a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z" />
-                            </svg>
-                            Fornecedores
                         </NavLink>
                     </div>
                 }
@@ -551,9 +500,9 @@
     private void AoNavegar(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
     {
         var grupo = GrupoAtual;
-        if (grupo == null || abertos.Contains(grupo)) return;
+        if (grupo != null) abertos.Add(grupo);
 
-        abertos.Add(grupo);
+        // Sempre redesenha: o destaque de Estoque e Repasses depende da pagina aberta.
         InvokeAsync(StateHasChanged);
     }
 
@@ -569,6 +518,20 @@
 
     /// <summary>A secao so aparece se algum item dela aparecer.</summary>
     private bool AlgumaDe(params string[] telas) => telas.Any(Pode);
+
+    /// <summary>Item que junta varias telas leva para a primeira aba que a pessoa pode abrir.</summary>
+    private string? PrimeiraAba(AbasGrupo.Aba[] abas) =>
+        abas.FirstOrDefault(a => Pode(a.Tela))?.Href.TrimStart('/');
+
+    /// <summary>
+    /// "active" quando a pagina aberta e uma das telas do grupo. O NavLink
+    /// sozinho so compara com o proprio href, e o item aponta para uma aba so.
+    /// </summary>
+    private string AtivoEm(AbasGrupo.Aba[] abas)
+    {
+        var tela = Catalogo.PorRota(Navigation.ToBaseRelativePath(Navigation.Uri).Split('?', '#')[0])?.Chave;
+        return abas.Any(a => a.Tela == tela) ? "active" : "";
+    }
 
     /// <summary>
     /// Tema em exibicao. Comeca em "claro" so para o render estatico do

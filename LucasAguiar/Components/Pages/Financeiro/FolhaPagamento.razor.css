@@ -39,12 +39,6 @@
     text-transform: capitalize;
 }
 
-.link-lateral {
-    margin-left: auto;
-    font-size: 0.82rem;
-    color: var(--marca-escura);
-}
-
 /* ---------- resumo ---------- */
 
 .resumo {
@@ -157,6 +151,7 @@ tr.pago {
 /* ---------- pagamentos anteriores (modal) ---------- */
 
 .btn-historico {
+    margin-left: auto;
     height: 40px;
     padding: 0 16px;
     display: inline-flex;
