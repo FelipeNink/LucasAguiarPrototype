@@ -5,6 +5,7 @@
 @using LucasAguiar.Configs
 @using LucasAguiar.Models
 @using LucasAguiar.Services
+@using System.Text.Json
 @inject RelatoriosDAO relatoriosDAO
 @inject PainelDAO painelDAO
 @inject Autorizacao permissao
@@ -112,6 +113,33 @@ else if (relatorio == Faturamento)
         Venda cancelada não entra. Lucro aqui é receita − despesas − comissões; o resultado
         completo, com taxas e custo dos produtos, fica em <a href="/fluxo-caixa" class="link-texto">Fluxo de caixa</a>.
     </p>
+
+    @* Vieram do painel. As barras sao sempre os ultimos 12 meses; a
+       pizza segue o periodo do filtro. *@
+    <div class="graficos">
+        <section class="cartao">
+            <header class="cartao-topo">
+                <h2>Receita e despesas por mês</h2>
+                <span class="cartao-sub">Últimos 12 meses</span>
+            </header>
+            <div class="area-grafico">
+                <canvas id="barChart"></canvas>
+            </div>
+        </section>
+
+        <section class="cartao">
+            <header class="cartao-topo">
+                <h2>Formas de pagamento</h2>
+                <span class="cartao-sub">No período</span>
+            </header>
+            <div class="area-grafico">
+                <canvas id="pieChart"></canvas>
+            </div>
+        </section>
+    </div>
+
+    @* Os dados vao para o JS por um elemento oculto, lido pelo dashboard.js. *@
+    <script id="dados-painel" type="application/json">@((MarkupString)dadosJson)</script>
 
     <div class="tabela fixa">
         <table class="table table-striped">
@@ -402,6 +430,7 @@ else if (relatorio == Inativos)
     private DateTime ate;
 
     private PainelDAO.ResumoPainel resumo = new();
+    private string dadosJson = "{}";
     private List<RelatoriosDAO.LinhaProfissional> profissionais = new();
     private List<RelatoriosDAO.LinhaItem> servicos = new();
     private List<RelatoriosDAO.LinhaItem> produtos = new();
@@ -509,6 +538,18 @@ else if (relatorio == Inativos)
                 case Faturamento:
                     resumo = painelDAO.Resumo(inicio, fim);
                     profissionais = relatoriosDAO.FaturamentoPorProfissional(inicio, fim);
+
+                    var serie = painelDAO.SerieMensal();
+                    var formas = painelDAO.PorFormaPagamento(inicio, fim);
+
+                    dadosJson = JsonSerializer.Serialize(new
+                    {
+                        meses = serie.Select(s => s.Mes).ToArray(),
+                        receitas = serie.Select(s => s.Receita).ToArray(),
+                        despesas = serie.Select(s => s.Despesa).ToArray(),
+                        formasRotulos = formas.Keys.Select(FormaPagamento.Rotulo).ToArray(),
+                        formasValores = formas.Values.ToArray()
+                    });
                     break;
 
                 case MaisVendidos:
@@ -534,6 +575,7 @@ else if (relatorio == Inativos)
         catch (Exception ex)
         {
             erro = "Não foi possível apurar os números: " + ex.Message;
+            dadosJson = "{}";
         }
         finally
         {

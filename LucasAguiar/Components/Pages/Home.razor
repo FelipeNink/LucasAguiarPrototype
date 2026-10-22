@@ -6,10 +6,10 @@
 @using LucasAguiar.Configs
 @using LucasAguiar.Models
 @using LucasAguiar.Services
-@using System.Text.Json
 @inject PainelDAO painelDAO
 @inject CaixaDAO caixaDAO
 @inject EstoqueDAO estoqueDAO
+@inject AssinaturaDAO assinaturaDAO
 @inject HorarioDAO horarioDAO
 @inject Autorizacao permissao
 
@@ -143,6 +143,30 @@
     </div>
 }
 
+@* ---------- assinaturas ----------
+   Mesma regra da reposicao: so aparece quando ha o que cobrar, e so
+   para quem pode abrir as assinaturas. Vencida e a ativa com o prazo
+   ja passado; vencendo, a que vence nos proximos dias. *@
+@if (assinaturasAtencao.Count > 0)
+{
+    <div class="aviso-reposicao">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 5h16v14H4zM4 10h16M8 15h3" />
+        </svg>
+
+        <div>
+            <strong>@TextoAssinaturas</strong>
+            <span>
+                @string.Join(" · ", assinaturasAtencao.Take(4).Select(a =>
+                    $"{a.NomeCliente}: {a.DataFim:dd/MM}"))@(assinaturasAtencao.Count > 4 ? " · …" : "")
+            </span>
+        </div>
+
+        <a href="/assinaturas" class="link-caixa">Ver assinaturas</a>
+    </div>
+}
+
 @* ---------- indicadores ----------
    Faturamento, despesa, comissao e lucro so para quem tem "Ver valores".
    Esconder apenas o menu nao bastaria: o painel e justamente onde os
@@ -190,30 +214,8 @@ else
     </div>
 }
 
-@* ---------- gráficos ---------- *@
-@if (podeVerValores)
-{
-    <div class="painel">
-        <section class="cartao cartao-barras">
-            <header class="cartao-topo">
-                <h2>Receita e despesas por mês</h2>
-                <span class="cartao-sub">Últimos 12 meses</span>
-            </header>
-            <div class="area-grafico">
-                <canvas id="barChart"></canvas>
-            </div>
-        </section>
-
-        <section class="cartao cartao-pizza">
-            <header class="cartao-topo">
-                <h2>Formas de pagamento</h2>
-            </header>
-            <div class="area-grafico">
-                <canvas id="pieChart"></canvas>
-            </div>
-        </section>
-    </div>
-}
+@* Os graficos de receita x despesa e formas de pagamento foram para
+   Relatorios: sao analise, e o painel fica com o que pede acao hoje. *@
 
 @if (permissao.PodeVer("agendamentos"))
 {
@@ -225,18 +227,9 @@ else
     <CartaoAniversariantes />
 }
 
-@* Os dados vão para o JS por um elemento oculto, lido pelo dashboard.js.
-   Sem permissao de ver valores o elemento nem existe: esconder o grafico
-   e deixar os numeros no HTML nao esconderia nada. *@
-@if (podeVerValores)
-{
-    <script id="dados-painel" type="application/json">@((MarkupString)dadosJson)</script>
-}
-
 @code {
     private PainelDAO.ResumoPainel resumo = new();
     private Caixa? caixaAberto;
-    private string dadosJson = "{}";
     private string? erro;
 
     /// <summary>0 = hoje, 7/30 = últimos dias, -1 = mês corrente.</summary>
@@ -284,6 +277,28 @@ else
     private bool podeVerCaixa;
     private List<SaldoEstoque> reposicao = new();
 
+    /// <summary>Dias a frente em que uma assinatura ativa ja conta como "vencendo".</summary>
+    private const int DiasAvisoAssinatura = 7;
+
+    /// <summary>Ativas vencidas ou vencendo, da mais antiga para a mais nova.</summary>
+    private List<Assinatura> assinaturasAtencao = new();
+
+    private string TextoAssinaturas
+    {
+        get
+        {
+            var vencidas = assinaturasAtencao.Count(a => a.Vencida);
+            var vencendo = assinaturasAtencao.Count - vencidas;
+
+            if (vencidas > 0 && vencendo > 0)
+                return $"{vencidas} assinatura(s) vencida(s) e {vencendo} vencendo em {DiasAvisoAssinatura} dias";
+
+            return vencidas > 0
+                ? $"{vencidas} assinatura(s) vencida(s)"
+                : $"{vencendo} assinatura(s) vencendo em {DiasAvisoAssinatura} dias";
+        }
+    }
+
     private SituacaoExpediente? situacao;
     private bool? excecaoHoje;
     private bool menuExpediente;
@@ -308,6 +323,22 @@ else
             catch
             {
                 // Aviso de reposicao nao pode derrubar o painel inteiro.
+            }
+        }
+
+        if (permissao.PodeVer("assinaturas"))
+        {
+            try
+            {
+                var limite = DateTime.Today.AddDays(DiasAvisoAssinatura);
+                assinaturasAtencao = assinaturaDAO.ListarTodas()
+                    .Where(a => a.Status == StatusAssinatura.Ativa
+                                && a.DataFim.HasValue && a.DataFim.Value.Date <= limite)
+                    .ToList();
+            }
+            catch
+            {
+                // Mesmo caso da reposicao: o aviso e acessorio.
             }
         }
 
@@ -355,23 +386,10 @@ else
             var (de, ate) = Intervalo;
             resumo = painelDAO.Resumo(de, ate);
             caixaAberto = caixaDAO.BuscarAberto();
-
-            var serie = painelDAO.SerieMensal();
-            var formas = painelDAO.PorFormaPagamento(de, ate);
-
-            dadosJson = JsonSerializer.Serialize(new
-            {
-                meses = serie.Select(s => s.Mes).ToArray(),
-                receitas = serie.Select(s => s.Receita).ToArray(),
-                despesas = serie.Select(s => s.Despesa).ToArray(),
-                formasRotulos = formas.Keys.Select(FormaPagamento.Rotulo).ToArray(),
-                formasValores = formas.Values.ToArray()
-            });
         }
         catch (Exception ex)
         {
             erro = "Erro ao carregar o painel: " + ex.Message;
-            dadosJson = "{}";
         }
 
         CarregarExpediente();

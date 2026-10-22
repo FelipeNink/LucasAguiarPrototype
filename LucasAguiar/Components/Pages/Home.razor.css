@@ -14,51 +14,6 @@
     margin: 0;
 }
 
-.painel {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 1.25rem;
-    align-items: stretch;
-}
-
-.cartao {
-    background: var(--superficie);
-    border: 1px solid var(--borda-suave);
-    border-radius: 10px;
-    padding: 1.25rem 1.25rem 1rem;
-    box-shadow: 0 1px 3px rgba(16, 24, 40, 0.06);
-    display: flex;
-    flex-direction: column;
-}
-
-.cartao-topo {
-    margin-bottom: 1rem;
-}
-
-.cartao-topo h2 {
-    margin: 0;
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: var(--texto);
-}
-
-.cartao-sub {
-    font-size: 0.78rem;
-    color: var(--texto-fraco);
-}
-
-/* Altura fixa + maintainAspectRatio:false = o Chart.js respeita este tamanho.
-   Sem flex:1 aqui: o stretch do grid sobrescreveria a altura. */
-.area-grafico {
-    position: relative;
-    height: 300px;
-    flex: 0 0 300px;
-}
-
-.area-grafico canvas {
-    max-width: 100%;
-}
-
 /* Detalhe sob o valor, nao ao lado dele. */
 .indicador .detalhe {
     display: block;
@@ -123,21 +78,12 @@
 /* ---------- período ---------- */
 
 @media (max-width: 1100px) {
-    .painel {
-        grid-template-columns: 1fr;
-    }
-
     .indicadores {
         grid-template-columns: repeat(2, 1fr);
     }
 
     .atalhos {
         grid-template-columns: repeat(2, 1fr);
-    }
-
-    .area-grafico {
-        height: 260px;
-        flex: 0 0 260px;
     }
 }
 
