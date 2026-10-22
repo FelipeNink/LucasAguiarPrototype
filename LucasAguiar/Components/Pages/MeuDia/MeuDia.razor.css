@@ -1,0 +1,286 @@
+/* Pensada primeiro para o celular do barbeiro: uma coluna, alvos
+   grandes, e o que importa (proximo cliente, agenda) sem rolar muito. */
+
+.topo-meu-dia {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 1rem;
+}
+
+.topo-meu-dia h1 {
+    margin: 0;
+}
+
+.saudacao {
+    display: block;
+    font-size: 13px;
+    color: var(--texto-3);
+}
+
+/* ---------- seletor de dia ---------- */
+
+.seletor-dia {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px;
+    background: var(--superficie-3);
+    border-radius: 9px;
+}
+
+.seletor-dia button {
+    height: 36px;
+    border: none;
+    border-radius: 7px;
+    background: none;
+    color: var(--texto-3);
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.seletor-dia .seta {
+    width: 36px;
+    font-size: 18px;
+}
+
+.seletor-dia .dia {
+    min-width: 96px;
+    padding: 0 12px;
+    background: var(--superficie);
+    color: var(--texto);
+    text-transform: capitalize;
+}
+
+.seletor-dia .dia.hoje {
+    color: var(--marca-escura);
+}
+
+/* ---------- numeros ---------- */
+
+.numeros {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 1rem;
+}
+
+.numero {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 12px 14px;
+    background: var(--superficie);
+    border: 1px solid var(--borda-suave);
+    border-radius: var(--raio-cartao);
+}
+
+.numero .rotulo,
+.proximo .rotulo {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--texto-fraco);
+}
+
+.numero strong {
+    font-family: var(--fonte-titulo);
+    font-size: 24px;
+    line-height: 1.1;
+    color: var(--texto);
+}
+
+.numero.destaque strong {
+    color: var(--marca-escura);
+}
+
+.numero .detalhe {
+    font-size: 12px;
+    color: var(--texto-3);
+}
+
+/* ---------- proximo cliente ---------- */
+
+.proximo {
+    margin-bottom: 1rem;
+    padding: 14px 16px;
+    border: 1px solid var(--marca);
+    border-radius: var(--raio-cartao);
+    background: var(--superficie);
+}
+
+.proximo-linha {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 4px;
+}
+
+.proximo-linha strong {
+    display: block;
+    font-size: 18px;
+    color: var(--texto);
+}
+
+.proximo-linha span {
+    font-size: 13px;
+    color: var(--texto-3);
+}
+
+/* ---------- agenda ---------- */
+
+.agenda-dia h2 {
+    margin: 0 0 8px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--texto);
+}
+
+.agenda-dia ul {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.agenda-dia li {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 14px;
+    background: var(--superficie);
+    border: 1px solid var(--borda-suave);
+    border-radius: var(--raio-cartao);
+}
+
+.agenda-dia li.fechado {
+    opacity: 0.6;
+}
+
+/* Passou da hora e ninguem fechou: chama atencao sem gritar. */
+.agenda-dia li.atrasado {
+    border-color: var(--alerta-borda);
+    background: var(--alerta-fundo);
+}
+
+.hora {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 48px;
+}
+
+.hora strong {
+    font-family: var(--fonte-titulo);
+    font-size: 20px;
+    line-height: 1;
+    color: var(--texto);
+}
+
+.hora small {
+    font-size: 11px;
+    color: var(--texto-fraco);
+}
+
+.quem {
+    flex: 1;
+    min-width: 0;
+}
+
+.quem strong {
+    display: block;
+    color: var(--texto);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.quem span {
+    display: block;
+    font-size: 13px;
+    color: var(--texto-3);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.acoes {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: none;
+}
+
+.situacao {
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    background: var(--superficie-3);
+    color: var(--texto-3);
+}
+
+.situacao.agendado {
+    background: var(--morno);
+    color: var(--marca-escura);
+}
+
+.situacao.concluido {
+    background: var(--ok-fundo);
+    color: var(--ok-escuro);
+}
+
+.situacao.faltou {
+    background: var(--alerta-fundo);
+    color: var(--alerta);
+}
+
+.vazio {
+    margin: 0;
+    padding: 18px;
+    text-align: center;
+    color: var(--texto-3);
+    background: var(--superficie);
+    border: 1px dashed var(--borda);
+    border-radius: var(--raio-cartao);
+}
+
+.sem-vinculo {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 16px 18px;
+    border: 1px solid var(--alerta-borda);
+    border-radius: var(--raio-cartao);
+    background: var(--alerta-fundo);
+    color: var(--alerta-texto);
+}
+
+/* ---------- celular ---------- */
+
+@media (max-width: 620px) {
+    .numeros {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .numero.destaque {
+        grid-column: 1 / -1;
+    }
+
+    .agenda-dia li {
+        flex-wrap: wrap;
+    }
+
+    .acoes {
+        width: 100%;
+        justify-content: flex-end;
+    }
+}

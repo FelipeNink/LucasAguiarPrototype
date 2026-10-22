@@ -49,7 +49,7 @@
 <div class="nav-scrollable">
     <nav class="nav flex-column">
 
-        @if (AlgumaDe("painel", "vendas", "agendamentos", "caixa"))
+        @if (AlgumaDe("painel", "meudia", "vendas", "agendamentos", "caixa"))
         {
             <div class="grupo @(Aberto("Operação") ? "aberto" : "")">
                 <button type="button" class="grupo-rotulo" aria-expanded="@Aberto("Operação")"
@@ -75,6 +75,19 @@
                                 <path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z" />
                             </svg>
                             Painel
+                        </NavLink>
+                    </div>
+                }
+
+                @if (Pode("meudia"))
+                {
+                    <div class="nav-item">
+                        <NavLink class="nav-link" href="meu-dia">
+                            <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0" />
+                            </svg>
+                            Meu dia
                         </NavLink>
                     </div>
                 }

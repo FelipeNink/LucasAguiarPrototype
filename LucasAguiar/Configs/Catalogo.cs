@@ -81,6 +81,13 @@ namespace LucasAguiar.Configs
                 Acao.Ver | Acao.VerValores,
                 new[] { "/" }),
 
+            // Area do barbeiro: a agenda e a comissao de quem esta logado,
+            // pelo profissional ligado ao acesso. Logo depois do painel:
+            // quem nao tem o painel cai aqui ao entrar.
+            new("meudia", "Meu dia", Operacao,
+                Acao.Ver,
+                new[] { "/meu-dia" }),
+
             // Editar venda, hoje, e trocar o profissional do atendimento.
             new("vendas", "Vendas", Operacao,
                 Acao.Ver | Acao.Criar | Acao.Editar | Acao.Estornar | Acao.Exportar,

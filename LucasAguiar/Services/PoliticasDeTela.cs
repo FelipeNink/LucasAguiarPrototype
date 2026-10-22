@@ -24,6 +24,7 @@ namespace LucasAguiar.Services
         public static string Para(string tela, Acao acao) => $"{Prefixo}{tela}:{acao}";
 
         public const string Painel = "tela:painel:Ver";
+        public const string MeuDia = "tela:meudia:Ver";
         public const string Vendas = "tela:vendas:Ver";
         public const string Agendamentos = "tela:agendamentos:Ver";
         public const string Caixa = "tela:caixa:Ver";

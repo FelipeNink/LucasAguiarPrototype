@@ -1,0 +1,236 @@
+@page "/meu-dia"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = Politicas.MeuDia)]
+
+@using LucasAguiar.Configs
+@using LucasAguiar.Models
+@using LucasAguiar.Services
+@inject AgendamentoDAO agendamentoDAO
+@inject ComissaoDAO comissaoDAO
+@inject EquipeDAO equipeDAO
+@inject Autorizacao permissao
+@inject AuthenticationService auth
+
+@* Area do barbeiro: a tela que o profissional abre no celular todo dia.
+   Mostra so o que e dele -- agenda do dia e comissao --, pelo
+   profissional ligado ao acesso em Equipe. Nao tem filtro de
+   profissional de proposito: quem quer ver os outros usa Agendamentos. *@
+
+<PageTitle>Meu dia</PageTitle>
+
+<div class="topo-meu-dia">
+    <div>
+        <span class="saudacao">@Saudacao, @WhatsApp.PrimeiroNome(nomeProfissional ?? auth.GetUsuarioNome())</span>
+        <h1>Meu dia</h1>
+    </div>
+
+    <div class="seletor-dia">
+        <button type="button" class="seta" title="Dia anterior" @onclick="() => TrocarDia(-1)">‹</button>
+        <button type="button" class="dia @(dia == DateTime.Today ? "hoje" : "")" @onclick="() => IrPara(DateTime.Today)">
+            @RotuloDia
+        </button>
+        <button type="button" class="seta" title="Próximo dia" @onclick="() => TrocarDia(1)">›</button>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(erro))
+{
+    <div class="alert alert-danger" role="alert">@erro</div>
+}
+
+@if (carregado && idFuncionario == null)
+{
+    <div class="sem-vinculo">
+        <strong>Seu acesso não está ligado a um profissional.</strong>
+        <span>
+            Peça ao administrador para escolher o seu nome em
+            Configurações › Equipe, no campo do profissional.
+        </span>
+    </div>
+}
+else if (carregado)
+{
+    @* ---------- numeros ---------- *@
+    <div class="numeros">
+        <div class="numero">
+            <span class="rotulo">Horários</span>
+            <strong>@agenda.Count(a => a.Status != StatusAgendamento.Cancelado)</strong>
+            <span class="detalhe">@agenda.Count(a => a.Status == StatusAgendamento.Concluido) concluído(s)</span>
+        </div>
+        <div class="numero">
+            <span class="rotulo">Comissão @(dia == DateTime.Today ? "hoje" : "no dia")</span>
+            <strong>@comissaoDia.ToString("C")</strong>
+            <span class="detalhe">@atendimentosDia atendimento(s)</span>
+        </div>
+        <div class="numero destaque">
+            <span class="rotulo">Comissão em @dia.ToString("MMMM", Cultura)</span>
+            <strong>@comissaoMes.ToString("C")</strong>
+            <span class="detalhe">até @(dia.Month == DateTime.Today.Month && dia.Year == DateTime.Today.Year ? "hoje" : "o fim do mês")</span>
+        </div>
+    </div>
+
+    @* ---------- proximo cliente ---------- *@
+    var proximo = Proximo;
+    @if (proximo != null)
+    {
+        <section class="proximo">
+            <span class="rotulo">Próximo cliente</span>
+            <div class="proximo-linha">
+                <div>
+                    <strong>@proximo.NomeCliente</strong>
+                    <span>@proximo.DataHora.ToString("HH:mm") · @proximo.NomeServico</span>
+                </div>
+                <BotaoWhatsApp Telefone="@proximo.TelefoneCliente" Rotulo="WhatsApp"
+                               Titulo="Falar com o cliente no WhatsApp"
+                               Mensagem="@WhatsApp.ConfirmacaoAgendamento(proximo.NomeCliente, proximo.DataHora, proximo.NomeServico, proximo.NomeFuncionario)" />
+            </div>
+        </section>
+    }
+
+    @* ---------- agenda ---------- *@
+    <section class="agenda-dia">
+        <h2>Agenda</h2>
+
+        @if (agenda.Count == 0)
+        {
+            <p class="vazio">Nenhum horário marcado para você neste dia.</p>
+        }
+        else
+        {
+            <ul>
+                @foreach (var a in agenda)
+                {
+                    <li class="@ClasseLinha(a)">
+                        <span class="hora">
+                            <strong>@a.DataHora.ToString("HH:mm")</strong>
+                            <small>@a.Fim.ToString("HH:mm")</small>
+                        </span>
+
+                        <span class="quem">
+                            <strong>@a.NomeCliente</strong>
+                            <span>@a.NomeServico</span>
+                        </span>
+
+                        <span class="acoes">
+                            <span class="situacao @a.Status.ToLowerInvariant()">@StatusAgendamento.Rotulo(a.Status)</span>
+
+                            @if (a.Aberto && podeVender)
+                            {
+                                <a class="btn btn-sm btn-primary" href="/venda/nova?agendamento=@a.IdAgendamento">Fechar venda</a>
+                            }
+                            @if (a.Aberto)
+                            {
+                                <BotaoWhatsApp Telefone="@a.TelefoneCliente" Titulo="Falar com o cliente no WhatsApp"
+                                               Mensagem="@WhatsApp.ConfirmacaoAgendamento(a.NomeCliente, a.DataHora, a.NomeServico, a.NomeFuncionario)" />
+                            }
+                        </span>
+                    </li>
+                }
+            </ul>
+        }
+    </section>
+}
+
+@code {
+    private static readonly System.Globalization.CultureInfo Cultura = new("pt-BR");
+
+    private DateTime dia = DateTime.Today;
+    private int? idFuncionario;
+    private string? nomeProfissional;
+    private List<Agendamento> agenda = new();
+    private decimal comissaoDia;
+    private decimal comissaoMes;
+    private int atendimentosDia;
+    private bool podeVender;
+    private bool carregado;
+    private string? erro;
+
+    private static string Saudacao =>
+        DateTime.Now.Hour < 12 ? "Bom dia" : DateTime.Now.Hour < 18 ? "Boa tarde" : "Boa noite";
+
+    private string RotuloDia
+    {
+        get
+        {
+            if (dia == DateTime.Today) return "Hoje";
+            if (dia == DateTime.Today.AddDays(1)) return "Amanhã";
+            if (dia == DateTime.Today.AddDays(-1)) return "Ontem";
+            return dia.ToString("ddd, dd/MM", Cultura);
+        }
+    }
+
+    /// <summary>Primeiro horario ainda em aberto a partir de agora; so faz sentido hoje.</summary>
+    private Agendamento? Proximo =>
+        dia != DateTime.Today
+            ? null
+            : agenda.FirstOrDefault(a => a.Aberto && a.Fim >= DateTime.Now);
+
+    private static string ClasseLinha(Agendamento a) =>
+        a.Aberto && a.Fim < DateTime.Now ? "atrasado" : a.Aberto ? "" : "fechado";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await auth.PrepararAsync();
+        await permissao.CarregarAsync();
+
+        podeVender = permissao.Pode("vendas", Acao.Criar);
+
+        try
+        {
+            var idUsuario = auth.GetUsuarioId();
+            var usuario = idUsuario.HasValue ? equipeDAO.BuscarPorId(idUsuario.Value) : null;
+            idFuncionario = usuario?.IdFuncionario;
+            nomeProfissional = usuario?.NomeFuncionario;
+        }
+        catch (Exception ex)
+        {
+            erro = "Erro ao identificar o profissional: " + ex.Message;
+        }
+
+        Carregar();
+    }
+
+    private void TrocarDia(int dias) => IrPara(dia.AddDays(dias));
+
+    private void IrPara(DateTime novo)
+    {
+        dia = novo.Date;
+        Carregar();
+    }
+
+    private void Carregar()
+    {
+        if (idFuncionario is not int id)
+        {
+            carregado = true;
+            return;
+        }
+
+        try
+        {
+            erro = null;
+
+            agenda = agendamentoDAO.Listar(dia, dia.AddDays(1))
+                .Where(a => a.IdFuncionario == id)
+                .ToList();
+
+            var doDia = comissaoDAO.Detalhar(id, dia, dia.AddDays(1));
+            comissaoDia = doDia.Sum(l => l.Comissao);
+            atendimentosDia = doDia.Select(l => l.IdVenda).Distinct().Count();
+
+            var inicioMes = new DateTime(dia.Year, dia.Month, 1);
+            var fimMes = dia.Month == DateTime.Today.Month && dia.Year == DateTime.Today.Year
+                ? DateTime.Today.AddDays(1)
+                : inicioMes.AddMonths(1);
+            comissaoMes = comissaoDAO.Detalhar(id, inicioMes, fimMes).Sum(l => l.Comissao);
+        }
+        catch (Exception ex)
+        {
+            erro = "Erro ao carregar o seu dia: " + ex.Message;
+        }
+        finally
+        {
+            carregado = true;
+        }
+    }
+}
