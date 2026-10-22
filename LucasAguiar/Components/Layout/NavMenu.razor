@@ -268,23 +268,11 @@
                     </div>
                 }
 
-                @if (Pode("planos"))
+                @* Assinantes e planos num item so; as duas telas viram abas. *@
+                @if (AlgumaDe("assinaturas", "planos"))
                 {
                     <div class="nav-item">
-                        <NavLink class="nav-link" href="/plano">
-                            <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <path d="M12 3l9 5-9 5-9-5zM3 13l9 5 9-5" />
-                            </svg>
-                            Planos
-                        </NavLink>
-                    </div>
-                }
-
-                @if (Pode("assinaturas"))
-                {
-                    <div class="nav-item">
-                        <NavLink class="nav-link" href="/assinaturas">
+                        <NavLink class="@($"nav-link {AtivoEm(AbasGrupo.Assinaturas)}")" href="@PrimeiraAba(AbasGrupo.Assinaturas)">
                             <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                  stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                 <path d="M4 5h16v14H4zM4 10h16M8 15h3" />
@@ -310,77 +298,19 @@
             </div>
         }
 
-        @* Quem administra o sistema. Para a maior parte da equipe esta
-           secao inteira nao existe. *@
+        @* Quem administra o sistema. Item solto, sem grupo: equipe,
+           funcoes, horario e logs viram abas. Para a maior parte da
+           equipe ele nem existe. *@
         @if (AlgumaDe("equipe", "funcoes", "logs", "horario"))
         {
-            <div class="grupo @(Aberto("Sistema") ? "aberto" : "")">
-                <button type="button" class="grupo-rotulo" aria-expanded="@Aberto("Sistema")"
-                        @onclick='() => Alternar("Sistema")'>
-                    <span>Sistema</span>
-                    @if (!Aberto("Sistema"))
-                    {
-                        @if (GrupoAtual == "Sistema")
-                        {
-                            <i class="ponto-atual" title="A página aberta está aqui"></i>
-                        }
-                    }
-                    <svg class="seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
-                </button>
-                <div class="grupo-itens"><div class="grupo-conteudo">
-
-                @if (Pode("equipe"))
-                {
-                    <div class="nav-item">
-                        <NavLink class="nav-link" href="equipe">
-                            <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8" />
-                            </svg>
-                            Equipe
-                        </NavLink>
-                    </div>
-                }
-
-                @if (Pode("funcoes"))
-                {
-                    <div class="nav-item">
-                        <NavLink class="nav-link" href="funcoes">
-                            <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <path d="M3 7h18M3 12h18M3 17h10" />
-                            </svg>
-                            Funções
-                        </NavLink>
-                    </div>
-                }
-
-                @if (Pode("logs"))
-                {
-                    <div class="nav-item">
-                        <NavLink class="nav-link" href="logs">
-                            <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <path d="M8 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-3M8 3v4h8V3M8 12h8M8 16h5" />
-                            </svg>
-                            Logs
-                        </NavLink>
-                    </div>
-                }
-
-                @if (Pode("horario"))
-                {
-                    <div class="nav-item">
-                        <NavLink class="nav-link" href="horario">
-                            <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 7v5l3 2" />
-                            </svg>
-                            Horário
-                        </NavLink>
-                    </div>
-                }
-                </div></div>
+            <div class="nav-item">
+                <NavLink class="@($"nav-link {AtivoEm(AbasGrupo.Configuracoes)}")" href="@PrimeiraAba(AbasGrupo.Configuracoes)">
+                    <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6" />
+                    </svg>
+                    Configurações
+                </NavLink>
             </div>
         }
     </nav>

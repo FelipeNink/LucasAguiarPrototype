@@ -35,6 +35,20 @@
         new("comissoes", "Detalhe por venda", "/comissoes")
     };
 
+    public static readonly Aba[] Assinaturas =
+    {
+        new("assinaturas", "Assinantes", "/assinaturas"),
+        new("planos", "Planos", "/plano")
+    };
+
+    public static readonly Aba[] Configuracoes =
+    {
+        new("equipe", "Equipe", "/equipe"),
+        new("funcoes", "Funções", "/funcoes"),
+        new("horario", "Horário", "/horario"),
+        new("logs", "Logs", "/logs")
+    };
+
     [Parameter, EditorRequired]
     public Aba[] Abas { get; set; } = Array.Empty<Aba>();
 

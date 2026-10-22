@@ -109,6 +109,10 @@
 .grupo + .grupo {
     margin-top: 22px;
 }
+/* Configuracoes: item solto depois dos grupos, com o mesmo respiro. */
+.grupo + .nav-item {
+    margin-top: 22px;
+}
 .grupo-rotulo {
     display: block;
     padding: 0 10px 6px;
