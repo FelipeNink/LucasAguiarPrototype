@@ -29,31 +29,32 @@
 <section class="filtros">
     <div class="campo">
         <label>De</label>
-        <input type="date" class="form-control" @bind="de" />
+        <input type="date" class="form-control" @bind="de" @bind:after="Aplicar" />
     </div>
     <div class="campo">
         <label>Até</label>
-        <input type="date" class="form-control" @bind="ate" />
+        <input type="date" class="form-control" @bind="ate" @bind:after="Aplicar" />
     </div>
     <div class="campo campo-largo">
         <label>Cliente</label>
-        <input class="form-control" placeholder="Nome do cliente" @bind="cliente" />
+        <input class="form-control" placeholder="Nome ou telefone do cliente"
+               @bind="cliente" @bind:event="oninput" @bind:after="FiltrarNaTela" />
     </div>
     <div class="campo">
         <label>Profissional</label>
         <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesFuncionario"
-                 @bind-Valor="idFuncionario" TextoDe="o => o.Rotulo" ValorDe="o => o.Id"
+                 @bind-Valor="idFuncionario" @bind-Valor:after="FiltrarNaTela" TextoDe="o => o.Rotulo" ValorDe="o => o.Id"
                  ComAvatar="true" />
     </div>
     <div class="campo">
         <label>Serviço</label>
         <Seletor TItem="OpcaoId" TValor="int" Itens="OpcoesServico"
-                 @bind-Valor="idServico" TextoDe="o => o.Rotulo" ValorDe="o => o.Id" />
+                 @bind-Valor="idServico" @bind-Valor:after="FiltrarNaTela" TextoDe="o => o.Rotulo" ValorDe="o => o.Id" />
     </div>
     <div class="campo">
         <label>Status</label>
         <Seletor TItem="Opcao" TValor="string" Itens="OpcoesFiltroStatus"
-                 @bind-Valor="filtroStatus" TextoDe="o => o.Rotulo" ValorDe="o => o.Valor"
+                 @bind-Valor="filtroStatus" @bind-Valor:after="Aplicar" TextoDe="o => o.Rotulo" ValorDe="o => o.Valor"
                  PontoDe="o => o.Cor" />
     </div>
     <div class="campo-acoes">
@@ -94,7 +95,7 @@
 </div>
 
 @* Os horarios de amanha que ainda nao confirmaram, com o lembrete pronto. *@
-<LembretesAmanha />
+<LembretesAmanha Recolhido="true" />
 
 <div class="tabela fixa">
     <table class="table">
@@ -298,6 +299,9 @@
 
     private List<Agendamento> agendamentos = new();
 
+    /// <summary>O que veio do banco pelo periodo e status; cliente, profissional e servico filtram aqui, sem nova consulta.</summary>
+    private List<Agendamento> carregados = new();
+
     /// <summary>Atalho em uso; nulo quando as datas foram digitadas.</summary>
     private Periodo? periodo = Periodo.Hoje;
     private DateTime? de = DateTime.Today;
@@ -399,19 +403,31 @@
             erro = null;
 
             // 'ate' e exclusivo no SQL: soma um dia para incluir o dia escolhido.
-            var lista = agendamentoDAO.Listar(de, ate?.AddDays(1), filtroStatus);
-
-            agendamentos = lista
-                .Where(a => string.IsNullOrWhiteSpace(cliente)
-                            || (a.NomeCliente ?? "").Contains(cliente.Trim(), StringComparison.OrdinalIgnoreCase))
-                .Where(a => idFuncionario == 0 || a.IdFuncionario == idFuncionario)
-                .Where(a => idServico == 0 || a.IdServico == idServico)
-                .ToList();
+            carregados = agendamentoDAO.Listar(de, ate?.AddDays(1), filtroStatus);
+            FiltrarNaTela();
         }
         catch (Exception ex)
         {
             erro = "Erro ao carregar os agendamentos: " + ex.Message;
         }
+    }
+
+    /// <summary>
+    /// Filtra o que ja foi carregado, a cada letra digitada. O telefone
+    /// casa so pelos digitos: "99123" acha "(48) 99123-4567".
+    /// </summary>
+    private void FiltrarNaTela()
+    {
+        var termo = cliente.Trim();
+        var digitos = Documentos.SoDigitos(termo);
+
+        agendamentos = carregados
+            .Where(a => termo.Length == 0
+                        || (a.NomeCliente ?? "").Contains(termo, StringComparison.OrdinalIgnoreCase)
+                        || (digitos.Length >= 3 && Documentos.SoDigitos(a.TelefoneCliente).Contains(digitos)))
+            .Where(a => idFuncionario == 0 || a.IdFuncionario == idFuncionario)
+            .Where(a => idServico == 0 || a.IdsServicos.Contains(idServico))
+            .ToList();
     }
 
     private void Visualizar(Agendamento a)

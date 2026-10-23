@@ -21,9 +21,17 @@
                     @confirmados de @total confirmado(s)@(pendentes.Count > 0 ? $" · {pendentes.Count} sem resposta" : "")
                 </span>
             </div>
+            @if (Recolhido)
+            {
+                <button type="button" class="alternar" aria-expanded="@(aberto ? "true" : "false")"
+                        @onclick="() => aberto = !aberto">@(aberto ? "Ocultar" : "Mostrar")</button>
+            }
         </header>
 
-        @if (pendentes.Count == 0)
+        @if (!aberto)
+        {
+        }
+        else if (pendentes.Count == 0)
         {
             <p class="tudo-certo">✓ Todos os horários de amanhã estão confirmados.</p>
         }
@@ -52,6 +60,16 @@
     /// <summary>So os horarios deste profissional; null mostra todos.</summary>
     [Parameter] public int? IdFuncionario { get; set; }
 
+    /// <summary>
+    /// Comeca fechado, so com o resumo. Na lista de agendamentos os
+    /// lembretes nao seguem os filtros, e abertos pareciam o resultado da
+    /// busca, empurrando a tabela para baixo.
+    /// </summary>
+    [Parameter] public bool Recolhido { get; set; }
+
+    private bool aberto = true;
+    private bool primeiraVez = true;
+
     private List<(Agendamento Agendamento, string Link)> pendentes = new();
     private int total;
     private int confirmados;
@@ -59,6 +77,12 @@
 
     protected override void OnParametersSet()
     {
+        if (primeiraVez)
+        {
+            aberto = !Recolhido;
+            primeiraVez = false;
+        }
+
         try
         {
             var amanha = DateTime.Today.AddDays(1);

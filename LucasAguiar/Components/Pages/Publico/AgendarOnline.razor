@@ -7,6 +7,7 @@
 @inject AgendaOnlineDAO agendaOnlineDAO
 @inject TentativaLoginDAO tentativas
 @inject IHttpContextAccessor HttpContextAccessor
+@inject ILogger<AgendarOnline> Log
 
 @* Pagina publica do agendamento: o cliente escolhe servico, profissional,
    dia e horario, e informa nome e telefone. Sem login. Os horarios saem
@@ -347,8 +348,9 @@
             // ficaria sem profissional na etapa seguinte.
             servicos = servicos.Where(s => profissionais.Any(p => p.Faz(new[] { s.IdServico }))).ToList();
         }
-        catch
+        catch (Exception ex)
         {
+            Log.LogError(ex, "Agendamento online: falha ao abrir a página.");
             falhaCarga = true;
         }
     }
@@ -432,8 +434,9 @@
 
             CalcularHorarios();
         }
-        catch
+        catch (Exception ex)
         {
+            Log.LogError(ex, "Agendamento online: falha ao carregar os horários.");
             dias = new();
             horarios = new();
             erro = "Não conseguimos carregar os horários. Tente de novo em instantes.";
@@ -492,7 +495,15 @@
             }, DateTime.Now);
 
             // Conta o agendamento feito (a tabela e a mesma contagem do login).
-            tentativas.RegistrarFalha(chaves.ToArray());
+            // Ja gravou: falhar aqui nao pode virar "nao conseguimos marcar".
+            try
+            {
+                tentativas.RegistrarFalha(chaves.ToArray());
+            }
+            catch (Exception ex)
+            {
+                Log.LogWarning(ex, "Agendamento online: o limite por IP/telefone não foi contado.");
+            }
         }
         catch (AgendaOnlineException ex)
         {
@@ -504,8 +515,10 @@
                 etapa = EtapaHorario;
             }
         }
-        catch
+        catch (Exception ex)
         {
+            // O cliente ve a mensagem generica; o motivo fica no log do Railway.
+            Log.LogError(ex, "Agendamento online: falha ao gravar o horário de {Inicio}.", quando);
             erro = "Não conseguimos marcar agora. Tente de novo em instantes ou fale com a barbearia.";
         }
         finally

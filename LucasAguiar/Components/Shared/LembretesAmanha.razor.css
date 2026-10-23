@@ -7,7 +7,30 @@
 }
 
 .lembretes header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
     margin-bottom: 10px;
+}
+
+.lembretes .alternar {
+    flex-shrink: 0;
+    height: 32px;
+    padding: 0 12px;
+    border: 1px solid var(--borda-2);
+    border-radius: var(--raio);
+    background: var(--superficie);
+    font-family: var(--fonte);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--texto-2);
+    cursor: pointer;
+}
+
+.lembretes .alternar:hover {
+    border-color: var(--marca-fraca);
+    color: var(--marca-escura);
 }
 
 .lembretes h2 {
