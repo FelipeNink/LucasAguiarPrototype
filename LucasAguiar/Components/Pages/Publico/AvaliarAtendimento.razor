@@ -1,0 +1,139 @@
+@page "/avaliar/{Token}"
+@rendermode InteractiveServer
+@attribute [AllowAnonymous]
+
+@using LucasAguiar.Configs
+@using LucasAguiar.Models
+@inject AvaliacaoDAO avaliacaoDAO
+@inject ILogger<AvaliarAtendimento> Log
+
+@* Pagina publica da avaliacao: o cliente abre pelo link do WhatsApp, sem
+   login, e da a nota de 1 a 5 ao atendimento, com comentario opcional.
+   O que da acesso e so o codigo do link, aleatorio e unico por venda;
+   responde-se uma vez, ate 30 dias depois da visita. Nao mostra nada
+   alem do que o cliente ja sabe da propria visita. *@
+
+<PageTitle>Avalie seu atendimento</PageTitle>
+<HeadContent>
+    <meta name="robots" content="noindex, nofollow" />
+</HeadContent>
+
+<main class="pagina-avaliar">
+    <div class="cartao-avaliar">
+        <Marca Largura="120" />
+
+        @if (avaliacao == null)
+        {
+            <h1>Link inválido</h1>
+            <p>Este link não existe ou foi digitado errado.</p>
+        }
+        else if (avaliacao.Respondida)
+        {
+            <div class="obrigado">
+                <span class="estrelas-lidas" aria-label="@avaliacao.Nota de 5 estrelas">@NotaAvaliacao.Estrelas(avaliacao.Nota!.Value)</span>
+                <h1>Obrigado, @WhatsApp.PrimeiroNome(avaliacao.NomeCliente)!</h1>
+                <p>
+                    @(avaliacao.Nota >= 4
+                        ? "Ficamos felizes que gostou. Até a próxima!"
+                        : "Sentimos muito. Sua opinião vai direto para a gerência, e vamos melhorar.")
+                </p>
+            </div>
+        }
+        else if (avaliacao.VendaCancelada || avaliacao.Vencida(DateTime.Now))
+        {
+            <h1>Link expirado</h1>
+            <p>O prazo para avaliar esta visita já passou. Obrigado mesmo assim!</p>
+        }
+        else
+        {
+            <h1>Como foi seu atendimento?</h1>
+            <p class="contexto">
+                @avaliacao.DataVenda.ToString("dddd, dd/MM", Cultura)@(string.IsNullOrWhiteSpace(avaliacao.Servicos) ? "" : $" · {avaliacao.Servicos}")
+                @if (!string.IsNullOrWhiteSpace(avaliacao.NomeFuncionario))
+                {
+                    <br />
+                    <span>com <strong>@WhatsApp.PrimeiroNome(avaliacao.NomeFuncionario)</strong></span>
+                }
+            </p>
+
+            <div class="estrelas" role="radiogroup" aria-label="Nota de 1 a 5">
+                @for (var n = NotaAvaliacao.Minima; n <= NotaAvaliacao.Maxima; n++)
+                {
+                    var valor = n;
+                    <button type="button" role="radio" aria-checked="@(nota == valor ? "true" : "false")"
+                            aria-label="@valor — @NotaAvaliacao.Rotulos[valor]"
+                            class="estrela @(valor <= nota ? "acesa" : "")" @onclick="() => nota = valor">★</button>
+                }
+            </div>
+            <p class="rotulo-nota">@(nota > 0 ? NotaAvaliacao.Rotulos[nota] : "Toque nas estrelas")</p>
+
+            @if (nota > 0)
+            {
+                <label for="av-comentario" class="rotulo-comentario">
+                    @(nota <= NotaAvaliacao.Baixa ? "O que podemos melhorar?" : "Quer deixar um recado?")
+                    <span>(opcional)</span>
+                </label>
+                <textarea id="av-comentario" class="comentario" rows="3" maxlength="@NotaAvaliacao.TamanhoComentario"
+                          @bind="comentario"></textarea>
+
+                <button type="button" class="botao-principal" disabled="@enviando" @onclick="Enviar">
+                    @(enviando ? "Enviando…" : "Enviar avaliação")
+                </button>
+            }
+
+            @if (erro != null)
+            {
+                <p class="erro" role="alert">@erro</p>
+            }
+        }
+    </div>
+</main>
+
+@code {
+    private static readonly System.Globalization.CultureInfo Cultura = new("pt-BR");
+
+    [Parameter] public string Token { get; set; } = "";
+
+    private Avaliacao? avaliacao;
+    private int nota;
+    private string? comentario;
+    private bool enviando;
+    private string? erro;
+
+    protected override void OnParametersSet() => Recarregar();
+
+    private void Recarregar()
+    {
+        try
+        {
+            avaliacao = avaliacaoDAO.BuscarPorToken(Token);
+        }
+        catch (Exception ex)
+        {
+            Log.LogError(ex, "Avaliação: falha ao abrir o link.");
+            avaliacao = null;
+        }
+    }
+
+    private void Enviar()
+    {
+        erro = null;
+        enviando = true;
+
+        try
+        {
+            if (!avaliacaoDAO.Responder(Token, nota, comentario))
+                erro = "Este link não aceita mais respostas.";
+            Recarregar();
+        }
+        catch (Exception ex)
+        {
+            Log.LogError(ex, "Avaliação: falha ao gravar a nota.");
+            erro = "Não conseguimos registrar agora. Tente de novo em instantes.";
+        }
+        finally
+        {
+            enviando = false;
+        }
+    }
+}

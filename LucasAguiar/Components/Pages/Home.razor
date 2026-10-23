@@ -12,6 +12,7 @@
 @inject EstoqueDAO estoqueDAO
 @inject AssinaturaDAO assinaturaDAO
 @inject AgendamentoDAO agendamentoDAO
+@inject AvaliacaoDAO avaliacaoDAO
 @inject HorarioDAO horarioDAO
 @inject Autorizacao permissao
 
@@ -127,9 +128,27 @@
    Reposicao: so quando ha o que repor, e so para quem pode abrir o
    estoque. Assinaturas: mesma regra; vencida e a ativa com o prazo ja
    passado, vencendo e a que vence nos proximos dias. *@
-@if (reposicao.Count > 0 || assinaturasAtencao.Count > 0 || canceladosCliente.Count > 0 || marcadosOnline.Count > 0)
+@if (reposicao.Count > 0 || assinaturasAtencao.Count > 0 || canceladosCliente.Count > 0 || marcadosOnline.Count > 0
+     || notasBaixas.Count > 0)
 {
     <div class="avisos-painel">
+        @* Nota baixa nos ultimos 3 dias: o dono liga para o cliente antes
+           de o problema virar avaliacao ruim no Google. *@
+        @if (notasBaixas.Count > 0)
+        {
+            var lista = string.Join(" · ", notasBaixas.Select(a =>
+                $"{a.NomeCliente}: {a.Nota}★ para {WhatsApp.PrimeiroNome(a.NomeFuncionario)}"
+                + (string.IsNullOrWhiteSpace(a.Comentario) ? "" : $" — “{a.Comentario}”")));
+            <a href="/relatorios?r=avaliacoes" class="aviso-compacto" title="@lista">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z" />
+                </svg>
+                <strong>@TextoNotasBaixas</strong>
+                <span>@lista</span>
+            </a>
+        }
+
         @* Marcou sozinho pelo link publico nas ultimas 24 horas: ja esta na
            agenda, o aviso e para a equipe ver quem chegou por ali. *@
         @if (marcadosOnline.Count > 0)
@@ -338,6 +357,14 @@ else
     /// <summary>Cancelados pelo cliente, pelo link do lembrete, nas ultimas 24 horas.</summary>
     private List<Agendamento> canceladosCliente = new();
 
+    /// <summary>Avaliacoes de 1 a 3 estrelas nos ultimos 3 dias.</summary>
+    private List<Avaliacao> notasBaixas = new();
+
+    private string TextoNotasBaixas =>
+        notasBaixas.Count == 1
+            ? $"{WhatsApp.PrimeiroNome(notasBaixas[0].NomeCliente)} deu {notasBaixas[0].Nota}★ ao atendimento"
+            : $"{notasBaixas.Count} avaliações baixas nos últimos dias";
+
     /// <summary>Marcados pelo proprio cliente no link publico nas ultimas 24 horas.</summary>
     private List<Agendamento> marcadosOnline = new();
 
@@ -403,6 +430,19 @@ else
             {
                 canceladosCliente = agendamentoDAO.CanceladosPeloCliente(DateTime.Now.AddHours(-24));
                 marcadosOnline = agendamentoDAO.CriadosOnline(DateTime.Now.AddHours(-24));
+            }
+            catch
+            {
+                // Mesmo caso da reposicao: o aviso e acessorio.
+            }
+        }
+
+        if (permissao.PodeVer("relatorios"))
+        {
+            try
+            {
+                notasBaixas = avaliacaoDAO.Respondidas(
+                    DateTime.Today.AddDays(-2), DateTime.Now.AddMinutes(1), notaAte: NotaAvaliacao.Baixa);
             }
             catch
             {

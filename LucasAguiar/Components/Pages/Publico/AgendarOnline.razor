@@ -253,7 +253,14 @@
                     <label for="ag-obs">Observação <span class="opcional">(opcional)</span></label>
                     <textarea id="ag-obs" class="campo" rows="2" maxlength="@AgendaOnlineDAO.TamanhoObservacao" @bind="observacao"></textarea>
 
-                    <p class="nota">Usamos seu WhatsApp só para falar sobre este horário.</p>
+                    @* LGPD: desmarcada por padrao, e o lembrete do horario sai de
+                       qualquer jeito -- e parte do servico, nao propaganda. *@
+                    <label class="aceite">
+                        <input type="checkbox" @bind="aceitaWhatsApp" />
+                        <span>Quero receber novidades e promoções da barbearia pelo WhatsApp.</span>
+                    </label>
+
+                    <p class="nota">O lembrete deste horário chega pelo WhatsApp de qualquer forma.</p>
 
                     <div class="rodape-agendar">
                         <button type="button" class="botao-voltar" disabled="@enviando" @onclick="() => Voltar(EtapaHorario)">Voltar</button>
@@ -307,6 +314,7 @@
     private string nome = "";
     private string telefone = "";
     private string? observacao;
+    private bool aceitaWhatsApp;
     private bool tentou;
     private bool enviando;
     private string? ip;
@@ -491,7 +499,8 @@
                 Inicio = quando,
                 Nome = nome,
                 Telefone = telefone,
-                Observacao = observacao
+                Observacao = observacao,
+                AceitaWhatsApp = aceitaWhatsApp
             }, DateTime.Now);
 
             // Conta o agendamento feito (a tabela e a mesma contagem do login).

@@ -33,6 +33,9 @@ namespace LucasAguiar.Data
         public string Nome { get; set; } = "";
         public string Telefone { get; set; } = "";
         public string? Observacao { get; set; }
+
+        /// <summary>Marcou "quero receber novidades": vira consentimento de WhatsApp. Desmarcado nao muda nada.</summary>
+        public bool AceitaWhatsApp { get; set; }
     }
 
     /// <summary>O horario marcado, para a tela de sucesso.</summary>
@@ -447,7 +450,7 @@ namespace LucasAguiar.Data
                 if (livre is not int idFuncionario)
                     throw new AgendaOnlineException("Esse horário acabou de ser ocupado. Escolha outro.", true);
 
-                var idCliente = GarantirCliente(conexao, transacao, nome, digitos);
+                var idCliente = GarantirCliente(conexao, transacao, nome, digitos, pedido.AceitaWhatsApp);
                 ConferirCliente(conexao, transacao, idCliente, inicio, fim, config.MaximoAbertos);
 
                 var token = Convert.ToHexString(RandomNumberGenerator.GetBytes(16)).ToLowerInvariant();
@@ -495,7 +498,8 @@ namespace LucasAguiar.Data
         /// O nome digitado nao muda o cadastro que ja existe: no link nao ha
         /// como saber se quem digitou e o dono do numero.
         /// </summary>
-        private static int GarantirCliente(MySqlConnection conexao, MySqlTransaction transacao, string nome, string digitos)
+        private static int GarantirCliente(
+            MySqlConnection conexao, MySqlTransaction transacao, string nome, string digitos, bool aceitaWhatsApp)
         {
             int? id;
             using (var buscar = new MySqlCommand(@"
@@ -520,14 +524,33 @@ namespace LucasAguiar.Data
                     "SELECT id_cli FROM cliente WHERE id_cli = @id FOR UPDATE", conexao, transacao);
                 travar.Parameters.AddWithValue("@id", existente);
                 travar.ExecuteScalar();
+
+                // So o "sim" grava: caixa desmarcada nao e recusa, e nao
+                // apaga o que o cliente ja tinha respondido no balcao.
+                if (aceitaWhatsApp)
+                {
+                    using var aceitar = new MySqlCommand(@"
+                        UPDATE cliente SET
+                            whatsapp_ok_em = IF(whatsapp_ok <=> 1, whatsapp_ok_em, NOW()),
+                            whatsapp_ok_origem = IF(whatsapp_ok <=> 1, whatsapp_ok_origem, @origem),
+                            whatsapp_ok = 1
+                         WHERE id_cli = @id", conexao, transacao);
+                    aceitar.Parameters.AddWithValue("@origem", OrigemConsentimento.Online);
+                    aceitar.Parameters.AddWithValue("@id", existente);
+                    aceitar.ExecuteNonQuery();
+                }
+
                 return existente;
             }
 
             using var inserir = new MySqlCommand(@"
-                INSERT INTO cliente (nome_cli, telefone_cli, ativo_cli) VALUES (@nome, @telefone, 1);
+                INSERT INTO cliente (nome_cli, telefone_cli, ativo_cli, whatsapp_ok, whatsapp_ok_em, whatsapp_ok_origem)
+                VALUES (@nome, @telefone, 1, @ok, IF(@ok IS NULL, NULL, NOW()), IF(@ok IS NULL, NULL, @origem));
                 SELECT LAST_INSERT_ID();", conexao, transacao);
             inserir.Parameters.AddWithValue("@nome", nome);
             inserir.Parameters.AddWithValue("@telefone", Documentos.FormatarTelefone(digitos));
+            inserir.Parameters.AddWithValue("@ok", aceitaWhatsApp ? 1 : DBNull.Value);
+            inserir.Parameters.AddWithValue("@origem", OrigemConsentimento.Online);
             return Convert.ToInt32(inserir.ExecuteScalar());
         }
 

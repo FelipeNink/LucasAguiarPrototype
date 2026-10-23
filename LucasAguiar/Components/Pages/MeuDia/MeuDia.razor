@@ -7,6 +7,7 @@
 @using LucasAguiar.Services
 @inject AgendamentoDAO agendamentoDAO
 @inject ComissaoDAO comissaoDAO
+@inject AvaliacaoDAO avaliacaoDAO
 @inject EquipeDAO equipeDAO
 @inject Autorizacao permissao
 @inject AuthenticationService auth
@@ -68,6 +69,16 @@ else if (carregado)
             <span class="detalhe">até @(dia.Month == DateTime.Today.Month && dia.Year == DateTime.Today.Year ? "hoje" : "o fim do mês")</span>
         </div>
     </div>
+
+    @* A nota do mes: so aparece quando ja tem avaliacao. *@
+    @if (notasMes.Count > 0)
+    {
+        <p class="nota-mes">
+            <span class="estrela-mes" aria-hidden="true">★</span>
+            Sua nota em @dia.ToString("MMMM", Cultura): <strong>@MediaMes.ToString("0.0")</strong>
+            <span class="detalhe">· @notasMes.Count avaliação(ões)</span>
+        </p>
+    }
 
     @* ---------- proximo cliente ---------- *@
     var proximo = Proximo;
@@ -143,6 +154,9 @@ else if (carregado)
     private List<Agendamento> agenda = new();
     private decimal comissaoDia;
     private decimal comissaoMes;
+    private List<Avaliacao> notasMes = new();
+
+    private decimal MediaMes => notasMes.Count == 0 ? 0 : Math.Round((decimal)notasMes.Average(a => a.Nota ?? 0), 1);
     private int atendimentosDia;
     private bool podeVender;
     private bool carregado;
@@ -226,6 +240,16 @@ else if (carregado)
                 ? DateTime.Today.AddDays(1)
                 : inicioMes.AddMonths(1);
             comissaoMes = comissaoDAO.Detalhar(id, inicioMes, fimMes).Sum(l => l.Comissao);
+
+            try
+            {
+                notasMes = avaliacaoDAO.Respondidas(inicioMes, inicioMes.AddMonths(1), idFuncionario: id);
+            }
+            catch
+            {
+                // A nota e um extra: sem ela, o dia carrega igual.
+                notasMes = new();
+            }
         }
         catch (Exception ex)
         {

@@ -8,6 +8,7 @@
 @inject VendaDAO vendaDAO
 @inject FuncionarioDAO funcionarioDAO
 @inject ClienteDAO clienteDAO
+@inject AvaliacaoDAO avaliacaoDAO
 @inject NavigationManager Navigation
 @inject LucasAguiar.Services.AuthenticationService auth
 @inject Autorizacao permissao
@@ -22,7 +23,15 @@
 
 @if (idNova.HasValue)
 {
-    <div class="alert alert-success">Venda #@idNova registrada com sucesso.</div>
+    @* O pedido de avaliacao sai na hora, com o cliente ainda na cadeira. *@
+    <div class="alert alert-success alerta-venda">
+        <span>Venda #@idNova registrada com sucesso.</span>
+        @if (avaliacaoNova is { NotaDada: null } pedido)
+        {
+            <BotaoWhatsApp Telefone="@pedido.Telefone" Rotulo="Pedir avaliação"
+                           Titulo="Mandar o link de avaliação no WhatsApp" Mensagem="@pedido.Mensagem" />
+        }
+    </div>
 }
 @if (idEditada.HasValue)
 {
@@ -290,6 +299,15 @@
                     <BotaoWhatsApp Telefone="@detalhe.TelefoneCliente" Rotulo="Enviar comprovante"
                                    Mensagem="@WhatsApp.ComprovanteVenda(detalhe)" />
                 }
+                @if (avaliacaoDetalhe is { NotaDada: int dada })
+                {
+                    <span class="nota-dada" title="Nota que o cliente deu">@NotaAvaliacao.Estrelas(dada)</span>
+                }
+                else if (avaliacaoDetalhe is { } pedidoDetalhe)
+                {
+                    <BotaoWhatsApp Telefone="@pedidoDetalhe.Telefone" Rotulo="Pedir avaliação"
+                                   Titulo="Mandar o link de avaliação no WhatsApp" Mensagem="@pedidoDetalhe.Mensagem" />
+                }
                 <button class="btn btn-secondary" @onclick="Fechar">Fechar</button>
             </div>
         </div>
@@ -438,6 +456,12 @@
             .ToList();
     private Venda? detalhe;
 
+    /// <summary>Pedido de avaliacao: a mensagem pronta, ou a nota se o cliente ja respondeu.</summary>
+    private record PedidoAvaliacao(string? Telefone, string Mensagem, int? NotaDada);
+
+    private PedidoAvaliacao? avaliacaoNova;
+    private PedidoAvaliacao? avaliacaoDetalhe;
+
     /// <summary>Venda com o cartao da nota fiscal aberto.</summary>
     private int? notaDaVenda;
     private bool podeVerNota;
@@ -487,7 +511,17 @@
 
         var query = QueryHelpers.ParseQuery(new Uri(Navigation.Uri).Query);
         if (query.TryGetValue("nova", out var valor) && int.TryParse(valor, out var id))
+        {
             idNova = id;
+            try
+            {
+                if (vendaDAO.BuscarPorId(id) is { } nova) avaliacaoNova = MontarPedido(nova);
+            }
+            catch
+            {
+                // O pedido de avaliacao e acessorio: a venda ja foi registrada.
+            }
+        }
         if (query.TryGetValue("editada", out var editada) && int.TryParse(editada, out var idE))
             idEditada = idE;
 
@@ -528,6 +562,7 @@
     private void Aplicar()
     {
         idNova = null;
+        avaliacaoNova = null;
         idEditada = null;
         Carregar();
     }
@@ -562,6 +597,15 @@
         {
             erro = null;
             detalhe = vendaDAO.BuscarPorId(id);
+            avaliacaoDetalhe = null;
+            try
+            {
+                if (detalhe != null) avaliacaoDetalhe = MontarPedido(detalhe);
+            }
+            catch
+            {
+                // Sem o pedido de avaliacao, o detalhe da venda abre igual.
+            }
         }
         catch (Exception ex)
         {
@@ -647,9 +691,30 @@
         Fechar();
     }
 
+    /// <summary>
+    /// Null quando nao ha a quem pedir: venda cancelada, sem cliente, sem
+    /// WhatsApp valido ou cliente que recusou mensagens (LGPD).
+    /// </summary>
+    private PedidoAvaliacao? MontarPedido(Venda venda)
+    {
+        if (venda.Status == StatusVenda.Cancelada || venda.IdCliente is not int idCliente) return null;
+
+        var cliente = clienteDAO.BuscarPorId(idCliente);
+        if (cliente == null || cliente.RecusouWhatsApp || WhatsApp.Numero(cliente.Telefone) == null) return null;
+
+        if (avaliacaoDAO.GarantirToken(venda.IdVenda) is not string token) return null;
+        var avaliacao = avaliacaoDAO.BuscarPorVenda(venda.IdVenda);
+
+        return new PedidoAvaliacao(
+            cliente.Telefone,
+            WhatsApp.PedidoAvaliacao(cliente.NomeCliente, avaliacao?.NomeFuncionario, Navigation.BaseUri + "avaliar/" + token),
+            avaliacao?.Nota);
+    }
+
     private void Fechar()
     {
         detalhe = null;
+        avaliacaoDetalhe = null;
         cancelando = false;
         motivoCancelamento = "";
     }

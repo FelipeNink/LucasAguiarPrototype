@@ -60,6 +60,25 @@
 
 /* ---------- numeros ---------- */
 
+/* Nota do mes nas avaliacoes, discreta abaixo dos numeros. */
+.nota-mes {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: -0.25rem 0 1rem;
+    font-size: 14px;
+    color: var(--texto-2);
+}
+
+.nota-mes .estrela-mes {
+    font-size: 17px;
+    color: var(--marca);
+}
+
+.nota-mes .detalhe {
+    color: var(--texto-fraco);
+}
+
 .numeros {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));

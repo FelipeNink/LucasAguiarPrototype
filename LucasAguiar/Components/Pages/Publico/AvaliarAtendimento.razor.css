@@ -1,0 +1,175 @@
+/* Aberta no celular, pelo link do WhatsApp: um cartao so, estrelas
+   grandes para o polegar. Mesma moldura da pagina de confirmar horario. */
+
+.pagina-avaliar {
+    min-height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+    background: var(--superficie-2);
+}
+
+.cartao-avaliar {
+    width: 100%;
+    max-width: 420px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    padding: 28px 24px;
+    background: var(--superficie);
+    border: 1px solid var(--borda-suave);
+    border-radius: var(--raio-cartao);
+    box-shadow: var(--sombra-media);
+    text-align: center;
+}
+
+.cartao-avaliar h1 {
+    margin: 4px 0 0;
+    font-family: var(--fonte-titulo);
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--texto);
+}
+
+.cartao-avaliar p {
+    margin: 0;
+    color: var(--texto-3);
+}
+
+.contexto {
+    font-size: 15px;
+}
+
+.contexto::first-letter {
+    text-transform: uppercase;
+}
+
+.contexto strong {
+    color: var(--texto);
+}
+
+/* ---------- estrelas ---------- */
+
+.estrelas {
+    display: flex;
+    gap: 6px;
+    margin-top: 6px;
+}
+
+.estrela {
+    width: 52px;
+    height: 52px;
+    padding: 0;
+    border: none;
+    background: none;
+    font-size: 44px;
+    line-height: 1;
+    color: var(--borda-3);
+    cursor: pointer;
+    transition: transform 0.12s, color 0.12s;
+}
+
+.estrela.acesa {
+    color: var(--marca);
+}
+
+.estrela:active {
+    transform: scale(0.9);
+}
+
+.estrela:focus-visible {
+    outline: none;
+    border-radius: var(--raio);
+    box-shadow: var(--anel-foco);
+}
+
+.rotulo-nota {
+    min-height: 1.5em;
+    font-weight: 600;
+    color: var(--texto-2) !important;
+}
+
+/* ---------- comentario ---------- */
+
+.rotulo-comentario {
+    align-self: stretch;
+    margin-top: 4px;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: left;
+    color: var(--texto-2);
+}
+
+.rotulo-comentario span {
+    font-weight: 400;
+    color: var(--texto-fraco);
+}
+
+/* 16px: abaixo disso o Safari do iPhone da zoom ao focar o campo. */
+.comentario {
+    align-self: stretch;
+    padding: 10px 12px;
+    border: 1px solid var(--borda-2);
+    border-radius: var(--raio);
+    background: var(--superficie);
+    font-family: var(--fonte);
+    font-size: 16px;
+    color: var(--texto);
+    resize: vertical;
+}
+
+.comentario:focus {
+    outline: none;
+    border-color: var(--marca);
+    box-shadow: var(--anel-foco);
+}
+
+.botao-principal {
+    align-self: stretch;
+    height: 48px;
+    border: none;
+    border-radius: var(--raio);
+    background: var(--marca);
+    color: var(--sobre-marca);
+    font-family: var(--fonte);
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.botao-principal:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+.erro {
+    align-self: stretch;
+    padding: 10px 12px;
+    border-radius: var(--raio);
+    background: var(--perigo-fundo);
+    color: var(--perigo-escuro) !important;
+    font-weight: 600;
+}
+
+/* ---------- depois de responder ---------- */
+
+.obrigado {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.estrelas-lidas {
+    font-size: 30px;
+    letter-spacing: 4px;
+    color: var(--marca);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .estrela {
+        transition: none;
+    }
+}

@@ -208,3 +208,94 @@
         flex: 0 0 260px;
     }
 }
+
+/* Inativo que recusou mensagens: no lugar do botao de WhatsApp. */
+.nao-aceita {
+    font-size: 12px;
+    color: var(--texto-fraco);
+    white-space: nowrap;
+}
+
+/* ---------- avaliacoes ---------- */
+
+.media-estrela {
+    font-weight: 700;
+    color: var(--marca-escura);
+    white-space: nowrap;
+}
+
+/* Barra empilhada das notas, da 5 (verde) a 1 (vermelha). */
+.distribuicao {
+    display: flex;
+    width: 100%;
+    max-width: 260px;
+    height: 10px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: var(--superficie-3);
+}
+
+.distribuicao i { display: block; height: 100%; }
+.distribuicao .n5 { background: var(--ok); }
+.distribuicao .n4 { background: #84cc16; }
+.distribuicao .n3 { background: #eab308; }
+.distribuicao .n2 { background: #f97316; }
+.distribuicao .n1 { background: var(--perigo); }
+
+.titulo-secao-relatorio {
+    margin: 1.75rem 0 0.75rem;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--texto);
+}
+
+.lista-avaliacoes {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    background: var(--superficie);
+    border: 1px solid var(--borda-suave);
+    border-radius: var(--raio-cartao);
+}
+
+.lista-avaliacoes li {
+    display: flex;
+    gap: 14px;
+    padding: 12px 16px;
+    border-top: 1px solid var(--borda-suave);
+}
+
+.lista-avaliacoes li:first-child {
+    border-top: none;
+}
+
+.lista-avaliacoes li.baixa {
+    background: var(--perigo-fundo);
+}
+
+.estrelas-avaliacao {
+    flex-shrink: 0;
+    width: 92px;
+    font-size: 16px;
+    letter-spacing: 1px;
+    color: var(--marca);
+}
+
+.quem-avaliou {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.quem-avaliou small {
+    font-size: 12.5px;
+    color: var(--texto-3);
+}
+
+.comentario-avaliacao {
+    margin-top: 4px;
+    font-style: italic;
+    color: var(--texto-2);
+}

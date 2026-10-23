@@ -69,6 +69,7 @@ builder.Services.AddScoped<LogDAO>();
 builder.Services.AddScoped<HorarioDAO>();
 builder.Services.AddScoped<JornadaDAO>();
 builder.Services.AddScoped<AgendaOnlineDAO>();
+builder.Services.AddScoped<AvaliacaoDAO>();
 builder.Services.AddScoped<BancoInicializador>();
 builder.Services.AddScoped<DadosExemplo>();
 builder.Services.AddScoped<LucasAguiar.Services.AuthenticationService>();

@@ -21,11 +21,11 @@ namespace LucasAguiar.Tests
         /// que exigem login mas nunca permissao -- barrar alguem de trocar
         /// a senha ou de ler o aviso de recusa nao faria sentido. E as duas
         /// publicas do cliente: confirmar horario, que ele abre pelo
-        /// lembrete, e agendar, pelo link da barbearia.
+        /// lembrete, agendar, pelo link da barbearia, e avaliar o atendimento.
         /// </summary>
         private static readonly string[] ForaDoCatalogo =
         {
-            "/login", "/logout", "/error", "/sem-permissao", "/trocar-senha", "/conta", "/confirmar/{Token}", "/agendar"
+            "/login", "/logout", "/error", "/sem-permissao", "/trocar-senha", "/conta", "/confirmar/{Token}", "/agendar", "/avaliar/{Token}"
         };
 
         [Fact]

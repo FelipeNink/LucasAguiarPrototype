@@ -19,6 +19,20 @@ namespace LucasAguiar.Models
             Todas.FirstOrDefault(o => o.Valor == valor).Rotulo ?? (valor ?? "—");
     }
 
+    /// <summary>Onde o cliente disse se aceita mensagens no WhatsApp.</summary>
+    public static class OrigemConsentimento
+    {
+        public const string Cadastro = "CADASTRO";
+        public const string Online = "ONLINE";
+
+        public static string Rotulo(string? valor) => valor switch
+        {
+            Cadastro => "no cadastro",
+            Online => "no agendamento online",
+            _ => ""
+        };
+    }
+
     public class Cliente : IEndereco
     {
         public int IdCliente{ get; set; }
@@ -44,6 +58,20 @@ namespace LucasAguiar.Models
         public int? IdProfissionalPreferidoCadastro { get; set; }
 
         public bool Ativo { get; set; } = true;
+
+        /// <summary>
+        /// Aceita mensagens de relacionamento no WhatsApp (LGPD): aniversario,
+        /// "sumiu", pedido de avaliacao. Null e ainda nao perguntado. O
+        /// lembrete do horario marcado e parte do servico e nao depende disto.
+        /// </summary>
+        public bool? AceitaWhatsApp { get; set; }
+
+        /// <summary>Quando a resposta mudou pela ultima vez, e onde: a prova do consentimento.</summary>
+        public DateTime? AceitaWhatsAppEm { get; set; }
+        public string? AceitaWhatsAppOrigem { get; set; }
+
+        /// <summary>Disse que nao quer: nenhuma mensagem de relacionamento para ele.</summary>
+        public bool RecusouWhatsApp => AceitaWhatsApp == false;
 
         // Preenchidos por join, para exibicao
         public string? NomePlano { get; set; }

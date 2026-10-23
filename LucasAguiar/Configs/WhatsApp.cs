@@ -57,6 +57,15 @@ namespace LucasAguiar.Configs
                    $"{Quando(quando)}. Confirme ou cancele por aqui: {link}";
         }
 
+        /// <summary>Depois do atendimento, com o link de dar a nota.</summary>
+        public static string PedidoAvaliacao(string? cliente, string? profissional, string link)
+        {
+            var com = string.IsNullOrWhiteSpace(profissional) ? "" : $" com {PrimeiroNome(profissional)}";
+
+            return $"Olá, {PrimeiroNome(cliente)}! Obrigado pela visita na {NomeBarbearia}. " +
+                   $"Como foi seu atendimento{com}? Leva menos de um minuto: {link}";
+        }
+
         public static string RemarcarFalta(string? cliente, DateTime quando)
             => $"Olá, {PrimeiroNome(cliente)}! Sentimos sua falta no horário de " +
                $"{quando.ToString("dd/MM 'às' HH:mm", Cultura)} aqui na {NomeBarbearia}. " +

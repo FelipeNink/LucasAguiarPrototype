@@ -47,8 +47,12 @@
                             @Idade(cliente) anos
                         </small>
                     </span>
-                    <BotaoWhatsApp Telefone="@cliente.Telefone" Titulo="Mandar parabéns no WhatsApp"
-                                   Mensagem="@WhatsApp.Aniversario(cliente.NomeCliente)" />
+                    @* LGPD: quem recusou mensagens nao recebe o parabens. *@
+                    @if (!cliente.RecusouWhatsApp)
+                    {
+                        <BotaoWhatsApp Telefone="@cliente.Telefone" Titulo="Mandar parabéns no WhatsApp"
+                                       Mensagem="@WhatsApp.Aniversario(cliente.NomeCliente)" />
+                    }
                 </li>
             }
         </ul>

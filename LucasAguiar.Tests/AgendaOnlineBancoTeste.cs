@@ -174,6 +174,27 @@ namespace LucasAguiar.Tests
         }
 
         [FatoComBanco]
+        public void Caixa_marcada_vira_consentimento_e_desmarcada_nao_muda_nada()
+        {
+            using var c = new Cenario();
+            var telefone = Telefone();
+
+            var semAceite = c.Online.Agendar(c.Pedido(telefone), DateTime.Now);
+            var agendamentos = new AgendamentoDAO(BancoDeTeste.Fabricar());
+            var clientes = new ClienteDAO(BancoDeTeste.Fabricar());
+            var idCliente = agendamentos.BuscarPorId(semAceite.IdAgendamento)!.IdCliente;
+            Assert.Null(clientes.BuscarPorId(idCliente)!.AceitaWhatsApp);
+
+            var pedido = c.Pedido(telefone, c.Horario.AddHours(2));
+            pedido.AceitaWhatsApp = true;
+            c.Online.Agendar(pedido, DateTime.Now);
+
+            var cliente = clientes.BuscarPorId(idCliente)!;
+            Assert.True(cliente.AceitaWhatsApp);
+            Assert.Equal(OrigemConsentimento.Online, cliente.AceitaWhatsAppOrigem);
+        }
+
+        [FatoComBanco]
         public void Desligado_recusa()
         {
             using var c = new Cenario();

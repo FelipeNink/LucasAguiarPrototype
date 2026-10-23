@@ -8,6 +8,7 @@
 @using System.Text.Json
 @inject RelatoriosDAO relatoriosDAO
 @inject PainelDAO painelDAO
+@inject AvaliacaoDAO avaliacaoDAO
 @inject Autorizacao permissao
 @inject AuthenticationService auth
 @inject NavigationManager Navigation
@@ -356,6 +357,88 @@ else if (relatorio == Ocupacao)
         </table>
     </div>
 }
+else if (relatorio == Avaliacoes)
+{
+    <div class="resumo">
+        <div class="cartao-resumo">
+            <span class="rotulo">Nota média</span>
+            <strong class="valor">@(avaliacoes.Count == 0 ? "—" : MediaGeral.ToString("0.0"))</strong>
+        </div>
+        <div class="cartao-resumo">
+            <span class="rotulo">Avaliações</span>
+            <strong class="valor">@avaliacoes.Count</strong>
+        </div>
+        <div class="cartao-resumo @(avaliacoes.Any(a => a.Nota <= NotaAvaliacao.Baixa) ? "prejuizo" : "")">
+            <span class="rotulo">Notas baixas (1 a @NotaAvaliacao.Baixa)</span>
+            <strong class="valor">@avaliacoes.Count(a => a.Nota <= NotaAvaliacao.Baixa)</strong>
+        </div>
+    </div>
+
+    <p class="nota-relatorio">
+        Notas que os clientes deram pelo link de avaliação, respondidas no período. A nota fica com
+        quem fez o serviço. Peça a avaliação em Vendas, logo depois de registrar a venda.
+    </p>
+
+    <div class="tabela fixa">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Profissional</th>
+                    <th class="al-dir">Avaliações</th>
+                    <th class="al-dir">Média</th>
+                    <th class="col-participacao opcional">Distribuição</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (avaliacoesPorProfissional.Count == 0)
+                {
+                    <tr><td colspan="4" class="text-center text-muted">Nenhuma avaliação no período.</td></tr>
+                }
+                else
+                {
+                    @foreach (var linha in avaliacoesPorProfissional)
+                    {
+                        <tr>
+                            <td><strong>@linha.Nome</strong></td>
+                            <td class="al-dir">@linha.Quantidade</td>
+                            <td class="al-dir"><span class="media-estrela">★ @linha.Media.ToString("0.0")</span></td>
+                            <td class="col-participacao opcional">
+                                <span class="distribuicao" title="@string.Join(" · ", Enumerable.Range(1, 5).Reverse().Select(n => $"{n}★: {linha.PorNota[n]}"))">
+                                    @for (var n = NotaAvaliacao.Maxima; n >= NotaAvaliacao.Minima; n--)
+                                    {
+                                        var parte = linha.PorNota[n] * 100m / linha.Quantidade;
+                                        <i class="n@(n)" style="width: @parte.ToString("0.#", Invariante)%"></i>
+                                    }
+                                </span>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (avaliacoes.Count > 0)
+    {
+        <h2 class="titulo-secao-relatorio">Comentários e notas recentes</h2>
+        <ul class="lista-avaliacoes">
+            @foreach (var a in avaliacoes.Take(50))
+            {
+                <li class="@(a.Nota <= NotaAvaliacao.Baixa ? "baixa" : "")">
+                    <span class="estrelas-avaliacao" aria-label="@a.Nota de 5">@NotaAvaliacao.Estrelas(a.Nota ?? 0)</span>
+                    <span class="quem-avaliou">
+                        <strong>@(a.NomeCliente ?? "Cliente")</strong>
+                        <small>@a.RespondidoEm?.ToString("dd/MM HH:mm") · @(a.NomeFuncionario ?? "—")@(string.IsNullOrWhiteSpace(a.Servicos) ? "" : $" · {a.Servicos}")</small>
+                        @if (!string.IsNullOrWhiteSpace(a.Comentario))
+                        {
+                            <span class="comentario-avaliacao">“@a.Comentario”</span>
+                        }
+                    </span>
+                </li>
+            }
+        </ul>
+    }
+}
 else if (relatorio == Inativos)
 {
     <div class="resumo">
@@ -415,8 +498,15 @@ else if (relatorio == Inativos)
                             <td class="al-dir opcional">@cliente.Visitas</td>
                             <td class="al-dir opcional dinheiro">@cliente.TotalGasto.ToString("C")</td>
                             <td class="col-acoes">
-                                <BotaoWhatsApp Telefone="@cliente.Telefone" Titulo="Chamar de volta no WhatsApp"
-                                               Mensagem="@WhatsApp.ClienteInativo(cliente.Nome, cliente.DiasSemVir)" />
+                                @if (cliente.RecusouWhatsApp)
+                                {
+                                    <span class="nao-aceita" title="O cliente disse que não quer mensagens no WhatsApp">não aceita mensagens</span>
+                                }
+                                else
+                                {
+                                    <BotaoWhatsApp Telefone="@cliente.Telefone" Titulo="Chamar de volta no WhatsApp"
+                                                   Mensagem="@WhatsApp.ClienteInativo(cliente.Nome, cliente.DiasSemVir)" />
+                                }
                             </td>
                         </tr>
                     }
@@ -433,6 +523,7 @@ else if (relatorio == Inativos)
     private const string Faltas = "faltas";
     private const string Ocupacao = "ocupacao";
     private const string Inativos = "inativos";
+    private const string Avaliacoes = "avaliacoes";
 
     private static readonly (string Chave, string Nome, string Descricao)[] Opcoes =
     {
@@ -440,7 +531,8 @@ else if (relatorio == Inativos)
         (MaisVendidos, "Mais vendidos", "Serviços e produtos que mais saem"),
         (Faltas, "Faltas", "Quem não apareceu e a taxa de faltas"),
         (Ocupacao, "Ocupação da agenda", "Quanto da jornada de cada um está agendada"),
-        (Inativos, "Clientes inativos", "Quem sumiu, para chamar de volta")
+        (Inativos, "Clientes inativos", "Quem sumiu, para chamar de volta"),
+        (Avaliacoes, "Avaliações", "Nota dos clientes por profissional")
     };
 
     /// <summary>Relatório aberto; vem de ?r= para dar link direto.</summary>
@@ -462,6 +554,12 @@ else if (relatorio == Inativos)
     private List<(string Cliente, string Telefone, string Profissional, DateTime Quando)> quemFaltou = new();
     private List<RelatoriosDAO.LinhaOcupacao> ocupacao = new();
     private List<RelatoriosDAO.LinhaInativo> inativos = new();
+    private List<Avaliacao> avaliacoes = new();
+    private List<LinhaAvaliacaoProfissional> avaliacoesPorProfissional = new();
+
+    private decimal MediaGeral => avaliacoes.Count == 0
+        ? 0
+        : Math.Round((decimal)avaliacoes.Average(a => a.Nota ?? 0), 1);
 
     private int diasDeFuncionamento;
     private int diasInatividade = 60;
@@ -593,6 +691,11 @@ else if (relatorio == Inativos)
 
                 case Inativos:
                     CarregarInativos();
+                    break;
+
+                case Avaliacoes:
+                    avaliacoes = avaliacaoDAO.Respondidas(inicio, fim);
+                    avaliacoesPorProfissional = AvaliacaoDAO.PorProfissional(avaliacoes);
                     break;
             }
         }

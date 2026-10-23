@@ -350,6 +350,9 @@ namespace LucasAguiar.Data
             public decimal TotalGasto { get; set; }
             public int Visitas { get; set; }
 
+            /// <summary>Disse que nao quer mensagem no WhatsApp (LGPD): sem o botao de chamar de volta.</summary>
+            public bool RecusouWhatsApp { get; set; }
+
             /// <summary>Null quando a pessoa nunca veio.</summary>
             public int? DiasSemVir => UltimaVisita == null
                 ? null
@@ -371,14 +374,14 @@ namespace LucasAguiar.Data
 
             using var conexao = _conexao.GetConnection();
             using var comando = new MySqlCommand($@"
-                SELECT c.id_cli, c.nome_cli, c.telefone_cli,
+                SELECT c.id_cli, c.nome_cli, c.telefone_cli, c.whatsapp_ok,
                        MAX(v.data_vend) AS ultima,
                        COUNT(v.id_vend) AS visitas,
                        COALESCE(SUM(v.valor_vend), 0) AS gasto
                   FROM cliente c
                   LEFT JOIN venda v
                          ON v.id_cli_fk = c.id_cli AND {Validas}
-                 GROUP BY c.id_cli, c.nome_cli, c.telefone_cli
+                 GROUP BY c.id_cli, c.nome_cli, c.telefone_cli, c.whatsapp_ok
                 HAVING ultima IS NULL OR ultima < @limite
                  ORDER BY ultima IS NULL, ultima
                  LIMIT @quantos", conexao);
@@ -396,7 +399,9 @@ namespace LucasAguiar.Data
                     Telefone = DAOHelper.GetString(leitor, "telefone_cli"),
                     UltimaVisita = DAOHelper.GetDateTime(leitor, "ultima"),
                     Visitas = leitor.GetInt32("visitas"),
-                    TotalGasto = leitor.GetDecimal("gasto")
+                    TotalGasto = leitor.GetDecimal("gasto"),
+                    RecusouWhatsApp = !DAOHelper.IsNull(leitor, "whatsapp_ok")
+                                      && Convert.ToInt32(leitor.GetValue(leitor.GetOrdinal("whatsapp_ok"))) == 0
                 });
             }
 

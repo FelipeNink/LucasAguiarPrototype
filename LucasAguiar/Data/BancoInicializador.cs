@@ -58,6 +58,10 @@ namespace LucasAguiar.Data
                 MigrarConfirmacao(conexao);
 
                 MigrarAgendaOnline(conexao);
+
+                MigrarConsentimento(conexao);
+
+                MigrarAvaliacao(conexao);
             }
             catch (Exception ex)
             {
@@ -933,6 +937,54 @@ namespace LucasAguiar.Data
 
             // ONLINE quando o cliente marcou pelo link; nulo e a equipe.
             GarantirColuna(conexao, "agendamento", "origem", "varchar(10) DEFAULT NULL");
+        }
+
+        // =============================================================
+        // CONSENTIMENTO DE WHATSAPP (LGPD)
+        //
+        // Nulo e "nao perguntado". Quando e onde a resposta mudou ficam
+        // gravados: e o que prova o consentimento se alguem perguntar.
+        // =============================================================
+
+        private void MigrarConsentimento(MySqlConnection conexao)
+        {
+            GarantirColuna(conexao, "cliente", "whatsapp_ok", "tinyint(1) DEFAULT NULL");
+            GarantirColuna(conexao, "cliente", "whatsapp_ok_em", "datetime DEFAULT NULL");
+            GarantirColuna(conexao, "cliente", "whatsapp_ok_origem", "varchar(12) DEFAULT NULL");
+        }
+
+        // =============================================================
+        // AVALIACAO POS-ATENDIMENTO
+        //
+        // Uma por venda, criada quando alguem manda o pedido. O link
+        // /avaliar/<token> e do cliente; a nota fica com o profissional
+        // que fez o servico.
+        // =============================================================
+
+        private void MigrarAvaliacao(MySqlConnection conexao)
+        {
+            CriarTabela(conexao, "avaliacao", @"
+                CREATE TABLE IF NOT EXISTS `avaliacao` (
+                  `id_aval` int NOT NULL AUTO_INCREMENT,
+                  `id_vend_fk` int NOT NULL,
+                  `id_cli_fk` int DEFAULT NULL,
+                  `id_fun_fk` int DEFAULT NULL,
+                  `token` varchar(32) NOT NULL,
+                  `nota` tinyint DEFAULT NULL,
+                  `comentario` varchar(500) DEFAULT NULL,
+                  `criado_em` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                  `respondido_em` datetime DEFAULT NULL,
+                  PRIMARY KEY (`id_aval`),
+                  UNIQUE KEY `uk_avaliacao_venda` (`id_vend_fk`),
+                  UNIQUE KEY `uk_avaliacao_token` (`token`),
+                  KEY `idx_avaliacao_resposta` (`respondido_em`),
+                  CONSTRAINT `fk_avaliacao_venda` FOREIGN KEY (`id_vend_fk`)
+                      REFERENCES `venda` (`id_vend`) ON DELETE CASCADE,
+                  CONSTRAINT `fk_avaliacao_cliente` FOREIGN KEY (`id_cli_fk`)
+                      REFERENCES `cliente` (`id_cli`) ON DELETE SET NULL,
+                  CONSTRAINT `fk_avaliacao_funcionario` FOREIGN KEY (`id_fun_fk`)
+                      REFERENCES `funcionario` (`id_fun`) ON DELETE SET NULL
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci");
         }
 
         // ---------- apoio das migracoes ----------

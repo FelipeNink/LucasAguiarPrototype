@@ -14,7 +14,7 @@
             // Telas de acesso nao levam a lateral nem o cabecalho. A de
             // confirmar horario e do cliente, aberta pelo link do lembrete,
             // e a de agendar tambem, aberta pelo link publico.
-            var semMoldura = nomePagina is "Login" or "Logout" or "Error" or "TrocarSenha" or "ConfirmarHorario" or "AgendarOnline";
+            var semMoldura = nomePagina is "Login" or "Logout" or "Error" or "TrocarSenha" or "ConfirmarHorario" or "AgendarOnline" or "AvaliarAtendimento";
 
             var tipoLayout = semMoldura
                 ? typeof(Layout.BlankLayout)

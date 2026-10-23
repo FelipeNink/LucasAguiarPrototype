@@ -276,3 +276,20 @@
         min-width: 100%;
     }
 }
+
+/* Venda registrada: o aviso leva o pedido de avaliacao ao lado. */
+.alerta-venda {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+/* Nota que o cliente ja deu, no lugar do botao de pedir. */
+.nota-dada {
+    align-self: center;
+    font-size: 18px;
+    letter-spacing: 2px;
+    color: var(--marca);
+}

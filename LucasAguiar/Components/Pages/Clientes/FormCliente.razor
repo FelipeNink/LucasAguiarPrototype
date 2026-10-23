@@ -91,6 +91,14 @@
                         <label class="form-check-label" for="cli-ativo">@(Modelo.Ativo ? "Ativo" : "Inativo")</label>
                     </div>
                 </Campo>
+                @* LGPD: aniversario, "sumiu" e pedido de avaliacao so saem para
+                   quem nao recusou. O lembrete do horario e servico, nao depende. *@
+                <Campo Rotulo="Mensagens no WhatsApp" Colunas="4" Dica="@DicaConsentimento">
+                    <Seletor TItem="Opcao" TValor="string" Itens="OpcoesConsentimento"
+                             Valor="@ValorConsentimento"
+                             ValorChanged="@(v => Modelo.AceitaWhatsApp = v == "SIM" ? true : v == "NAO" ? false : null)"
+                             TextoDe="o => o.Rotulo" ValorDe="o => o.Valor" PontoDe="o => o.Cor" />
+                </Campo>
                 <Campo Rotulo="Observações" Para="cli-obs" Colunas="12">
                     <textarea id="cli-obs" class="form-control" rows="3" maxlength="500"
                               placeholder="Ex.: alérgico a pós-barba com álcool" @bind="Modelo.Observacoes"></textarea>
@@ -123,6 +131,26 @@
         new List<OpcaoId> { new(0, "Nenhum") }
             .Concat(planos.Select(p => new OpcaoId(p.IdPlano, p.NomePlano ?? "Sem nome")))
             .ToList();
+
+    private static readonly List<Opcao> OpcoesConsentimento = new()
+    {
+        new("", "Não perguntado", "var(--texto-fraco)"),
+        new("SIM", "Aceita receber", "var(--ok)"),
+        new("NAO", "Não aceita", "var(--perigo)")
+    };
+
+    private string ValorConsentimento => Modelo.AceitaWhatsApp switch
+    {
+        true => "SIM",
+        false => "NAO",
+        null => ""
+    };
+
+    /// <summary>Quando e onde respondeu; some enquanto a resposta nao foi salva.</summary>
+    private string DicaConsentimento =>
+        Modelo.AceitaWhatsAppEm is DateTime em && Modelo.AceitaWhatsApp != null
+            ? $"Respondeu em {em:dd/MM/yyyy} {OrigemConsentimento.Rotulo(Modelo.AceitaWhatsAppOrigem)}."
+            : "Aniversário, retorno e avaliação. O lembrete do horário não depende disto.";
 
     private static List<Opcao> OpcoesOrigem =>
         new List<Opcao> { new("", "Não informado") }
