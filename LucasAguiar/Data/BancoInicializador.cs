@@ -56,6 +56,8 @@ namespace LucasAguiar.Data
                 MigrarJornada(conexao);
 
                 MigrarConfirmacao(conexao);
+
+                MigrarAgendaOnline(conexao);
             }
             catch (Exception ex)
             {
@@ -896,6 +898,41 @@ namespace LucasAguiar.Data
             GarantirColuna(conexao, "agendamento", "confirmado_em", "datetime DEFAULT NULL");
             GarantirColuna(conexao, "agendamento", "cancelado_cliente_em", "datetime DEFAULT NULL");
             GarantirIndiceUnico(conexao, "agendamento", "uk_agendamento_token", "token_confirmacao");
+        }
+
+        // =============================================================
+        // AGENDAMENTO ONLINE
+        //
+        // O cliente marca sozinho pelo link /agendar. A configuracao e uma
+        // linha so e nasce desligada: nada aparece para o publico antes de
+        // o dono revisar e ligar. online_fun e online_serv nulos seguem o
+        // padrao (barbeiro e todo servico ativo) ate a primeira gravacao da
+        // tela, que grava 0 ou 1 em cada um.
+        // =============================================================
+
+        private void MigrarAgendaOnline(MySqlConnection conexao)
+        {
+            CriarTabela(conexao, "agenda_online", @"
+                CREATE TABLE IF NOT EXISTS `agenda_online` (
+                  `id` tinyint NOT NULL,
+                  `ativo` tinyint(1) NOT NULL DEFAULT 0,
+                  `antecedencia_min` int NOT NULL DEFAULT 60,
+                  `dias_a_frente` int NOT NULL DEFAULT 30,
+                  `intervalo_min` int NOT NULL DEFAULT 15,
+                  `maximo_abertos` int NOT NULL DEFAULT 2,
+                  `aviso` varchar(300) DEFAULT NULL,
+                  `whatsapp` varchar(20) DEFAULT NULL,
+                  PRIMARY KEY (`id`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci");
+
+            Executar(conexao, "agenda_online preenchida",
+                "INSERT IGNORE INTO agenda_online (id) VALUES (1)");
+
+            GarantirColuna(conexao, "funcionario", "online_fun", "tinyint(1) DEFAULT NULL");
+            GarantirColuna(conexao, "servico", "online_serv", "tinyint(1) DEFAULT NULL");
+
+            // ONLINE quando o cliente marcou pelo link; nulo e a equipe.
+            GarantirColuna(conexao, "agendamento", "origem", "varchar(10) DEFAULT NULL");
         }
 
         // ---------- apoio das migracoes ----------

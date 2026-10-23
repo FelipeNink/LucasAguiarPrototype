@@ -68,6 +68,7 @@ builder.Services.AddScoped<TentativaLoginDAO>();
 builder.Services.AddScoped<LogDAO>();
 builder.Services.AddScoped<HorarioDAO>();
 builder.Services.AddScoped<JornadaDAO>();
+builder.Services.AddScoped<AgendaOnlineDAO>();
 builder.Services.AddScoped<BancoInicializador>();
 builder.Services.AddScoped<DadosExemplo>();
 builder.Services.AddScoped<LucasAguiar.Services.AuthenticationService>();
@@ -220,7 +221,20 @@ app.MapGet("/health", () => Results.Ok("ok")).AllowAnonymous();
 
 app.MapearRelatorios();
 app.MapearExcel();
+// O script do Blazor (_framework/blazor.web.js) e o hub do circuito
+// (_blazor) sao servidos por aqui, nao pelo MapStaticAssets, e caiam na
+// FallbackPolicy: visitante sem login recebia 302 para /login, e as
+// paginas publicas interativas (/confirmar, /agendar) apareciam mas nao
+// respondiam a clique. Liberar so esses dois nao abre tela nenhuma:
+// dentro do circuito quem barra e o AuthorizeRouteView, pelo [Authorize]
+// de cada pagina, e as rotas das paginas seguem com a regra de sempre.
 app.MapRazorComponents<App>()
-    .AddInteractiveServerRenderMode();
+    .AddInteractiveServerRenderMode()
+    .Add(endpoint =>
+    {
+        var padrao = (endpoint as RouteEndpointBuilder)?.RoutePattern.RawText?.TrimStart('/') ?? "";
+        if (padrao.StartsWith("_framework/") || padrao.StartsWith("_blazor"))
+            endpoint.Metadata.Add(new AllowAnonymousAttribute());
+    });
 
 app.Run();

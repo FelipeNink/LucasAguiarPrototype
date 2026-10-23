@@ -1,0 +1,547 @@
+@page "/agendar"
+@rendermode InteractiveServer
+@attribute [AllowAnonymous]
+
+@using LucasAguiar.Configs
+@using LucasAguiar.Models
+@inject AgendaOnlineDAO agendaOnlineDAO
+@inject TentativaLoginDAO tentativas
+@inject IHttpContextAccessor HttpContextAccessor
+
+@* Pagina publica do agendamento: o cliente escolhe servico, profissional,
+   dia e horario, e informa nome e telefone. Sem login. Os horarios saem
+   do QuadroAgenda, carregado uma vez por escolha de servico e
+   profissional; a gravacao confere tudo de novo no banco, porque o que
+   a pagina mostrou pode ter mudado. Nao mostra nada de outros clientes:
+   horario ocupado simplesmente nao aparece. *@
+
+<PageTitle>Agendar horário · @WhatsApp.NomeBarbearia</PageTitle>
+<HeadContent>
+    <meta name="description" content="Agende seu horário na @WhatsApp.NomeBarbearia: escolha o serviço, o profissional e o horário." />
+</HeadContent>
+
+<main class="pagina-agendar">
+    <div class="cartao-agendar">
+        <header class="topo-agendar">
+            <Marca Largura="132" />
+        </header>
+
+        @if (falhaCarga)
+        {
+            <div class="vazio-agendar">
+                <h1>Agenda fora do ar</h1>
+                <p>Não conseguimos abrir a agenda agora. Tente de novo em instantes.</p>
+                @if (LinkWhatsApp != null)
+                {
+                    <a class="botao-principal" href="@LinkWhatsApp" target="_blank" rel="noopener">Chamar no WhatsApp</a>
+                }
+            </div>
+        }
+        else if (!config.Ativo || servicos.Count == 0 || profissionais.Count == 0)
+        {
+            <div class="vazio-agendar">
+                <h1>Agendamento pelo WhatsApp</h1>
+                <p>O agendamento pela internet não está disponível no momento. Fale com a gente para marcar seu horário.</p>
+                @if (LinkWhatsApp != null)
+                {
+                    <a class="botao-principal" href="@LinkWhatsApp" target="_blank" rel="noopener">Chamar no WhatsApp</a>
+                }
+            </div>
+        }
+        else if (resultado != null)
+        {
+            @* ================= PRONTO ================= *@
+            <div class="pronto">
+                <div class="selo-ok" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+                </div>
+                <h1>Horário marcado!</h1>
+                <p>Te esperamos, @WhatsApp.PrimeiroNome(nome).</p>
+
+                <dl class="resumo">
+                    <div><dt>Quando</dt><dd>@resultado.Inicio.ToString("dddd, dd 'de' MMMM 'às' HH:mm", Cultura)</dd></div>
+                    <div><dt>Serviço</dt><dd>@resultado.NomeServicos · @resultado.DuracaoMin min</dd></div>
+                    <div><dt>Com</dt><dd>@WhatsApp.PrimeiroNome(resultado.NomeFuncionario)</dd></div>
+                    <div><dt>Valor</dt><dd>@resultado.Preco.ToString("C", Cultura) <small>no local</small></dd></div>
+                </dl>
+
+                <div class="acoes-pronto">
+                    <a class="botao-principal" href="@LinkCalendario" target="_blank" rel="noopener">Salvar na minha agenda</a>
+                    <a class="botao-secundario" href="/confirmar/@resultado.Token">Cancelar ou ver meu horário</a>
+                </div>
+                <p class="nota">
+                    Guarde este link para cancelar se não puder vir.
+                    Na véspera, mandamos um lembrete no seu WhatsApp.
+                </p>
+            </div>
+        }
+        else
+        {
+            <h1 class="titulo-agendar">Agende seu horário</h1>
+
+            @if (!string.IsNullOrWhiteSpace(config.Aviso))
+            {
+                <p class="recado">@config.Aviso</p>
+            }
+
+            <ol class="passos" aria-label="Etapas">
+                @foreach (var (numero, rotulo) in Etapas)
+                {
+                    <li class="@(numero == etapa ? "atual" : numero < etapa ? "feito" : "")"
+                        aria-current="@(numero == etapa ? "step" : null)">
+                        <span>@(numero < etapa ? "✓" : numero.ToString())</span>@rotulo
+                    </li>
+                }
+            </ol>
+
+            @if (erro != null)
+            {
+                <p class="erro-agendar" role="alert">@erro</p>
+            }
+
+            @if (etapa == EtapaServico)
+            {
+                @* ================= 1. SERVICO ================= *@
+                <h2 class="pergunta">O que vamos fazer?</h2>
+                <p class="ajuda">Pode escolher mais de um.</p>
+
+                <div class="opcoes">
+                    @foreach (var s in servicos)
+                    {
+                        var marcado = escolhidos.Contains(s.IdServico);
+                        <button type="button" class="opcao @(marcado ? "marcada" : "")" aria-pressed="@(marcado ? "true" : "false")"
+                                @onclick="() => AlternarServico(s.IdServico)">
+                            <span class="caixa" aria-hidden="true">@(marcado ? "✓" : "")</span>
+                            <span class="opcao-texto">
+                                <strong>@s.NomeServico</strong>
+                                <small>@s.DuracaoServico min</small>
+                            </span>
+                            <span class="opcao-preco">@(((decimal)s.PrecoServico).ToString("C", Cultura))</span>
+                        </button>
+                    }
+                </div>
+
+                <div class="rodape-agendar">
+                    <button type="button" class="botao-principal" disabled="@(escolhidos.Count == 0)" @onclick="IrParaProfissional">
+                        @if (escolhidos.Count == 0)
+                        {
+                            <span>Escolha um serviço</span>
+                        }
+                        else
+                        {
+                            <span>Continuar · @Duracao min</span>
+                        }
+                    </button>
+                </div>
+            }
+            else if (etapa == EtapaProfissional)
+            {
+                @* ================= 2. PROFISSIONAL ================= *@
+                <h2 class="pergunta">Com quem?</h2>
+
+                <div class="opcoes">
+                    @if (QuemFaz.Count > 1)
+                    {
+                        <button type="button" class="opcao" @onclick="() => EscolherProfissional(0)">
+                            <span class="avatar qualquer" aria-hidden="true">
+                                <svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2" /><circle cx="16.5" cy="9" r="2.6" /><path d="M3.5 19c.6-3.2 3-5 5.5-5s4.9 1.8 5.5 5M14.5 14.2c2.6-.4 5 1.1 5.8 4.8" /></svg>
+                            </span>
+                            <span class="opcao-texto">
+                                <strong>Qualquer profissional</strong>
+                                <small>Mais horários para escolher</small>
+                            </span>
+                        </button>
+                    }
+                    @foreach (var p in QuemFaz)
+                    {
+                        var cor = CorDe(p);
+                        <button type="button" class="opcao" @onclick="() => EscolherProfissional(p.IdFuncionario)">
+                            <span class="avatar" style="background: @cor; color: @CorProfissional.TextoSobre(cor)" aria-hidden="true">
+                                @CorProfissional.Inicial(p.Nome)
+                            </span>
+                            <span class="opcao-texto">
+                                <strong>@p.Nome</strong>
+                            </span>
+                            <span class="opcao-preco">@PrecoCom(p).ToString("C", Cultura)</span>
+                        </button>
+                    }
+                </div>
+
+                <div class="rodape-agendar">
+                    <button type="button" class="botao-voltar" @onclick="() => Voltar(EtapaServico)">Voltar</button>
+                </div>
+            }
+            else if (etapa == EtapaHorario)
+            {
+                @* ================= 3. DIA E HORARIO ================= *@
+                <h2 class="pergunta">Quando?</h2>
+                <p class="ajuda">@NomeServicos · @Duracao min · com @NomeProfissional</p>
+
+                @if (dias.All(d => !d.Livre))
+                {
+                    <p class="sem-horario">
+                        Não há horário livre nos próximos @config.DiasAFrente dias@(idProfissional > 0 ? " com este profissional" : "").
+                        @if (idProfissional > 0 && QuemFaz.Count > 1)
+                        {
+                            <button type="button" class="link-acao" @onclick="() => EscolherProfissional(0)">Ver com qualquer profissional</button>
+                        }
+                    </p>
+                }
+                else
+                {
+                    <div class="faixa-dias" role="listbox" aria-label="Dia">
+                        @foreach (var d in dias)
+                        {
+                            var atual = d.Data == dia;
+                            <button type="button" role="option" aria-selected="@(atual ? "true" : "false")"
+                                    class="chip-dia @(atual ? "atual" : "")" disabled="@(!d.Livre)"
+                                    @onclick="() => EscolherDia(d.Data)">
+                                <small>@RotuloSemana(d.Data)</small>
+                                <strong>@d.Data.Day</strong>
+                                <small>@d.Data.ToString("MMM", Cultura).TrimEnd('.')</small>
+                            </button>
+                        }
+                    </div>
+
+                    <p class="dia-escolhido">@dia.ToString("dddd, dd 'de' MMMM", Cultura)</p>
+
+                    @foreach (var (periodo, lista) in Periodos())
+                    {
+                        <h3 class="periodo">@periodo</h3>
+                        <div class="grade-horas">
+                            @foreach (var h in lista)
+                            {
+                                <button type="button" class="chip-hora" @onclick="() => EscolherHorario(h)">@h.ToString("HH:mm")</button>
+                            }
+                        </div>
+                    }
+                }
+
+                <div class="rodape-agendar">
+                    <button type="button" class="botao-voltar" @onclick="() => Voltar(EtapaProfissional)">Voltar</button>
+                </div>
+            }
+            else if (etapa == EtapaDados && inicio is DateTime quando)
+            {
+                @* ================= 4. DADOS ================= *@
+                <h2 class="pergunta">Seus dados</h2>
+
+                <dl class="resumo">
+                    <div><dt>Quando</dt><dd>@quando.ToString("dddd, dd 'de' MMMM 'às' HH:mm", Cultura)</dd></div>
+                    <div><dt>Serviço</dt><dd>@NomeServicos · @Duracao min</dd></div>
+                    <div><dt>Com</dt><dd>@NomeProfissional</dd></div>
+                </dl>
+
+                <form class="dados" @onsubmit="Confirmar" novalidate>
+                    <label for="ag-nome">Nome</label>
+                    <input id="ag-nome" class="campo @(tentou && NomeInvalido ? "invalido" : "")" autocomplete="name"
+                           maxlength="@AgendaOnlineDAO.TamanhoNome" @bind="nome" />
+                    @if (tentou && NomeInvalido)
+                    {
+                        <small class="erro-campo">Informe seu nome.</small>
+                    }
+
+                    <label for="ag-telefone">WhatsApp</label>
+                    <input id="ag-telefone" class="campo @(tentou && TelefoneInvalido ? "invalido" : "")" type="tel" inputmode="tel"
+                           autocomplete="tel-national" placeholder="(48) 99999-9999" maxlength="20" @bind="telefone" />
+                    @if (tentou && TelefoneInvalido)
+                    {
+                        <small class="erro-campo">Telefone incorreto. Use DDD + número.</small>
+                    }
+
+                    <label for="ag-obs">Observação <span class="opcional">(opcional)</span></label>
+                    <textarea id="ag-obs" class="campo" rows="2" maxlength="@AgendaOnlineDAO.TamanhoObservacao" @bind="observacao"></textarea>
+
+                    <p class="nota">Usamos seu WhatsApp só para falar sobre este horário.</p>
+
+                    <div class="rodape-agendar">
+                        <button type="button" class="botao-voltar" disabled="@enviando" @onclick="() => Voltar(EtapaHorario)">Voltar</button>
+                        <button type="submit" class="botao-principal" disabled="@enviando">
+                            @(enviando ? "Marcando…" : "Confirmar agendamento")
+                        </button>
+                    </div>
+                </form>
+            }
+
+            @if (LinkWhatsApp != null)
+            {
+                <p class="contato-rodape">
+                    Dúvidas? <a href="@LinkWhatsApp" target="_blank" rel="noopener">Fale com a gente no WhatsApp</a>
+                </p>
+            }
+        }
+    </div>
+</main>
+
+@code {
+    private static readonly System.Globalization.CultureInfo Cultura = new("pt-BR");
+
+    private const int EtapaServico = 1, EtapaProfissional = 2, EtapaHorario = 3, EtapaDados = 4;
+
+    private static readonly (int Numero, string Rotulo)[] Etapas =
+    {
+        (EtapaServico, "Serviço"), (EtapaProfissional, "Profissional"), (EtapaHorario, "Horário"), (EtapaDados, "Dados")
+    };
+
+    private ConfigAgendaOnline config = new();
+    private List<Servico> servicos = new();
+    private List<ProfissionalOnline> profissionais = new();
+    private bool falhaCarga;
+
+    private int etapa = EtapaServico;
+    private string? erro;
+
+    /// <summary>Na ordem em que o cliente marcou: e a ordem do atendimento.</summary>
+    private readonly List<int> escolhidos = new();
+
+    /// <summary>0 = qualquer profissional.</summary>
+    private int idProfissional;
+
+    private QuadroAgenda? quadro;
+    private List<(DateTime Data, bool Livre)> dias = new();
+    private DateTime dia;
+    private SortedDictionary<DateTime, List<int>> horarios = new();
+    private DateTime? inicio;
+
+    private string nome = "";
+    private string telefone = "";
+    private string? observacao;
+    private bool tentou;
+    private bool enviando;
+    private string? ip;
+
+    private ResultadoOnline? resultado;
+
+    private int Duracao => servicos.Where(s => escolhidos.Contains(s.IdServico)).Sum(s => s.DuracaoServico);
+
+    private string NomeServicos => string.Join(" + ",
+        escolhidos.Select(id => servicos.FirstOrDefault(s => s.IdServico == id)?.NomeServico).OfType<string>());
+
+    /// <summary>Quem faz todos os servicos escolhidos.</summary>
+    private List<ProfissionalOnline> QuemFaz => profissionais.Where(p => p.Faz(escolhidos)).ToList();
+
+    private string NomeProfissional => idProfissional == 0
+        ? "qualquer profissional"
+        : WhatsApp.PrimeiroNome(profissionais.FirstOrDefault(p => p.IdFuncionario == idProfissional)?.Nome);
+
+    private bool NomeInvalido => nome.Trim().Length < 2;
+    private bool TelefoneInvalido => WhatsApp.Numero(telefone) == null;
+
+    private string? LinkWhatsApp => WhatsApp.Link(config.WhatsApp, "Olá! Vim pela página de agendamento.");
+
+    protected override void OnInitialized()
+    {
+        // Na primeira renderizacao existe o pedido HTTP; no circuito, o da
+        // conexao. Se nenhum der o IP, fica so o limite por telefone.
+        ip ??= HttpContextAccessor.HttpContext?.Connection.RemoteIpAddress?.ToString();
+
+        try
+        {
+            config = agendaOnlineDAO.LerConfig();
+            if (!config.Ativo) return;
+
+            servicos = agendaOnlineDAO.ServicosOnline();
+            profissionais = agendaOnlineDAO.ProfissionaisOnline();
+
+            // Servico que ninguem faz nao aparece: o cliente escolheria e
+            // ficaria sem profissional na etapa seguinte.
+            servicos = servicos.Where(s => profissionais.Any(p => p.Faz(new[] { s.IdServico }))).ToList();
+        }
+        catch
+        {
+            falhaCarga = true;
+        }
+    }
+
+    // ---------- etapas ----------
+
+    private void AlternarServico(int id)
+    {
+        erro = null;
+        if (!escolhidos.Remove(id)) escolhidos.Add(id);
+    }
+
+    private void IrParaProfissional()
+    {
+        erro = null;
+        if (escolhidos.Count == 0) return;
+
+        if (QuemFaz.Count == 0)
+        {
+            erro = "Nenhum profissional faz todos esses serviços juntos. Tire um deles ou marque separado.";
+            return;
+        }
+
+        // Um so profissional para esses servicos: nao ha o que escolher.
+        if (QuemFaz.Count == 1) EscolherProfissional(QuemFaz[0].IdFuncionario);
+        else etapa = EtapaProfissional;
+    }
+
+    private void EscolherProfissional(int id)
+    {
+        erro = null;
+        idProfissional = id;
+        inicio = null;
+        CarregarHorarios(manterDia: false);
+        etapa = EtapaHorario;
+    }
+
+    private void EscolherDia(DateTime data)
+    {
+        dia = data;
+        CalcularHorarios();
+    }
+
+    private void EscolherHorario(DateTime h)
+    {
+        erro = null;
+        inicio = h;
+        etapa = EtapaDados;
+    }
+
+    private void Voltar(int para)
+    {
+        erro = null;
+        // Com um so profissional a etapa 2 foi pulada: volta direto ao servico.
+        if (para == EtapaProfissional && QuemFaz.Count <= 1) para = EtapaServico;
+        etapa = para;
+    }
+
+    // ---------- horarios ----------
+
+    private DateTime APartirDe => DateTime.Now.AddMinutes(config.AntecedenciaMin);
+
+    private IEnumerable<int> Candidatos =>
+        QuemFaz.Where(p => idProfissional == 0 || p.IdFuncionario == idProfissional).Select(p => p.IdFuncionario);
+
+    /// <summary>Le a agenda do periodo inteiro de uma vez e marca os dias com horario.</summary>
+    private void CarregarHorarios(bool manterDia)
+    {
+        try
+        {
+            var ids = Candidatos.ToList();
+            quadro = agendaOnlineDAO.CarregarQuadro(ids, DateTime.Today, DateTime.Today.AddDays(config.DiasAFrente));
+
+            dias = Enumerable.Range(0, config.DiasAFrente)
+                .Select(i => DateTime.Today.AddDays(i))
+                .Select(d => (d, quadro.LivresDeTodos(ids, d, Duracao, config.IntervaloMin, APartirDe).Count > 0))
+                .ToList();
+
+            if (!manterDia || !dias.Any(d => d.Data == dia && d.Livre))
+                dia = dias.FirstOrDefault(d => d.Livre).Data;
+
+            CalcularHorarios();
+        }
+        catch
+        {
+            dias = new();
+            horarios = new();
+            erro = "Não conseguimos carregar os horários. Tente de novo em instantes.";
+        }
+    }
+
+    private void CalcularHorarios()
+    {
+        horarios = quadro == null || dia == default
+            ? new()
+            : quadro.LivresDeTodos(Candidatos, dia, Duracao, config.IntervaloMin, APartirDe);
+    }
+
+    private IEnumerable<(string Periodo, List<DateTime> Lista)> Periodos()
+    {
+        var manha = horarios.Keys.Where(h => h.Hour < 12).ToList();
+        var tarde = horarios.Keys.Where(h => h.Hour is >= 12 and < 18).ToList();
+        var noite = horarios.Keys.Where(h => h.Hour >= 18).ToList();
+
+        if (manha.Count > 0) yield return ("Manhã", manha);
+        if (tarde.Count > 0) yield return ("Tarde", tarde);
+        if (noite.Count > 0) yield return ("Noite", noite);
+    }
+
+    // ---------- gravacao ----------
+
+    private void Confirmar()
+    {
+        tentou = true;
+        erro = null;
+        if (NomeInvalido || TelefoneInvalido || inicio is not DateTime quando) return;
+
+        // Freio contra robo e brincadeira: cinco agendamentos em quinze
+        // minutos por IP e por telefone. Chaves proprias, para nao se
+        // misturar com o bloqueio do login.
+        var chaves = new List<string> { "agendar-tel:" + WhatsApp.Numero(telefone) };
+        if (ip != null) chaves.Add("agendar-" + TentativaLoginDAO.ChaveDeIp(ip));
+
+        enviando = true;
+        try
+        {
+            if (tentativas.BloqueadoAte(chaves.ToArray()) is DateTime ate)
+            {
+                erro = $"Muitos agendamentos seguidos. Tente de novo em {TentativaLoginDAO.MinutosRestantes(ate)} minuto(s) ou fale com a barbearia.";
+                return;
+            }
+
+            resultado = agendaOnlineDAO.Agendar(new PedidoOnline
+            {
+                Servicos = escolhidos.ToList(),
+                IdFuncionario = idProfissional,
+                Inicio = quando,
+                Nome = nome,
+                Telefone = telefone,
+                Observacao = observacao
+            }, DateTime.Now);
+
+            // Conta o agendamento feito (a tabela e a mesma contagem do login).
+            tentativas.RegistrarFalha(chaves.ToArray());
+        }
+        catch (AgendaOnlineException ex)
+        {
+            erro = ex.Message;
+            if (ex.HorarioOcupado)
+            {
+                inicio = null;
+                CarregarHorarios(manterDia: true);
+                etapa = EtapaHorario;
+            }
+        }
+        catch
+        {
+            erro = "Não conseguimos marcar agora. Tente de novo em instantes ou fale com a barbearia.";
+        }
+        finally
+        {
+            enviando = false;
+        }
+    }
+
+    // ---------- apoio ----------
+
+    private string CorDe(ProfissionalOnline p) =>
+        !string.IsNullOrWhiteSpace(p.Cor) ? p.Cor : CorProfissional.De(Enumerable.Empty<Funcionario>(), p.IdFuncionario);
+
+    /// <summary>Soma dos servicos escolhidos com o preco proprio do profissional.</summary>
+    private decimal PrecoCom(ProfissionalOnline p) =>
+        escolhidos.Sum(id => p.Precos.TryGetValue(id, out var proprio)
+            ? proprio
+            : (decimal)(servicos.FirstOrDefault(s => s.IdServico == id)?.PrecoServico ?? 0f));
+
+    private static string RotuloSemana(DateTime d) =>
+        d == DateTime.Today ? "Hoje"
+        : d == DateTime.Today.AddDays(1) ? "Amanhã"
+        : d.ToString("ddd", Cultura).TrimEnd('.');
+
+    /// <summary>Evento no Google Agenda; o celular oferece abrir no app de agenda.</summary>
+    private string LinkCalendario
+    {
+        get
+        {
+            if (resultado == null) return "#";
+            var de = resultado.Inicio.ToString("yyyyMMdd'T'HHmmss");
+            var ate = resultado.Inicio.AddMinutes(resultado.DuracaoMin).ToString("yyyyMMdd'T'HHmmss");
+            var titulo = $"{resultado.NomeServicos} · {WhatsApp.NomeBarbearia}";
+            return "https://calendar.google.com/calendar/render?action=TEMPLATE"
+                   + $"&text={Uri.EscapeDataString(titulo)}&dates={de}/{ate}&ctz=America/Sao_Paulo"
+                   + $"&details={Uri.EscapeDataString("Com " + WhatsApp.PrimeiroNome(resultado.NomeFuncionario))}";
+        }
+    }
+}

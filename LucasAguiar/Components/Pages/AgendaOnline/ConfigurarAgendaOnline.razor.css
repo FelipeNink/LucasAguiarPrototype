@@ -1,0 +1,103 @@
+.interruptor-online {
+    margin: 0 0 16px;
+}
+
+.interruptor-online .form-check-label {
+    font-weight: 600;
+    color: var(--texto-2);
+}
+
+/* Link copiavel: o campo estica, os botoes ficam do tamanho do texto. */
+.link-publico {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.link-publico .form-control {
+    flex: 1;
+    min-width: 0;
+    height: var(--altura-controle);
+    border-radius: var(--raio);
+    background: var(--superficie-2);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 13px;
+}
+
+.link-publico .acao-campo {
+    margin-top: 0;
+    height: var(--altura-controle);
+    text-decoration: none;
+}
+
+.dica-online {
+    margin: 10px 0 14px;
+    font-size: 13px;
+}
+
+/* Lista de marcar: cartoezinhos em grade, que quebram no celular. */
+.lista-marcar {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 8px;
+}
+
+.item-marcar {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin: 0;
+    padding: 10px 12px;
+    border: 1px solid var(--borda-suave);
+    border-radius: var(--raio);
+    background: var(--superficie);
+    cursor: pointer;
+}
+
+.item-marcar:has(input:checked) {
+    border-color: var(--marca-fraca);
+    background: var(--morno);
+}
+
+.item-marcar input {
+    flex-shrink: 0;
+    margin-top: 3px;
+}
+
+.item-marcar span {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.item-marcar strong {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--texto);
+}
+
+.item-marcar small {
+    font-size: 12.5px;
+    color: var(--texto-3);
+}
+
+.item-marcar.inativo {
+    cursor: default;
+    opacity: 0.6;
+}
+
+@media (max-width: 575.98px) {
+    .link-publico {
+        flex-wrap: wrap;
+    }
+
+    .link-publico .form-control {
+        flex-basis: 100%;
+    }
+}
+
+/* O "dias" na altura do campo, e nao na do input-group do Bootstrap. */
+.input-group .form-control,
+.input-group .input-group-text {
+    height: var(--altura-controle);
+}

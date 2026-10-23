@@ -51,6 +51,11 @@ namespace LucasAguiar.Models
         /// <summary>Quando o cliente cancelou pelo link; null se foi a equipe.</summary>
         public DateTime? CanceladoClienteEm { get; set; }
 
+        /// <summary>OrigemAgendamento.Online quando o cliente marcou pelo link; null se foi a equipe.</summary>
+        public string? Origem { get; set; }
+
+        public bool Online => Origem == OrigemAgendamento.Online;
+
         // Preenchidos por join, para exibicao
         public string? NomeCliente { get; set; }
         public string? TelefoneCliente { get; set; }

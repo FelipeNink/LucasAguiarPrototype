@@ -332,7 +332,7 @@
     <div class="acoes-conta">
     @* A engrenagem e a configuracao do sistema: equipe, funcoes, horario
        e logs, em abas. So aparece para quem pode abrir alguma delas. *@
-    @if (AlgumaDe("equipe", "funcoes", "logs", "horario"))
+    @if (AlgumaDe("equipe", "funcoes", "logs", "horario", "agendaonline"))
     {
     <a class="botao-conta @AtivoEm(AbasGrupo.Configuracoes)" href="@PrimeiraAba(AbasGrupo.Configuracoes)"
        aria-label="Configurações" title="Configurações">

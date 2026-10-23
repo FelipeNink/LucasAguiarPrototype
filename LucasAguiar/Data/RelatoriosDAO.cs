@@ -227,6 +227,20 @@ namespace LucasAguiar.Data
 
             public decimal TaxaSemConfirmar =>
                 EncerradosSemConfirmar == 0 ? 0 : Math.Round((decimal)FaltasSemConfirmar / EncerradosSemConfirmar * 100, 1);
+
+            /// <summary>Todos os horarios do periodo, de qualquer status, e quantos o cliente marcou pelo link.</summary>
+            public int Total { get; set; }
+            public int Online { get; set; }
+
+            public decimal PercentualOnline =>
+                Total == 0 ? 0 : Math.Round((decimal)Online / Total * 100, 1);
+
+            /// <summary>Encerrados e faltas so do que veio pelo link: quem marca sozinho falta mais?</summary>
+            public int EncerradosOnline { get; set; }
+            public int FaltasOnline { get; set; }
+
+            public decimal TaxaOnline =>
+                EncerradosOnline == 0 ? 0 : Math.Round((decimal)FaltasOnline / EncerradosOnline * 100, 1);
         }
 
         /// <summary>
@@ -255,7 +269,13 @@ namespace LucasAguiar.Data
                     SUM(confirmado_em IS NOT NULL AND (status IN ('CONCLUIDO', 'FALTOU')
                         OR (status = 'AGENDADO' AND data_hora < NOW()))) AS encerrados_confirmados,
                     SUM(confirmado_em IS NOT NULL AND (status = 'FALTOU'
-                        OR (status = 'AGENDADO' AND data_hora < NOW()))) AS faltas_confirmados
+                        OR (status = 'AGENDADO' AND data_hora < NOW()))) AS faltas_confirmados,
+                    COUNT(*) AS total,
+                    SUM(origem = 'ONLINE') AS online,
+                    SUM(origem = 'ONLINE' AND (status IN ('CONCLUIDO', 'FALTOU')
+                        OR (status = 'AGENDADO' AND data_hora < NOW()))) AS encerrados_online,
+                    SUM(origem = 'ONLINE' AND (status = 'FALTOU'
+                        OR (status = 'AGENDADO' AND data_hora < NOW()))) AS faltas_online
                   FROM agendamento
                  WHERE data_hora >= @de AND data_hora < @ate", conexao);
 
@@ -271,6 +291,10 @@ namespace LucasAguiar.Data
                 resumo.Pendentes = Inteiro(leitor, "pendentes");
                 resumo.EncerradosConfirmados = Inteiro(leitor, "encerrados_confirmados");
                 resumo.FaltasConfirmados = Inteiro(leitor, "faltas_confirmados");
+                resumo.Total = Inteiro(leitor, "total");
+                resumo.Online = Inteiro(leitor, "online");
+                resumo.EncerradosOnline = Inteiro(leitor, "encerrados_online");
+                resumo.FaltasOnline = Inteiro(leitor, "faltas_online");
             }
 
             return resumo;

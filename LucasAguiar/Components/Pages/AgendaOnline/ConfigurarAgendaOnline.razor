@@ -1,0 +1,255 @@
+@page "/agendamento-online"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = Politicas.AgendaOnline)]
+
+@* Regras do link publico /agendar e quem aparece nele. Nasce desligado:
+   o dono revisa profissionais, servicos e regras antes de ligar. *@
+
+@using LucasAguiar.Configs
+@using LucasAguiar.Models
+@inject AgendaOnlineDAO agendaOnlineDAO
+@inject Autorizacao permissao
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<PageTitle>Agendamento online</PageTitle>
+
+<AbasGrupo Abas="AbasGrupo.Configuracoes" />
+
+<div class="form-pagina">
+    <TopoForm Titulo="Agendamento online" Voltar="/" RotuloVoltar="Painel" />
+
+    @if (erro != null)
+    {
+        <div class="alert alert-danger" role="alert">@erro</div>
+    }
+    @if (salvo)
+    {
+        <div class="alert alert-success" role="status">Configuração salva.</div>
+    }
+
+    <form @onsubmit="Salvar" novalidate>
+        <section class="cartao secao-form">
+            <h2>Link para os clientes</h2>
+
+            <div class="form-check form-switch interruptor-online">
+                <input id="online-ativo" class="form-check-input" type="checkbox" role="switch"
+                       disabled="@(!podeEditar)" @bind="config.Ativo" />
+                <label class="form-check-label" for="online-ativo">
+                    @(config.Ativo ? "Ligado: clientes marcam sozinhos pelo link" : "Desligado: o link mostra só o contato da barbearia")
+                </label>
+            </div>
+
+            <div class="link-publico">
+                <input class="form-control" readonly value="@LinkPublico" aria-label="Link do agendamento online" />
+                <button type="button" class="acao-campo" @onclick="Copiar">@(copiado ? "Copiado ✓" : "Copiar")</button>
+                <a class="acao-campo" href="/agendar" target="_blank" rel="noopener">Abrir</a>
+            </div>
+            <p class="suave dica-online">
+                Coloque na bio do Instagram, no Google e na mensagem automática do WhatsApp.
+                O horário entra direto na agenda, marcado como <strong>online</strong>, e o painel avisa.
+            </p>
+        </section>
+
+        <section class="cartao secao-form">
+            <h2>Regras</h2>
+            <div class="grade-12">
+                <Campo Rotulo="Antecedência mínima" Colunas="3" Para="online-antecedencia"
+                       Dica="Ninguém marca em cima da hora.">
+                    <select id="online-antecedencia" class="form-select" disabled="@(!podeEditar)" @bind="config.AntecedenciaMin">
+                        @foreach (var (minutos, rotulo) in Antecedencias)
+                        {
+                            <option value="@minutos">@rotulo</option>
+                        }
+                    </select>
+                </Campo>
+
+                <Campo Rotulo="Agenda aberta até" Colunas="3" Para="online-dias"
+                       Dica="Dias à frente, contando hoje.">
+                    <div class="input-group">
+                        <input id="online-dias" type="number" min="1" max="180" class="form-control"
+                               disabled="@(!podeEditar)" @bind="config.DiasAFrente" />
+                        <span class="input-group-text">dias</span>
+                    </div>
+                </Campo>
+
+                <Campo Rotulo="Horários de" Colunas="3" Para="online-intervalo"
+                       Dica="9:00, 9:15, 9:30... e logo ao fim de cada atendimento.">
+                    <select id="online-intervalo" class="form-select" disabled="@(!podeEditar)" @bind="config.IntervaloMin">
+                        @foreach (var minutos in ConfigAgendaOnline.Intervalos)
+                        {
+                            <option value="@minutos">@minutos em @minutos min</option>
+                        }
+                    </select>
+                </Campo>
+
+                <Campo Rotulo="Limite por telefone" Colunas="3" Para="online-limite"
+                       Dica="Horários futuros marcados pelo link.">
+                    <input id="online-limite" type="number" min="1" max="10" class="form-control"
+                           disabled="@(!podeEditar)" @bind="config.MaximoAbertos" />
+                </Campo>
+            </div>
+        </section>
+
+        <section class="cartao secao-form">
+            <h2>Na página</h2>
+            <div class="grade-12">
+                <Campo Rotulo="Recado no topo" Colunas="8" Para="online-aviso"
+                       Dica="Opcional. Ex.: chegue 5 minutos antes; tolerância de 10 minutos.">
+                    <textarea id="online-aviso" class="form-control" maxlength="300" rows="2"
+                              disabled="@(!podeEditar)" @bind="config.Aviso"></textarea>
+                </Campo>
+
+                <Campo Rotulo="WhatsApp da barbearia" Colunas="4" Para="online-whatsapp"
+                       Erro="@(tentouSalvar ? Documentos.ErroTelefone(config.WhatsApp) : null)"
+                       Dica="Para o cliente falar com vocês pela página.">
+                    <input id="online-whatsapp" class="form-control" inputmode="tel" placeholder="(48) 99999-9999"
+                           disabled="@(!podeEditar)" @bind="config.WhatsApp" />
+                </Campo>
+            </div>
+        </section>
+
+        <section class="cartao secao-form">
+            <h2>Profissionais no link</h2>
+            <p class="suave dica-online">
+                Os horários livres seguem a jornada, o almoço e os bloqueios de cada um (em Funcionários).
+                Quem não tem jornada fica o expediente inteiro da barbearia.
+            </p>
+            @if (profissionais.Count == 0)
+            {
+                <p class="suave">Nenhum profissional ativo.</p>
+            }
+            <div class="lista-marcar">
+                @foreach (var p in profissionais)
+                {
+                    <label class="item-marcar">
+                        <input type="checkbox" class="form-check-input" disabled="@(!podeEditar)"
+                               checked="@profissionaisNoLink.Contains(p.Id)"
+                               @onchange="e => Alternar(profissionaisNoLink, p.Id, e)" />
+                        <span>
+                            <strong>@p.Nome</strong>
+                            @if (p.Detalhe != null)
+                            {
+                                <small>@p.Detalhe</small>
+                            }
+                        </span>
+                    </label>
+                }
+            </div>
+        </section>
+
+        <section class="cartao secao-form">
+            <h2>Serviços no link</h2>
+            <p class="suave dica-online">
+                A duração vem do cadastro do serviço; com mais de um, o horário soma as durações.
+                O profissional só aparece para os serviços que faz.
+            </p>
+            <div class="lista-marcar">
+                @foreach (var s in servicos)
+                {
+                    <label class="item-marcar @(s.Disponivel ? "" : "inativo")">
+                        <input type="checkbox" class="form-check-input" disabled="@(!podeEditar || !s.Disponivel)"
+                               checked="@servicosNoLink.Contains(s.Id)"
+                               @onchange="e => Alternar(servicosNoLink, s.Id, e)" />
+                        <span>
+                            <strong>@s.Nome</strong>
+                            <small>@s.Detalhe</small>
+                        </span>
+                    </label>
+                }
+            </div>
+        </section>
+
+        @if (podeEditar)
+        {
+            <RodapeForm Cancelar="/" Salvando="salvando" />
+        }
+    </form>
+</div>
+
+@code {
+    private static readonly (int Minutos, string Rotulo)[] Antecedencias =
+    {
+        (0, "Sem antecedência"), (30, "30 minutos"), (60, "1 hora"), (120, "2 horas"),
+        (180, "3 horas"), (360, "6 horas"), (720, "12 horas"), (1440, "1 dia")
+    };
+
+    private ConfigAgendaOnline config = new();
+    private List<ItemOnline> profissionais = new();
+    private List<ItemOnline> servicos = new();
+    private HashSet<int> profissionaisNoLink = new();
+    private HashSet<int> servicosNoLink = new();
+
+    private string? erro;
+    private bool podeEditar;
+    private bool tentouSalvar;
+    private bool salvando;
+    private bool salvo;
+    private bool copiado;
+
+    private string LinkPublico => Navigation.BaseUri.TrimEnd('/') + "/agendar";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await permissao.CarregarAsync();
+        podeEditar = permissao.Pode("agendaonline", Acao.Editar);
+
+        try
+        {
+            config = agendaOnlineDAO.LerConfig();
+            profissionais = agendaOnlineDAO.ListarProfissionaisConfig();
+            servicos = agendaOnlineDAO.ListarServicosConfig();
+            profissionaisNoLink = profissionais.Where(p => p.Online).Select(p => p.Id).ToHashSet();
+            servicosNoLink = servicos.Where(s => s.Online).Select(s => s.Id).ToHashSet();
+        }
+        catch (Exception ex)
+        {
+            erro = "Erro ao carregar a configuração: " + ex.Message;
+        }
+    }
+
+    private void Alternar(HashSet<int> conjunto, int id, ChangeEventArgs e)
+    {
+        salvo = false;
+        if (e.Value is true) conjunto.Add(id);
+        else conjunto.Remove(id);
+    }
+
+    private async Task Copiar()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", LinkPublico);
+            copiado = true;
+        }
+        catch
+        {
+            // Sem permissao da area de transferencia: o link segue visivel para copiar na mao.
+        }
+    }
+
+    private async Task Salvar()
+    {
+        tentouSalvar = true;
+        salvo = false;
+        erro = config.Erro();
+        if (erro != null) return;
+
+        try
+        {
+            salvando = true;
+            await permissao.ExigirAsync("agendaonline", Acao.Editar);
+            agendaOnlineDAO.SalvarConfig(config, profissionaisNoLink, servicosNoLink);
+            config = agendaOnlineDAO.LerConfig();
+            salvo = true;
+        }
+        catch (Exception ex)
+        {
+            erro = ex.Message;
+        }
+        finally
+        {
+            salvando = false;
+        }
+    }
+}

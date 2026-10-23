@@ -130,6 +130,10 @@
                             <td><span class="hora">@a.DataHora.ToString("HH:mm")</span></td>
                             <td>
                                 <span class="nome-cliente">@(a.NomeCliente ?? "—")</span>
+                                @if (a.Online)
+                                {
+                                    <span class="selo-online" title="Marcado pelo cliente no link de agendamento">online</span>
+                                }
                             </td>
                             <td class="opcional"><span class="descritivo">@(a.NomeServico ?? "—")</span></td>
                             <td class="opcional"><span class="descritivo">@(a.NomeFuncionario ?? "—")</span></td>
@@ -204,7 +208,13 @@
                 </div>
                 <div>
                     <dt>Cliente</dt>
-                    <dd>@(visualizando.NomeCliente ?? "—")</dd>
+                    <dd>
+                        @(visualizando.NomeCliente ?? "—")
+                        @if (visualizando.Online)
+                        {
+                            <span class="selo-online" title="Marcado pelo cliente no link de agendamento">online</span>
+                        }
+                    </dd>
                 </div>
                 <div>
                     <dt>Telefone</dt>

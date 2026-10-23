@@ -203,7 +203,13 @@ namespace LucasAguiar.Configs
             // Editar tambem cobre o "abrir/fechar agora" do painel.
             new("horario", "Horário de funcionamento", Sistema,
                 Acao.Ver | Acao.Editar,
-                new[] { "/horario" })
+                new[] { "/horario" }),
+
+            // Regras do link publico /agendar e quem aparece nele. A pagina
+            // do cliente e publica; esta e a de quem configura.
+            new("agendaonline", "Agendamento online", Sistema,
+                Acao.Ver | Acao.Editar,
+                new[] { "/agendamento-online" })
         };
 
         /// <summary>Todas as acoes, na ordem em que aparecem na matriz.</summary>

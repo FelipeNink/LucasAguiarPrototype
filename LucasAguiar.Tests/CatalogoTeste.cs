@@ -19,12 +19,13 @@ namespace LucasAguiar.Tests
         /// Rotas que de proposito nao sao telas do catalogo: as tres de
         /// entrada e saida, que sao publicas, e as duas da propria conta,
         /// que exigem login mas nunca permissao -- barrar alguem de trocar
-        /// a senha ou de ler o aviso de recusa nao faria sentido. E a de
-        /// confirmar horario, publica, que o cliente abre pelo lembrete.
+        /// a senha ou de ler o aviso de recusa nao faria sentido. E as duas
+        /// publicas do cliente: confirmar horario, que ele abre pelo
+        /// lembrete, e agendar, pelo link da barbearia.
         /// </summary>
         private static readonly string[] ForaDoCatalogo =
         {
-            "/login", "/logout", "/error", "/sem-permissao", "/trocar-senha", "/conta", "/confirmar/{Token}"
+            "/login", "/logout", "/error", "/sem-permissao", "/trocar-senha", "/conta", "/confirmar/{Token}", "/agendar"
         };
 
         [Fact]

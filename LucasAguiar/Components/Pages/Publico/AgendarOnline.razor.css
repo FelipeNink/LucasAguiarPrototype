@@ -1,0 +1,563 @@
+/* Aberta no celular do cliente, pelo Instagram ou WhatsApp: uma coluna
+   so, alvos de toque grandes (48px), nada do sistema em volta. No
+   computador vira um cartao centralizado da mesma largura. */
+
+.pagina-agendar {
+    min-height: 100%;
+    display: flex;
+    justify-content: center;
+    padding: 24px 16px 40px;
+    background: var(--superficie-2);
+}
+
+.cartao-agendar {
+    width: 100%;
+    max-width: 480px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    align-self: flex-start;
+    padding: 24px 20px;
+    background: var(--superficie);
+    border: 1px solid var(--borda-suave);
+    border-radius: var(--raio-cartao);
+    box-shadow: var(--sombra-media);
+}
+
+.topo-agendar {
+    display: flex;
+    justify-content: center;
+    padding-bottom: 4px;
+    color: var(--texto);
+}
+
+.titulo-agendar,
+.vazio-agendar h1,
+.pronto h1 {
+    margin: 0;
+    font-family: var(--fonte-titulo);
+    font-size: 28px;
+    font-weight: 700;
+    text-align: center;
+    color: var(--texto);
+}
+
+.recado {
+    margin: 0;
+    padding: 10px 12px;
+    border-radius: var(--raio);
+    background: var(--morno);
+    border: 1px solid var(--morno-borda);
+    color: var(--morno-texto);
+    font-size: 14px;
+    white-space: pre-line;
+}
+
+/* ---------- etapas ---------- */
+
+.passos {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.passos li {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--texto-fraco);
+}
+
+.passos li span {
+    width: 26px;
+    height: 26px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--superficie-3);
+    font-size: 12.5px;
+}
+
+.passos li.atual {
+    color: var(--marca-escura);
+}
+
+.passos li.atual span {
+    background: var(--marca);
+    color: var(--sobre-marca);
+}
+
+.passos li.feito span {
+    background: var(--ok-fundo);
+    color: var(--ok-texto);
+}
+
+.pergunta {
+    margin: 6px 0 0;
+    font-size: 19px;
+    font-weight: 700;
+    color: var(--texto);
+}
+
+.ajuda {
+    margin: -8px 0 0;
+    font-size: 14px;
+    color: var(--texto-3);
+}
+
+.erro-agendar {
+    margin: 0;
+    padding: 10px 12px;
+    border-radius: var(--raio);
+    background: var(--perigo-fundo);
+    color: var(--perigo-escuro);
+    font-weight: 600;
+    font-size: 14px;
+}
+
+/* ---------- opcoes (servico e profissional) ---------- */
+
+.opcoes {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.opcao {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 60px;
+    padding: 10px 14px;
+    border: 1px solid var(--borda-2);
+    border-radius: var(--raio);
+    background: var(--superficie);
+    font-family: var(--fonte);
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 0.14s, background-color 0.14s;
+}
+
+.opcao:hover {
+    border-color: var(--marca-fraca);
+}
+
+.opcao:focus-visible,
+.chip-dia:focus-visible,
+.chip-hora:focus-visible {
+    outline: none;
+    border-color: var(--marca);
+    box-shadow: var(--anel-foco);
+}
+
+.opcao.marcada {
+    border-color: var(--marca);
+    background: var(--morno);
+}
+
+.caixa {
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    display: grid;
+    place-items: center;
+    border: 1.5px solid var(--borda-3);
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--sobre-marca);
+}
+
+.opcao.marcada .caixa {
+    border-color: var(--marca);
+    background: var(--marca);
+}
+
+.opcao-texto {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.opcao-texto strong {
+    font-size: 15.5px;
+    font-weight: 600;
+    color: var(--texto);
+}
+
+.opcao-texto small {
+    font-size: 13px;
+    color: var(--texto-3);
+}
+
+.opcao-preco {
+    flex-shrink: 0;
+    font-weight: 600;
+    color: var(--texto-2);
+    font-variant-numeric: tabular-nums;
+}
+
+.avatar {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    font-size: 17px;
+    font-weight: 700;
+}
+
+.avatar.qualquer {
+    background: var(--superficie-3);
+    color: var(--texto-2);
+}
+
+.avatar.qualquer svg {
+    width: 24px;
+    height: 24px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+}
+
+/* ---------- dia e horario ---------- */
+
+.faixa-dias {
+    display: flex;
+    gap: 8px;
+    margin: 0 -20px;
+    padding: 2px 20px 6px;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    scrollbar-width: thin;
+}
+
+.chip-dia {
+    flex-shrink: 0;
+    width: 62px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+    padding: 8px 0;
+    border: 1px solid var(--borda-2);
+    border-radius: var(--raio);
+    background: var(--superficie);
+    font-family: var(--fonte);
+    color: var(--texto-2);
+    scroll-snap-align: start;
+    cursor: pointer;
+}
+
+.chip-dia small {
+    font-size: 11.5px;
+    text-transform: capitalize;
+}
+
+.chip-dia strong {
+    font-family: var(--fonte-titulo);
+    font-size: 22px;
+    line-height: 1.1;
+    color: var(--texto);
+}
+
+.chip-dia.atual {
+    border-color: var(--marca);
+    background: var(--marca);
+    color: var(--sobre-marca);
+}
+
+.chip-dia.atual strong {
+    color: var(--sobre-marca);
+}
+
+.chip-dia:disabled {
+    cursor: default;
+    opacity: 0.4;
+    text-decoration: line-through;
+}
+
+.dia-escolhido {
+    margin: 0;
+    font-weight: 600;
+    color: var(--texto-2);
+}
+
+.dia-escolhido::first-letter {
+    text-transform: uppercase;
+}
+
+.periodo {
+    margin: 4px 0 -4px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--texto-fraco);
+}
+
+.grade-horas {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+    gap: 8px;
+}
+
+.chip-hora {
+    height: 44px;
+    border: 1px solid var(--borda-2);
+    border-radius: var(--raio);
+    background: var(--superficie);
+    font-family: var(--fonte);
+    font-size: 15.5px;
+    font-weight: 600;
+    color: var(--texto);
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
+}
+
+.chip-hora:hover {
+    border-color: var(--marca);
+    color: var(--marca-escura);
+}
+
+.sem-horario {
+    margin: 0;
+    padding: 14px;
+    border-radius: var(--raio);
+    background: var(--superficie-2);
+    color: var(--texto-2);
+}
+
+.link-acao {
+    display: block;
+    margin-top: 8px;
+    padding: 0;
+    border: none;
+    background: none;
+    font-family: var(--fonte);
+    font-weight: 600;
+    color: var(--marca-escura);
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+/* ---------- dados e resumo ---------- */
+
+.resumo {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 0;
+    padding: 14px 16px;
+    background: var(--superficie-2);
+    border-radius: var(--raio);
+    text-align: left;
+}
+
+.resumo dt {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--texto-fraco);
+}
+
+.resumo dd {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--texto);
+}
+
+.resumo dd::first-letter {
+    text-transform: uppercase;
+}
+
+.resumo dd small {
+    font-weight: 400;
+    color: var(--texto-3);
+}
+
+.dados {
+    display: flex;
+    flex-direction: column;
+}
+
+.dados label {
+    margin: 12px 0 6px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--texto-2);
+}
+
+.dados label .opcional {
+    font-weight: 400;
+    color: var(--texto-fraco);
+}
+
+/* 16px: abaixo disso o Safari do iPhone da zoom ao focar o campo. */
+.campo {
+    width: 100%;
+    min-height: 48px;
+    padding: 10px 12px;
+    border: 1px solid var(--borda-2);
+    border-radius: var(--raio);
+    background: var(--superficie);
+    font-family: var(--fonte);
+    font-size: 16px;
+    color: var(--texto);
+}
+
+.campo:focus {
+    outline: none;
+    border-color: var(--marca);
+    box-shadow: var(--anel-foco);
+}
+
+.campo.invalido {
+    border-color: var(--perigo);
+}
+
+.erro-campo {
+    margin-top: 5px;
+    font-size: 13px;
+    color: var(--perigo);
+}
+
+.nota {
+    margin: 12px 0 0;
+    font-size: 13px;
+    color: var(--texto-3);
+}
+
+/* ---------- botoes ---------- */
+
+.rodape-agendar {
+    display: flex;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.rodape-agendar .botao-principal {
+    flex: 1;
+}
+
+.botao-principal,
+.botao-secundario,
+.botao-voltar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 48px;
+    padding: 0 18px;
+    border-radius: var(--raio);
+    font-family: var(--fonte);
+    font-size: 16px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.botao-principal {
+    border: none;
+    background: var(--marca);
+    color: var(--sobre-marca);
+}
+
+.botao-principal:hover {
+    background: var(--marca-clara);
+    color: var(--sobre-marca);
+}
+
+.botao-secundario,
+.botao-voltar {
+    border: 1px solid var(--borda-2);
+    background: var(--superficie);
+    color: var(--texto-2);
+}
+
+button:disabled {
+    opacity: 0.55;
+    cursor: default;
+}
+
+.contato-rodape {
+    margin: 4px 0 0;
+    font-size: 13.5px;
+    text-align: center;
+    color: var(--texto-3);
+}
+
+.contato-rodape a {
+    font-weight: 600;
+    color: var(--marca-escura);
+}
+
+/* ---------- vazio e pronto ---------- */
+
+.vazio-agendar,
+.pronto {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    text-align: center;
+}
+
+.vazio-agendar p,
+.pronto > p {
+    margin: 0;
+    color: var(--texto-3);
+}
+
+.selo-ok {
+    width: 64px;
+    height: 64px;
+    margin: 4px auto 0;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--ok-fundo);
+}
+
+.selo-ok svg {
+    width: 34px;
+    height: 34px;
+    fill: none;
+    stroke: var(--ok);
+    stroke-width: 2.4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.acoes-pronto {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .opcao {
+        transition: none;
+    }
+}
+
+@media (max-width: 380px) {
+    .cartao-agendar {
+        padding: 20px 14px;
+    }
+
+    .faixa-dias {
+        margin: 0 -14px;
+        padding: 2px 14px 6px;
+    }
+}

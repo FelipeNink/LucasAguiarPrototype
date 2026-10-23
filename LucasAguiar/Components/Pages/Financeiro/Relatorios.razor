@@ -249,6 +249,19 @@ else if (relatorio == Faltas)
         </p>
     }
 
+    @* Mede o link publico: quanto da agenda chega por ele, e se quem marca sozinho falta mais. *@
+    @if (faltas.Online > 0)
+    {
+        <p class="nota-relatorio">
+            <strong>Marcados pelo link:</strong> @faltas.Online de @faltas.Total horário(s)
+            (@faltas.PercentualOnline.ToString("0.#")%).
+            @if (faltas.EncerradosOnline > 0)
+            {
+                <span>Falta de quem marcou pelo link: @faltas.TaxaOnline.ToString("0.#")% (@faltas.FaltasOnline de @faltas.EncerradosOnline).</span>
+            }
+        </p>
+    }
+
     <div class="tabela fixa">
         <table class="table table-striped">
             <thead>

@@ -38,11 +38,12 @@ namespace LucasAguiar.Data
             Validar(agendamento);
 
             using var conexao = _conexao.GetConnection();
-            VerificarConflito(agendamento, conexao);
-
             using var transacao = conexao.BeginTransaction();
             try
             {
+                TravarProfissional(conexao, transacao, agendamento.IdFuncionario);
+                VerificarConflito(agendamento, conexao, transacao);
+
                 int id;
                 using (var comando = new MySqlCommand(@"
                     INSERT INTO agendamento
@@ -75,12 +76,15 @@ namespace LucasAguiar.Data
                 throw new Exception("Status inválido.");
 
             using var conexao = _conexao.GetConnection();
-            if (agendamento.Status == StatusAgendamento.Agendado)
-                VerificarConflito(agendamento, conexao);
-
             using var transacao = conexao.BeginTransaction();
             try
             {
+                if (agendamento.Status == StatusAgendamento.Agendado)
+                {
+                    TravarProfissional(conexao, transacao, agendamento.IdFuncionario);
+                    VerificarConflito(agendamento, conexao, transacao);
+                }
+
                 // Remarcado para outra hora ou outro profissional, a
                 // confirmacao do cliente era do horario antigo: volta a
                 // pendente. Vem antes de data_hora no SET porque o MySQL
@@ -109,7 +113,7 @@ namespace LucasAguiar.Data
             }
         }
 
-        private static void GravarServicos(
+        internal static void GravarServicos(
             MySqlConnection conexao, MySqlTransaction transacao, int idAgendamento, List<int> idsServicos)
         {
             using (var limpar = new MySqlCommand(
@@ -235,6 +239,26 @@ namespace LucasAguiar.Data
             return lista;
         }
 
+        /// <summary>Marcados pelo proprio cliente no link publico desde uma data, ainda em aberto.</summary>
+        public List<Agendamento> CriadosOnline(DateTime desde)
+        {
+            var lista = new List<Agendamento>();
+
+            using var conexao = _conexao.GetConnection();
+            using var comando = new MySqlCommand(
+                SelecaoPadrao + @" WHERE a.origem = @online AND a.data_criacao >= @desde
+                                   AND a.status = @agendado AND a.data_hora >= @hoje
+                                   ORDER BY a.data_hora", conexao);
+            comando.Parameters.AddWithValue("@online", OrigemAgendamento.Online);
+            comando.Parameters.AddWithValue("@desde", desde);
+            comando.Parameters.AddWithValue("@agendado", StatusAgendamento.Agendado);
+            comando.Parameters.AddWithValue("@hoje", DateTime.Today);
+
+            using var leitor = comando.ExecuteReader();
+            while (leitor.Read()) lista.Add(Ler(leitor));
+            return lista;
+        }
+
         /// <summary>Marca a falta do cliente; só vale para horário ainda em aberto.</summary>
         public void MarcarFalta(int id)
         {
@@ -309,10 +333,27 @@ namespace LucasAguiar.Data
         }
 
         /// <summary>
-        /// O mesmo profissional nao atende dois horarios que se cruzam.
-        /// Cancelados e concluidos nao ocupam a agenda.
+        /// Fila por profissional: quem grava horario dele espera quem ja
+        /// esta gravando. Sem isto, dois pedidos ao mesmo tempo -- o balcao
+        /// e o link publico, ou dois clientes no link -- conferiam o
+        /// conflito antes de qualquer um gravar e marcavam o mesmo horario.
+        /// A linha do funcionario serve de trava mesmo com a agenda vazia,
+        /// quando nao ha agendamento nenhum para o FOR UPDATE segurar.
         /// </summary>
-        private static void VerificarConflito(Agendamento agendamento, MySqlConnection conexao)
+        internal static void TravarProfissional(MySqlConnection conexao, MySqlTransaction transacao, int idFuncionario)
+        {
+            using var comando = new MySqlCommand(
+                "SELECT id_fun FROM funcionario WHERE id_fun = @id FOR UPDATE", conexao, transacao);
+            comando.Parameters.AddWithValue("@id", idFuncionario);
+            comando.ExecuteScalar();
+        }
+
+        /// <summary>
+        /// O mesmo profissional nao atende dois horarios que se cruzam.
+        /// Cancelados e concluidos nao ocupam a agenda. Roda na transacao da
+        /// gravacao, depois de TravarProfissional.
+        /// </summary>
+        private static void VerificarConflito(Agendamento agendamento, MySqlConnection conexao, MySqlTransaction transacao)
         {
             using var comando = new MySqlCommand(@"
                 SELECT a.data_hora, a.duracao_min, c.nome_cli
@@ -324,7 +365,7 @@ namespace LucasAguiar.Data
                   AND a.data_hora < @fim
                   AND DATE_ADD(a.data_hora, INTERVAL a.duracao_min MINUTE) > @inicio
                 ORDER BY a.data_hora
-                LIMIT 1", conexao);
+                LIMIT 1", conexao, transacao);
 
             comando.Parameters.AddWithValue("@idFuncionario", agendamento.IdFuncionario);
             comando.Parameters.AddWithValue("@status", StatusAgendamento.Agendado);
@@ -378,6 +419,14 @@ namespace LucasAguiar.Data
                 return null;
             }
 
+            string? TextoSeHouver(string coluna)
+            {
+                for (var i = 0; i < leitor.FieldCount; i++)
+                    if (leitor.GetName(i) == coluna)
+                        return leitor.IsDBNull(i) ? null : leitor.GetString(i);
+                return null;
+            }
+
             var iVenda = leitor.GetOrdinal("id_vend_fk");
             var iPreco = leitor.GetOrdinal("preco_serv");
 
@@ -402,6 +451,7 @@ namespace LucasAguiar.Data
                 IdVenda = leitor.IsDBNull(iVenda) ? null : leitor.GetInt32(iVenda),
                 ConfirmadoEm = Data("confirmado_em"),
                 CanceladoClienteEm = Data("cancelado_cliente_em"),
+                Origem = TextoSeHouver("origem"),
                 NomeCliente = Texto("nome_cli"),
                 TelefoneCliente = Texto("telefone_cli"),
                 NomeFuncionario = Texto("nome_fun"),

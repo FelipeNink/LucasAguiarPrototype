@@ -24,7 +24,7 @@ namespace LucasAguiar.Tests
         /// </summary>
         private static readonly string[] SemPolitica =
         {
-            "Login", "Logout", "Error", "SemPermissao", "TrocarSenha", "Conta", "ConfirmarHorario"
+            "Login", "Logout", "Error", "SemPermissao", "TrocarSenha", "Conta", "ConfirmarHorario", "AgendarOnline"
         };
 
         // =========================================================
@@ -232,7 +232,7 @@ namespace LucasAguiar.Tests
         [Fact]
         public void Entrada_e_saida_continuam_publicas()
         {
-            foreach (var nome in new[] { "Login", "Logout", "Error", "ConfirmarHorario" })
+            foreach (var nome in new[] { "Login", "Logout", "Error", "ConfirmarHorario", "AgendarOnline" })
             {
                 var pagina = PaginasComRota().FirstOrDefault(p => p.Tipo.Name == nome);
 

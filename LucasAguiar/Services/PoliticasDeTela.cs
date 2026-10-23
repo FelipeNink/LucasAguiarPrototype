@@ -47,6 +47,7 @@ namespace LucasAguiar.Services
         public const string Funcoes = "tela:funcoes:Ver";
         public const string Logs = "tela:logs:Ver";
         public const string Horario = "tela:horario:Ver";
+        public const string AgendaOnline = "tela:agendaonline:Ver";
 
         /// <summary>Criar e o que as paginas de cadastro exigem.</summary>
         public const string CriarVenda = "tela:vendas:Criar";

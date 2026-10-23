@@ -5,6 +5,7 @@
 @using LucasAguiar.Configs
 @using LucasAguiar.Models
 @inject AgendamentoDAO agendamentoDAO
+@inject AgendaOnlineDAO agendaOnlineDAO
 
 @* Pagina publica do lembrete: o cliente abre pelo link do WhatsApp, sem
    login, e confirma ou cancela o proprio horario. O que da acesso e so
@@ -50,7 +51,16 @@
 
             @if (agendamento.Status == StatusAgendamento.Cancelado)
             {
-                <p class="situacao cancelado">Este horário foi cancelado. Se quiser marcar outro, fale com a barbearia.</p>
+                @if (agendaOnline)
+                {
+                    @* Remarcar e cancelar este e marcar outro pelo link publico. *@
+                    <p class="situacao cancelado">Este horário foi cancelado.</p>
+                    <a class="botao-principal botao-link" href="/agendar">Marcar outro horário</a>
+                }
+                else
+                {
+                    <p class="situacao cancelado">Este horário foi cancelado. Se quiser marcar outro, fale com a barbearia.</p>
+                }
             }
             else if (!agendamento.Aberto || agendamento.DataHora <= DateTime.Now)
             {
@@ -109,7 +119,22 @@
     private bool ocupado;
     private string? erro;
 
-    protected override void OnParametersSet() => Recarregar();
+    /// <summary>Com o link de agendamento ligado, quem cancela ja pode marcar outro horario.</summary>
+    private bool agendaOnline;
+
+    protected override void OnParametersSet()
+    {
+        Recarregar();
+
+        try
+        {
+            agendaOnline = agendaOnlineDAO.LerConfig().Ativo;
+        }
+        catch
+        {
+            agendaOnline = false;
+        }
+    }
 
     private void Recarregar()
     {
