@@ -171,12 +171,51 @@ namespace LucasAguiar.Data
             comando.ExecuteNonQuery();
         }
 
+        /// <summary>Letras minimas da justificativa de um fechamento com diferenca.</summary>
+        public const int TamanhoMinimoJustificativa = 10;
+
+        /// <summary>
+        /// Regra do fechamento com diferenca, sem banco. Sobra ou falta so
+        /// fecha com justificativa; falta, alem disso, so por administrador:
+        /// o operador conta, quem responde pelo dinheiro fecha. Null libera.
+        /// </summary>
+        public static string? ErroFechamento(decimal diferenca, string? justificativa, bool podeFecharComFalta)
+        {
+            if (diferenca == 0) return null;
+
+            if ((justificativa ?? "").Trim().Length < TamanhoMinimoJustificativa)
+                return $"Explique a {(diferenca < 0 ? "falta" : "sobra")} de {Math.Abs(diferenca):C} "
+                       + $"(ao menos {TamanhoMinimoJustificativa} letras).";
+
+            if (diferenca < 0 && !podeFecharComFalta)
+                return $"Faltam {Math.Abs(diferenca):C}. Só um administrador pode fechar o caixa com falta.";
+
+            return null;
+        }
+
+        /// <summary>
+        /// A diferenca que o fechamento daria com o valor contado, sem
+        /// fechar. Vem depois de o operador digitar o que contou: a
+        /// conferencia continua as cegas.
+        /// </summary>
+        public decimal PreverDiferenca(int idCaixa, decimal valorContado)
+        {
+            var caixa = BuscarPorId(idCaixa)
+                ?? throw new Exception("Caixa não encontrado.");
+
+            if (!caixa.EstaAberto)
+                throw new Exception("Este caixa já está fechado.");
+
+            return decimal.Round(valorContado - caixa.Resumo.SaldoEsperadoGaveta(caixa.ValorAbertura), 2);
+        }
+
         /// <summary>
         /// Fecha a sessão. O operador informa o que contou na gaveta e o
         /// sistema apura a diferença — conferência às cegas, sem mostrar o
-        /// esperado antes.
+        /// esperado antes. Com diferença, vale ErroFechamento.
         /// </summary>
-        public Caixa Fechar(int idCaixa, decimal valorContado, string? usuario, string? observacao = null)
+        public Caixa Fechar(int idCaixa, decimal valorContado, string? usuario, string? observacao = null,
+            bool podeFecharComFalta = false)
         {
             if (valorContado < 0)
                 throw new Exception("O valor contado não pode ser negativo.");
@@ -189,6 +228,9 @@ namespace LucasAguiar.Data
 
             var esperado = caixa.Resumo.SaldoEsperadoGaveta(caixa.ValorAbertura);
             var diferenca = decimal.Round(valorContado - esperado, 2);
+
+            if (ErroFechamento(diferenca, observacao, podeFecharComFalta) is string problema)
+                throw new Exception(problema);
 
             using (var conexao = _conexao.GetConnection())
             using (var comando = new MySqlCommand(@"

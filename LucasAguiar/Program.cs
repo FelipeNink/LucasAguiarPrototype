@@ -119,6 +119,11 @@ builder.Services.AddCascadingAuthenticationState();
 
 var app = builder.Build();
 
+// O relogio de tudo -- agenda, caixa, vendas, relatorios -- e o do
+// servidor. Fica no log da subida para conferir de cara se o TZ pegou.
+app.Logger.LogWarning("Fuso horário: {Fuso} (UTC{Deslocamento}), agora {Agora:dd/MM/yyyy HH:mm}.",
+    TimeZoneInfo.Local.Id, Conexao.FusoMySql(), DateTime.Now);
+
 // Cria o esquema e o primeiro login se o banco estiver vazio. Roda uma
 // vez, na subida, e nao faz nada quando as tabelas ja existem.
 using (var escopo = app.Services.CreateScope())

@@ -6,6 +6,8 @@
 @using LucasAguiar.Services
 @inject CaixaDAO caixaDAO
 @inject AuthenticationService auth
+@inject Autorizacao permissao
+@inject LogDAO logs
 
 
 <h1 class="titulo-listagem">Gestão de Caixa</h1>
@@ -288,7 +290,32 @@ else
             </div>
 
             <div class="modal-corpo">
-                @if (resultadoFechamento == null)
+                @if (resultadoFechamento == null && diferencaPrevista is decimal dif)
+                {
+                    @* 2a etapa: deu diferenca. O valor contado fica travado; mudar
+                       e "Recontar", e a falta conferida ja ficou no log. *@
+                    <div class="resultado comanda @(dif > 0 ? "sobra" : "falta")">
+                        <strong>@(dif > 0 ? $"Sobram {dif:C} na gaveta" : $"Faltam {Math.Abs(dif):C} na gaveta")</strong>
+                    </div>
+
+                    <div class="linhas">
+                        <div><span>Contado</span><span>@valorContado.ToString("C")</span></div>
+                    </div>
+
+                    <label>Justificativa <span class="obrigatorio">*</span></label>
+                    <textarea class="form-control" rows="2" maxlength="300"
+                              placeholder="O que aconteceu? Ex.: troco errado, venda lançada em dinheiro mas paga no Pix…"
+                              @bind="observacaoFechamento" @bind:event="oninput"></textarea>
+
+                    @if (dif < 0 && !permissao.EhAdmin)
+                    {
+                        <p class="aviso-falta">
+                            Com falta, só um administrador pode fechar o caixa. Reconte a gaveta
+                            ou peça para um administrador entrar e concluir o fechamento.
+                        </p>
+                    }
+                }
+                else if (resultadoFechamento == null)
                 {
                     <p class="explicacao">
                         Conte o dinheiro da gaveta e informe o total. O sistema só
@@ -321,10 +348,18 @@ else
             </div>
 
             <div class="modal-rodape">
-                @if (resultadoFechamento == null)
+                @if (resultadoFechamento == null && diferencaPrevista is decimal d)
+                {
+                    <button class="btn btn-outline-secondary" @onclick="Recontar">Recontar</button>
+                    <button class="btn btn-primary" disabled="@(ErroDoFechamento != null)" @onclick="ConfirmarFechamento"
+                            title="@ErroDoFechamento">
+                        @(d < 0 ? "Fechar com falta" : "Fechar com sobra")
+                    </button>
+                }
+                else if (resultadoFechamento == null)
                 {
                     <button class="btn btn-outline-secondary" @onclick="CancelarFechamento">Cancelar</button>
-                    <button class="btn btn-primary" @onclick="ConfirmarFechamento">Conferir e fechar</button>
+                    <button class="btn btn-primary" @onclick="Conferir">Conferir e fechar</button>
                 }
                 else
                 {
@@ -362,6 +397,13 @@ else
     private decimal valorContado;
     private string observacaoFechamento = "";
     private Caixa? resultadoFechamento;
+
+    /// <summary>Diferenca da conferencia; null enquanto o operador ainda nao informou o que contou.</summary>
+    private decimal? diferencaPrevista;
+
+    private string? ErroDoFechamento => diferencaPrevista is decimal d
+        ? CaixaDAO.ErroFechamento(d, observacaoFechamento, permissao.EhAdmin)
+        : null;
 
     private decimal SaldoEsperado =>
         caixa == null ? 0 : caixa.Resumo.SaldoEsperadoGaveta(caixa.ValorAbertura);
@@ -436,6 +478,7 @@ else
         // Quem esta logado precisa ser carregado antes de Carregar(): o nome
         // dele vai gravado nos movimentos de caixa.
         await auth.PrepararAsync();
+        await permissao.CarregarAsync();
         Carregar();
     }
 
@@ -493,6 +536,43 @@ else
         }
     }
 
+    /// <summary>
+    /// 1a etapa: confere o que foi contado. Bateu, fecha direto; deu
+    /// diferenca, mostra e pede a justificativa. Falta conferida vai para o
+    /// log na hora: recontar para "sumir" com ela deixa rastro.
+    /// </summary>
+    private void Conferir()
+    {
+        try
+        {
+            erro = null;
+            if (caixa == null) return;
+
+            var dif = caixaDAO.PreverDiferenca(caixa.IdCaixa, valorContado);
+            if (dif == 0)
+            {
+                ConfirmarFechamento();
+                return;
+            }
+
+            diferencaPrevista = dif;
+            if (dif < 0)
+                Registrar(Acoes.CaixaFaltaConferida, NivelLog.Alerta,
+                    $"Conferência do caixa #{caixa.IdCaixa}: contou {valorContado:C}, faltam {Math.Abs(dif):C}.");
+        }
+        catch (Exception ex)
+        {
+            erro = ex.Message;
+            mostrarFechamento = false;
+        }
+    }
+
+    private void Recontar()
+    {
+        diferencaPrevista = null;
+        observacaoFechamento = "";
+    }
+
     private void ConfirmarFechamento()
     {
         try
@@ -501,7 +581,12 @@ else
             if (caixa == null) return;
 
             resultadoFechamento = caixaDAO.Fechar(
-                caixa.IdCaixa, valorContado, Usuario, observacaoFechamento);
+                caixa.IdCaixa, valorContado, Usuario, observacaoFechamento, permissao.EhAdmin);
+
+            if (resultadoFechamento.Diferenca is decimal d && d != 0)
+                Registrar(Acoes.CaixaFechadoComDiferenca, d < 0 ? NivelLog.Alerta : NivelLog.Info,
+                    $"Fechou o caixa #{resultadoFechamento.IdCaixa} com {(d < 0 ? "falta" : "sobra")} de "
+                    + $"{Math.Abs(d):C}: {observacaoFechamento.Trim()}");
 
             Carregar();
         }
@@ -512,10 +597,22 @@ else
         }
     }
 
+    private void Registrar(string acao, string nivel, string descricao) => logs.Registrar(new Evento
+    {
+        Tipo = TipoLog.Auditoria,
+        Nivel = nivel,
+        Acao = acao,
+        Descricao = descricao,
+        IdUsuario = permissao.IdUsuario,
+        NomeGravado = Usuario,
+        Alvo = caixa != null ? $"Caixa #{caixa.IdCaixa}" : null
+    });
+
     private void CancelarFechamento()
     {
         mostrarFechamento = false;
         resultadoFechamento = null;
+        diferencaPrevista = null;
         valorContado = 0;
         observacaoFechamento = "";
     }

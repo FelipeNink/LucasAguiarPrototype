@@ -326,3 +326,18 @@ td.falta   { color: var(--perigo-escuro); font-weight: 600; }
         grid-template-columns: 1fr;
     }
 }
+
+/* Falta sem administrador: explica por que o botao nao fecha. */
+.aviso-falta {
+    margin: 10px 0 0;
+    padding: 10px 12px;
+    border-radius: var(--raio);
+    background: var(--perigo-fundo);
+    color: var(--perigo-escuro);
+    font-size: 13.5px;
+    font-weight: 600;
+}
+
+.modal-corpo .obrigatorio {
+    color: var(--perigo);
+}

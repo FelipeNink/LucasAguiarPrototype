@@ -39,7 +39,26 @@ namespace LucasAguiar.Configs
         {
             var conn = new MySqlConnection(_connectionString);
             conn.Open();
+
+            // NOW() e CURDATE() do MySQL no mesmo fuso do DateTime.Now da
+            // aplicacao (variavel TZ). Sem isto o banco do Railway fica em
+            // UTC e as comparacoes com horarios gravados pela aplicacao --
+            // "data_hora > NOW()", "quando >= CURDATE()" -- erram por horas.
+            // Por conexao: o pool zera as variaveis de sessao ao reaproveitar.
+            using (var fuso = new MySqlCommand("SET time_zone = @fuso", conn))
+            {
+                fuso.Parameters.AddWithValue("@fuso", FusoMySql());
+                fuso.ExecuteNonQuery();
+            }
+
             return conn;
+        }
+
+        /// <summary>"-04:00": deslocamento do fuso local agora, no formato que o MySQL aceita sem tabela de fusos.</summary>
+        public static string FusoMySql()
+        {
+            var deslocamento = TimeZoneInfo.Local.GetUtcOffset(DateTime.Now);
+            return (deslocamento < TimeSpan.Zero ? "-" : "+") + deslocamento.ToString(@"hh\:mm");
         }
 
         public MySqlCommand CreateCommand(string query)

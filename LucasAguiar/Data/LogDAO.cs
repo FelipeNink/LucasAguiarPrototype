@@ -287,6 +287,8 @@ namespace LucasAguiar.Data
         public const string FuncaoExcluida = "funcao_excluida";
         public const string AcessoNegado = "acesso_negado";
         public const string Exportou = "exportou";
+        public const string CaixaFaltaConferida = "caixa_falta_conferida";
+        public const string CaixaFechadoComDiferenca = "caixa_fechado_diferenca";
     }
 
     /// <summary>Um evento a gravar.</summary>

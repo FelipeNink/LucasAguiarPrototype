@@ -20,6 +20,12 @@ COPY --from=build /app/publish .
 # Porta padrao. Plataformas que informam PORT sobrescrevem isto: o
 # Program.cs le a variavel e reconfigura a escuta.
 ENV ASPNETCORE_URLS=http://+:8080
+
+# Fuso da barbearia. Sem isto o container fica em UTC: "Boa tarde" as 8h,
+# horario das 10:30 marcado como atrasado, venda depois das 20h caindo no
+# dia seguinte. O MySQL segue o mesmo fuso (Conexao.GetConnection). Para
+# outro lugar, sobrescreva TZ nas variaveis do Railway.
+ENV TZ=America/Porto_Velho
 EXPOSE 8080
 
 # Nao roda como root.
