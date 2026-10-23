@@ -36,7 +36,8 @@
                     <input id="fun-rg" class="form-control" maxlength="7" @bind="Modelo.RG" />
                 </Campo>
                 <Campo Rotulo="CTPS" Para="fun-ctps" Colunas="4">
-                    <input id="fun-ctps" class="form-control" maxlength="12" @bind="Modelo.CTPS" />
+                    <input id="fun-ctps" class="form-control" maxlength="12" inputmode="numeric" data-mascara="ctps"
+                           placeholder="0000000/0000" @bind="Modelo.CTPS" />
                 </Campo>
             </div>
         </section>

@@ -171,7 +171,7 @@ document.addEventListener('submit', function (evento) {
     botao.textContent = botao.dataset.textoEnviando;
 });
 
-// Mascara de digitacao: <input data-mascara="telefone|cpf|cnpj|cep|moeda">.
+// Mascara de digitacao: <input data-mascara="telefone|cpf|cnpj|ctps|cep|moeda">.
 // Delegado no document porque o Blazor cria e recria os campos o tempo
 // todo. So formata enquanto a pessoa digita; o @bind do Blazor le o valor
 // no change (ao sair do campo), ja formatado. Quem confere se o valor vale
@@ -205,6 +205,11 @@ document.addEventListener('submit', function (evento) {
         // Ate 11 digitos e CPF; passou disso, CNPJ.
         cpfcnpj: function (v) {
             return v.replace(/\D/g, '').length <= 11 ? mascaras.cpf(v) : mascaras.cnpj(v);
+        },
+        // CTPS fisica: numero (7) / serie (4).
+        ctps: function (v) {
+            const d = digitos(v, 11);
+            return d.length > 7 ? d.slice(0, 7) + '/' + d.slice(7) : d;
         },
         cep: function (v) {
             const d = digitos(v, 8);
