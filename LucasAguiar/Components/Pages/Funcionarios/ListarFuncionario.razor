@@ -104,6 +104,7 @@
                 <div><dt>Nascimento</dt><dd>@Valor(visualizando.DataNascimento?.ToString("dd/MM/yyyy"))</dd></div>
                 <div><dt>Salário fixo</dt><dd>@visualizando.SalarioFixo.ToString("C")</dd></div>
                 <div><dt>Cargo</dt><dd>@(visualizando.Cargo == null ? "—" : CargoFuncionario.Rotulo(visualizando.Cargo))</dd></div>
+                <div><dt>Vínculo</dt><dd>@(visualizando.Vinculo == null ? "—" : VinculoFuncionario.Rotulo(visualizando.Vinculo))@(visualizando.Parceiro && !string.IsNullOrEmpty(visualizando.CnpjParceiro) ? $" · CNPJ {visualizando.CnpjParceiro}" : "")</dd></div>
                 <div><dt>Admissão</dt><dd>@Valor(visualizando.DataAdmissao?.ToString("dd/MM/yyyy"))</dd></div>
                 <div><dt>Desligamento</dt><dd>@Valor(visualizando.DataDesligamento?.ToString("dd/MM/yyyy"))</dd></div>
                 <div><dt>Comissão padrão</dt><dd>@($"{visualizando.ComissaoServicoPadrao:0.##}% serviços · {visualizando.ComissaoProdutoPadrao:0.##}% produtos")</dd></div>

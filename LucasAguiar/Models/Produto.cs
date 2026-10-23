@@ -5,7 +5,7 @@ namespace LucasAguiar.Models
         public int IdProduto { get; set; }
         public string? NomeProduto { get; set; }
         public int Quantidade { get; set; }
-        public float Valor { get; set; }
+        public decimal Valor { get; set; }
         public string? Descricao { get; set; }
         public string? Marca { get; set; }
         public int IdFornecedor { get; set; }

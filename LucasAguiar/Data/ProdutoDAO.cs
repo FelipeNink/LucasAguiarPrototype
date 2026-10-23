@@ -216,7 +216,7 @@ namespace LucasAguiar.Data
                 IdProduto = leitor.GetInt32("id_prod"),
                 NomeProduto = DAOHelper.GetString(leitor, "nome_prod"),
                 Quantidade = DAOHelper.IsNull(leitor, "quantidade_prod") ? 0 : leitor.GetInt32("quantidade_prod"),
-                Valor = DAOHelper.IsNull(leitor, "valor_prod") ? 0 : leitor.GetFloat("valor_prod"),
+                Valor = DAOHelper.IsNull(leitor, "valor_prod") ? 0m : leitor.GetDecimal("valor_prod"),
                 Descricao = DAOHelper.GetString(leitor, "descricao_prod"),
                 Marca = DAOHelper.GetString(leitor, "marca_prod"),
                 IdFornecedor = DAOHelper.IsNull(leitor, "id_forn_fk") ? 0 : leitor.GetInt32("id_forn_fk"),

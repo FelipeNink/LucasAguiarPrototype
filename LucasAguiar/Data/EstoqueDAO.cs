@@ -240,7 +240,7 @@ namespace LucasAguiar.Data
                         Marca = DAOHelper.GetString(leitor, "marca_prod"),
                         Saldo = leitor.GetInt32("saldo"),
                         Minimo = leitor.GetInt32("minimo"),
-                        Valor = Convert.ToDecimal(leitor.GetDouble("valor")),
+                        Valor = Convert.ToDecimal(leitor.GetValue(leitor.GetOrdinal("valor"))),
                         UltimoMovimento = DAOHelper.GetDateTime(leitor, "ultimo")
                     });
                 }
@@ -285,7 +285,7 @@ namespace LucasAguiar.Data
                     Marca = DAOHelper.GetString(leitor, "marca_prod"),
                     Saldo = leitor.GetInt32("saldo"),
                     Minimo = leitor.GetInt32("minimo"),
-                    Valor = Convert.ToDecimal(leitor.GetDouble("valor"))
+                    Valor = Convert.ToDecimal(leitor.GetValue(leitor.GetOrdinal("valor")))
                 });
             }
 

@@ -185,7 +185,7 @@
                 TipoCadastro.Plano => planoDAO.Inserir(new Plano
                 {
                     NomePlano = nome.Trim(),
-                    Valor = (float)valor
+                    Valor = valor
                 }),
                 _ when CategoriaDoTipo is { } tipoCategoria => categoriaDAO.Inserir(tipoCategoria, nome),
                 _ => throw new Exception("Tipo de cadastro não suportado.")

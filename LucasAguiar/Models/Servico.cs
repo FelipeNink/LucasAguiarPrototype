@@ -15,12 +15,12 @@ namespace LucasAguiar.Models
 
         public string? NomeServico {get; set;}
 
-        public float PrecoServico {get; set;}
+        public decimal PrecoServico {get; set;}
 
         public int DuracaoServico {get; set;}
 
         /// <summary>Valor da comissão: R$ ou %, conforme <see cref="TipoComissao"/>.</summary>
-        public float ComissaoServico {get; set;}
+        public decimal ComissaoServico {get; set;}
 
         public string TipoComissao { get; set; } = Models.TipoComissao.Fixo;
 

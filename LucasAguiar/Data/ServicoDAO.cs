@@ -133,9 +133,9 @@ namespace LucasAguiar.Data
             {
                 IdServico = leitor.GetInt32("id_serv"),
                 NomeServico = leitor.IsDBNull(leitor.GetOrdinal("nome_serv")) ? "" : leitor.GetString("nome_serv"),
-                PrecoServico = leitor.IsDBNull(leitor.GetOrdinal("preco_serv")) ? 0f : leitor.GetFloat(leitor.GetOrdinal("preco_serv")),
+                PrecoServico = leitor.IsDBNull(leitor.GetOrdinal("preco_serv")) ? 0m : leitor.GetDecimal(leitor.GetOrdinal("preco_serv")),
                 DuracaoServico = leitor.IsDBNull(leitor.GetOrdinal("duracao_min")) ? 0 : leitor.GetInt32("duracao_min"),
-                ComissaoServico = leitor.IsDBNull(leitor.GetOrdinal("comis_funcionario_cli")) ? 0f : leitor.GetFloat(leitor.GetOrdinal("comis_funcionario_cli")),
+                ComissaoServico = leitor.IsDBNull(leitor.GetOrdinal("comis_funcionario_cli")) ? 0m : leitor.GetDecimal(leitor.GetOrdinal("comis_funcionario_cli")),
                 TipoComissao = leitor.GetString("tipo_comissao"),
                 IdCategoria = leitor.IsDBNull(iCategoria) ? null : leitor.GetInt32(iCategoria),
                 CustoEstimado = leitor.IsDBNull(iCusto) ? null : leitor.GetDecimal(iCusto),

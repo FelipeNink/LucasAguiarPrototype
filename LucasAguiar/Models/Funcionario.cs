@@ -15,6 +15,25 @@ namespace LucasAguiar.Models
             Todos.FirstOrDefault(c => c.Valor == valor).Rotulo ?? (valor ?? "—");
     }
 
+    /// <summary>Como o profissional trabalha com a barbearia.</summary>
+    public static class VinculoFuncionario
+    {
+        /// <summary>Parceiro da Lei 13.352/2016, com CNPJ proprio.</summary>
+        public const string Mei = "MEI";
+
+        public static readonly (string Valor, string Rotulo)[] Todos =
+        {
+            ("CLT", "CLT (carteira assinada)"),
+            (Mei, "MEI (parceiro)"),
+            ("AUTONOMO", "Autônomo"),
+            ("ESTAGIO", "Estagiário"),
+            ("SOCIO", "Sócio")
+        };
+
+        public static string Rotulo(string? valor) =>
+            Todos.FirstOrDefault(v => v.Valor == valor).Rotulo ?? (valor ?? "—");
+    }
+
     public class Funcionario : IEndereco
     {
         public int IdFuncionario { get; set; }
@@ -58,6 +77,9 @@ namespace LucasAguiar.Models
         /// Por ora so cadastro: a NFS-e ainda sai inteira pelo salao.
         /// </summary>
         public bool Parceiro { get; set; }
+
+        /// <summary>CLT, MEI etc. (<see cref="VinculoFuncionario"/>); MEI liga o <see cref="Parceiro"/>.</summary>
+        public string? Vinculo { get; set; }
         public string? CnpjParceiro { get; set; }
 
         // Preenchidos na leitura

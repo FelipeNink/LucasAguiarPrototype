@@ -545,7 +545,7 @@
     private decimal PrecoCom(ProfissionalOnline p) =>
         escolhidos.Sum(id => p.Precos.TryGetValue(id, out var proprio)
             ? proprio
-            : (decimal)(servicos.FirstOrDefault(s => s.IdServico == id)?.PrecoServico ?? 0f));
+            : (decimal)(servicos.FirstOrDefault(s => s.IdServico == id)?.PrecoServico ?? 0m));
 
     private static string RotuloSemana(DateTime d) =>
         d == DateTime.Today ? "Hoje"

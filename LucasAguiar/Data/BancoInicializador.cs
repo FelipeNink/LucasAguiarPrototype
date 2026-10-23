@@ -62,6 +62,10 @@ namespace LucasAguiar.Data
                 MigrarConsentimento(conexao);
 
                 MigrarAvaliacao(conexao);
+
+                MigrarVinculo(conexao);
+
+                MigrarValoresDecimais(conexao);
             }
             catch (Exception ex)
             {
@@ -987,7 +991,59 @@ namespace LucasAguiar.Data
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci");
         }
 
+        // =============================================================
+        // VINCULO DO PROFISSIONAL
+        //
+        // CLT, MEI, autonomo, estagiario ou socio. MEI e o parceiro da Lei
+        // 13.352/2016: parceiro_fun continua sendo o que a nota consulta.
+        // =============================================================
+
+        private void MigrarVinculo(MySqlConnection conexao)
+        {
+            GarantirColuna(conexao, "funcionario", "vinculo_fun", "varchar(12) DEFAULT NULL");
+            Executar(conexao, "parceiros marcados como MEI",
+                "UPDATE funcionario SET vinculo_fun = 'MEI' WHERE parceiro_fun = 1 AND vinculo_fun IS NULL");
+        }
+
+        // =============================================================
+        // VALORES EM DECIMAL
+        //
+        // As colunas de preco do esquema original sao FLOAT, que nao guarda
+        // centavos exatos (35,90 vira 35,9000015...). O MODIFY arredonda o
+        // que ja existe para 2 casas.
+        // =============================================================
+
+        private void MigrarValoresDecimais(MySqlConnection conexao)
+        {
+            GarantirDecimal(conexao, "servico", "preco_serv", "decimal(10,2) DEFAULT NULL");
+            GarantirDecimal(conexao, "servico", "comis_funcionario_cli", "decimal(10,2) DEFAULT NULL");
+            GarantirDecimal(conexao, "produto", "valor_prod", "decimal(10,2) DEFAULT NULL");
+            GarantirDecimal(conexao, "plano", "valor_plan", "decimal(10,2) DEFAULT NULL");
+        }
+
         // ---------- apoio das migracoes ----------
+
+        /// <summary>Troca FLOAT/DOUBLE por decimal. So age se a coluna ainda for de ponto flutuante.</summary>
+        private void GarantirDecimal(
+            MySqlConnection conexao, string tabela, string coluna, string definicao)
+        {
+            using (var atual = new MySqlCommand(
+                @"SELECT data_type FROM information_schema.columns
+                   WHERE table_schema = DATABASE()
+                     AND table_name = @t AND column_name = @c", conexao))
+            {
+                atual.Parameters.AddWithValue("@t", tabela);
+                atual.Parameters.AddWithValue("@c", coluna);
+
+                if (atual.ExecuteScalar() is not string tipo || (tipo != "float" && tipo != "double")) return;
+            }
+
+            using var alterar = new MySqlCommand(
+                $"ALTER TABLE `{tabela}` MODIFY COLUMN `{coluna}` {definicao}", conexao);
+
+            alterar.ExecuteNonQuery();
+            _log.LogWarning("Coluna {Tabela}.{Coluna} convertida para decimal.", tabela, coluna);
+        }
 
         /// <summary>Roda um preenchimento e so registra no log se mexeu em alguma linha.</summary>
         private void Executar(MySqlConnection conexao, string oQue, string sql)

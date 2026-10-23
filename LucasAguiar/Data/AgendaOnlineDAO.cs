@@ -244,7 +244,7 @@ namespace LucasAguiar.Data
                 {
                     IdServico = leitor.GetInt32("id_serv"),
                     NomeServico = DAOHelper.IsNull(leitor, "nome_serv") ? "" : leitor.GetString("nome_serv"),
-                    PrecoServico = DAOHelper.IsNull(leitor, "preco_serv") ? 0f : leitor.GetFloat(leitor.GetOrdinal("preco_serv")),
+                    PrecoServico = DAOHelper.IsNull(leitor, "preco_serv") ? 0m : leitor.GetDecimal(leitor.GetOrdinal("preco_serv")),
                     DuracaoServico = leitor.GetInt32("duracao_min")
                 });
             }

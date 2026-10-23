@@ -55,7 +55,7 @@
             <div class="grade-12">
                 <Campo Rotulo="Preço" Para="srv-preco" Colunas="3">
                     <InputMoeda Id="srv-preco" Valor="(decimal)Modelo.PrecoServico"
-                                ValorChanged="v => Modelo.PrecoServico = (float)v" />
+                                ValorChanged="v => Modelo.PrecoServico = v" />
                 </Campo>
                 <Campo Rotulo="Custo estimado" Para="srv-custo" Colunas="3"
                        Dica="Insumos por atendimento (lâmina, produto).">
@@ -70,7 +70,7 @@
                        Dica="@DicaComissao"
                        Erro="@(Modelo.ComissaoPercentual && Modelo.ComissaoServico > 100 ? "No máximo 100%." : null)">
                     <InputMoeda Id="srv-comissao" Valor="(decimal)Modelo.ComissaoServico"
-                                ValorChanged="v => Modelo.ComissaoServico = (float)v" />
+                                ValorChanged="v => Modelo.ComissaoServico = v" />
                 </Campo>
             </div>
         </section>

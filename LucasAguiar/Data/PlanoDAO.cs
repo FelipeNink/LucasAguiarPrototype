@@ -211,7 +211,7 @@ namespace LucasAguiar.Data
                 IdPlano = leitor.GetInt32("id_plan"),
                 NomePlano = leitor.IsDBNull(iNome) ? "" : leitor.GetString(iNome),
                 Descricao = leitor.IsDBNull(iDesc) ? "" : leitor.GetString(iDesc),
-                Valor = leitor.IsDBNull(iValor) ? 0f : leitor.GetFloat(iValor),
+                Valor = leitor.IsDBNull(iValor) ? 0m : leitor.GetDecimal(iValor),
                 Periodicidade = leitor.GetString("periodicidade"),
                 RegraComissaoAssinante = leitor.GetString("regra_comissao_assinante"),
                 Ativo = leitor.GetBoolean("ativo_plan")

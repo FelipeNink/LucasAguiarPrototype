@@ -46,7 +46,7 @@ namespace LucasAguiar.Models
         public string? Descricao { get; set; }
 
 
-        public float? Valor { get; set; }
+        public decimal? Valor { get; set; }
 
         public string Periodicidade { get; set; } = Models.Periodicidade.Mensal;
         public string RegraComissaoAssinante { get; set; } = Models.RegraComissaoAssinante.Normal;

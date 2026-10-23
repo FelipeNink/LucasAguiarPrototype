@@ -77,7 +77,7 @@
                 </Campo>
                 <Campo Rotulo="Preço de venda" Para="prd-valor" Colunas="3" Dica="@DicaMargem">
                     <InputMoeda Id="prd-valor" Valor="(decimal)Modelo.Valor"
-                                ValorChanged="v => Modelo.Valor = (float)v" />
+                                ValorChanged="v => Modelo.Valor = v" />
                 </Campo>
                 <Campo Rotulo="Comissão (%)" Para="prd-comissao" Colunas="2"
                        Dica="Vazio usa o % padrão do profissional."

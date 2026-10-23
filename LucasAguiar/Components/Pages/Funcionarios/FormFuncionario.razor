@@ -115,12 +115,12 @@
                     <input id="fun-banco" class="form-control" maxlength="300"
                            placeholder="Banco, agência e conta" @bind="Modelo.DadosBancarios" />
                 </Campo>
-                <Campo Rotulo="Profissional-parceiro" Para="fun-parceiro" Colunas="4"
-                       Dica="Lei do Salão-Parceiro: trabalha com CNPJ/MEI próprio.">
-                    <div class="form-check form-switch campo-switch">
-                        <input id="fun-parceiro" class="form-check-input" type="checkbox" role="switch" @bind="Modelo.Parceiro" />
-                        <label class="form-check-label" for="fun-parceiro">@(Modelo.Parceiro ? "Sim" : "Não")</label>
-                    </div>
+                <Campo Rotulo="Vínculo" Colunas="4"
+                       Dica="MEI é o parceiro da Lei do Salão-Parceiro, com CNPJ próprio.">
+                    <Seletor TItem="Opcao" TValor="string" Itens="OpcoesVinculo"
+                             Valor="@(Modelo.Vinculo ?? string.Empty)"
+                             ValorChanged="@(v => { Modelo.Vinculo = string.IsNullOrEmpty(v) ? null : v; Modelo.Parceiro = v == VinculoFuncionario.Mei; })"
+                             TextoDe="o => o.Rotulo" ValorDe="o => o.Valor" />
                 </Campo>
                 @if (Modelo.Parceiro)
                 {
@@ -341,6 +341,11 @@
     private static List<Opcao> OpcoesCargo =>
         new List<Opcao> { new("", "Não informado") }
             .Concat(CargoFuncionario.Todos.Select(c => new Opcao(c.Valor, c.Rotulo)))
+            .ToList();
+
+    private static List<Opcao> OpcoesVinculo =>
+        new List<Opcao> { new("", "Não informado") }
+            .Concat(VinculoFuncionario.Todos.Select(v => new Opcao(v.Valor, v.Rotulo)))
             .ToList();
 
     protected override void OnInitialized()
